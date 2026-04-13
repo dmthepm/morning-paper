@@ -1,0 +1,26 @@
+# Morning Paper example configuration
+
+name: example-paper
+timezone: America/Los_Angeles
+
+providers:
+  llm:
+    provider: openrouter
+    model: minimax/minimax-m2.7
+
+sources:
+  - type: rss
+    name: example-feed
+    url: https://example.com/feed.xml
+
+passes:
+  pass1:
+    max_candidates: 5
+  pass2:
+    enrich: true
+  pass3:
+    draft_outputs: true
+
+outputs:
+  staging_dir: ./staging
+  template: ./templates/typewriter-v5.md

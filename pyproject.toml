@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "morning-paper"
+version = "0.1.0"
+description = "CLI for building a daily intelligence paper from configurable sources."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Devon Meadows" }
+]
+dependencies = []
+
+[project.scripts]
+morning-paper = "morning_paper.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

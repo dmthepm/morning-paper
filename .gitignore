@@ -1,0 +1,7 @@
+scripts/__pycache__/
+tests/fixtures/*/smoke-runs/
+*.pyc
+.DS_Store
+.venv/
+dist/
+build/

@@ -1,0 +1,12 @@
+{
+  "output": "outputs/2026-04-05-morning-brief-engineering/repo/tests/fixtures/sample-run-2026-04-05/assembled-brief.md",
+  "assembled_at": "2026-04-05T09:07:31.591261",
+  "inputs": {
+    "typewriter-v5": "outputs/2026-04-05-morning-brief-engineering/repo/templates/typewriter-v5.md",
+    "candidates": "outputs/2026-04-05-morning-brief-engineering/repo/tests/fixtures/sample-run-2026-04-05/candidates.md",
+    "rabbit-holes": "outputs/2026-04-05-morning-brief-engineering/repo/tests/fixtures/sample-run-2026-04-05/rabbit-holes.md",
+    "content-drafts": "outputs/2026-04-05-morning-brief-engineering/repo/tests/fixtures/sample-run-2026-04-05/content-drafts.md",
+    "context-summary": "outputs/2026-04-05-morning-brief-engineering/repo/tests/fixtures/sample-run-2026-04-05/context-summary.md"
+  },
+  "size_bytes": 29257
+}
