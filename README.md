@@ -34,6 +34,17 @@ Right now it contains:
 - validation helpers
 - a first CLI wrapper
 
+Important:
+
+- the initial extraction commit was a repo split, not final render authority
+- the current approved render family is grounded in the 2026-04-12 style audit:
+  - tuned Morning Paper / Morning Brief PDFs on Thoth
+  - `x-article-print`
+  - `x-article-to-print`
+  - `morning-brief-print`
+  - `templates/typewriter-v5.md`
+- public render changes should follow that canon, not improvise from the seed scripts alone
+
 The boundary is deliberate:
 
 - public repo: generic engine, CLI, templates, tests, plugin surface
@@ -89,6 +100,27 @@ Important:
   - fixtures and golden outputs
 - `docs/`
   - product and runtime extraction notes
+
+## Render Authority
+
+The public repo should treat these as the current best evidence for print style:
+
+- tuned artifacts from `2026-04-12`
+- the X article print skill family on Thoth
+- the Morning Brief print template family on Thoth
+
+The main failure mode discovered in the style audit was not typography. It was
+structure:
+
+- concatenated article markdown leaked orphaned `---` markers into the body
+- combined outputs used broken relative image paths
+- a seed extraction was mistaken for the full render canon
+
+See:
+
+- `docs/style-forensics-2026-04-12.md`
+- `docs/layout-contract.md`
+- `templates/morning-paper-v1.md`
 
 ## What This Is Not
 

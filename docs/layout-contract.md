@@ -2,6 +2,20 @@
 
 These are the current visual and structural invariants.
 
+## Render Authority
+
+The current approved render family is derived from the 2026-04-12 style audit:
+
+- tuned Morning Paper artifacts on Thoth
+- tuned Morning Brief artifacts on Thoth
+- `x-article-print`
+- `x-article-to-print`
+- `morning-brief-print`
+- `templates/typewriter-v5.md`
+
+Do not treat extracted seed scripts as sufficient render authority by
+themselves.
+
 ## Typography
 
 - Body: `Courier Prime`
@@ -20,6 +34,7 @@ These are the current visual and structural invariants.
 - page 1 title/date/rule live in the body
 - PDF header template must be `"<span></span>"`
 - footer uses a 3-column flex layout with page numbers
+- use YAML literal blocks for CSS: `css: |`
 
 ## Content Blocks
 
@@ -33,7 +48,18 @@ These are the current visual and structural invariants.
 - no markdown `##` headers inside raw HTML blocks
 - HN heading and subhead should stay HTML when inside an HTML section scaffold
 - no forced page breaks unless explicitly part of an approved template rule
+- no orphan `---` separators inside combined article bodies
+- combined renders must use explicit article dividers, not frontmatter-style separators
+- combined article image paths must be explicit and relative to the rendered markdown
+- render review must include page screenshots, not only markdown inspection
 
 ## Golden Reference
 
-The current approved styling family is derived from the known-good Apr 5 repo brief and final PDF on Thoth. Future changes should be diffed against golden outputs, not improvised live in cron.
+The current approved styling family is derived from:
+
+- the known-good Apr 5 brief family
+- the 2026-04-12 tuned Morning Brief family
+- the 2026-04-12 tuned Morning Paper family
+
+Future changes should be diffed against golden outputs and tuned artifacts, not
+improvised live in cron.

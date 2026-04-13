@@ -51,6 +51,9 @@ Avoid:
 5. Keep both original and processed source references in metadata.
 6. Insert only after the brief passes structural QA.
 7. Require page screenshot review of the page containing the visual.
+8. For article-style outputs, resolve the final image path as it will appear in
+   the combined markdown file. Do not assume per-article relative paths will
+   still work after assembly.
 
 ## Why Local File Support Matters
 
@@ -78,6 +81,18 @@ The eventual repo-owned pipeline should add a small selector step that writes me
 ```
 
 That metadata should then feed the assembly step instead of forcing the template to rediscover the visual.
+
+## Author Portrait Rule
+
+For Morning Paper / article-style outputs, the portrait is often part of the
+meta-bar, not an optional decorative image.
+
+That means the render system should treat portraits like required assets for the
+article contract:
+
+- explicit path
+- explicit alt text
+- explicit failure mode if missing
 
 ## Product Rule
 
