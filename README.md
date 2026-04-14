@@ -42,7 +42,7 @@ Important:
   - `x-article-print` as the canonical article-print reference
   - `x-article-to-print` as legacy migration material only
   - `morning-brief-print`
-  - `templates/typewriter-v5.md`
+  - `templates/typewriter.md`
 - public render changes should follow that canon, not improvise from the seed scripts alone
 
 The boundary is deliberate:
@@ -77,10 +77,10 @@ The product cut for `v0.1` is:
 
 - no Thoth path assumptions
 - HN + RSS only
-- `typewriter-v5` as the default renderer
+- `typewriter` as the default renderer
 - markdown/HTML/JSON artifacts
 - no LLM required
-- `portable` PDF fallback when `md-to-pdf` is not installed
+- `portable` PDF fallback when the premium renderer is unavailable
 
 Quick start:
 
@@ -123,7 +123,7 @@ Important:
 - the public `init/build` path is the portable product surface
 - if you invoke a legacy command from a normal package install, Morning Paper
   will tell you to use `init` and `build` instead of failing with a traceback
-- the canonical public renderer is now `typewriter-v5`
+- the canonical public renderer is now `typewriter`
 - `portable` remains only as the fallback path when the richer renderer is unavailable
 
 ## Renderer Dependencies
@@ -131,9 +131,9 @@ Important:
 Morning Paper now has two renderer modes:
 
 - `typewriter` (default)
-  - best-looking output
-  - uses package-owned `typewriter-v5`
-  - prefers `md-to-pdf`
+  - the actual product look
+  - uses package-owned `typewriter`
+  - prefers optional `WeasyPrint`
 - `portable`
   - pure Python fallback
   - lower visual quality
@@ -145,7 +145,19 @@ outputs:
   renderer: typewriter
 ```
 
-If `md-to-pdf` is not installed, Morning Paper falls back cleanly and reports that in the build output.
+If `WeasyPrint` is not installed or its native libraries are unavailable, Morning Paper falls back cleanly and reports that in the build output.
+
+For the richer renderer:
+
+```bash
+pip install "morning-paper[pretty]"
+```
+
+On macOS, the richer renderer may also need:
+
+```bash
+brew install pango gdk-pixbuf
+```
 
 ## Repo Layout
 
@@ -192,10 +204,11 @@ See:
 ## Roadmap
 
 1. Replace the remaining fallback article-print behavior with the full package-owned premium render path.
-2. Add optional LLM scoring as an extra, not a requirement.
-3. Harden `print <url...>` for X article extraction and multi-article composition.
-4. Keep the Thoth harness thin and private.
-5. Reduce the legacy script lane over time.
+2. Add queueing commands for agent systems to stage tomorrow's paper without private harness assumptions.
+3. Add optional LLM scoring as an extra, not a requirement.
+4. Harden `print <url...>` for X article extraction and multi-article composition.
+5. Keep the Thoth harness thin and private.
+6. Reduce the legacy script lane over time.
 
 ## License
 

@@ -18,7 +18,7 @@ Live skill/template evidence:
 - `~/.hermes/skills/media/x-article-print/SKILL.md`
 - `~/.hermes/skills/x-article-to-print/SKILL.md`
 - `~/.hermes/skills/productivity/morning-brief-print/SKILL.md`
-- `~/.hermes/skills/productivity/morning-brief-print/templates/typewriter-v5.md`
+- `~/.hermes/skills/productivity/morning-brief-print/templates/typewriter.md` (publicized as `typewriter`)
 - `~/.hermes/skills/productivity/morning-brief-print/templates/presidential.md`
 
 Generated artifact evidence:

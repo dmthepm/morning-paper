@@ -24,7 +24,7 @@ class _FakeResponse:
             raise RuntimeError(f"http error: {self.status_code}")
 
 
-def _fake_get(url: str, timeout: int = 30) -> _FakeResponse:
+def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
     if "hn.algolia.com" in url:
         return _FakeResponse(
             text=json.dumps(
@@ -42,6 +42,22 @@ def _fake_get(url: str, timeout: int = 30) -> _FakeResponse:
                     ]
                 }
             )
+        )
+    if "r.jina.ai" in url:
+        return _FakeResponse(text="Reader View\n\nExample body paragraph one.\n\nExample body paragraph two.")
+    if "example.com/article" in url:
+        return _FakeResponse(
+            text="""
+<html>
+  <head>
+    <title>Printed Example</title>
+    <meta property="og:title" content="Printed Example" />
+    <meta property="og:site_name" content="Example" />
+    <meta name="author" content="Devon" />
+  </head>
+  <body><article><p>Body paragraph one.</p><p>Body paragraph two.</p></article></body>
+</html>
+"""
         )
     return _FakeResponse(
         text="""<?xml version="1.0" encoding="UTF-8"?>
@@ -88,6 +104,45 @@ class BuildFlowTest(unittest.TestCase):
                 path = Path(payload["outputs"][key])
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
+            self.assertEqual(payload["renderer"], "typewriter")
+            self.assertIsInstance(payload["warnings"], list)
+
+    def test_print_writes_outputs_for_article_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            output_dir = tmp_path / "out"
+
+            rc = cli.main(["init", "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            config["outputs"]["directory"] = str(output_dir)
+            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+
+            stdout = io.StringIO()
+            with patch("morning_paper.article_print.requests.get", side_effect=_fake_get):
+                with redirect_stdout(stdout):
+                    rc = cli.main(
+                        [
+                            "print",
+                            "https://example.com/article",
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-04-14",
+                        ]
+                    )
+            self.assertEqual(rc, 0)
+
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["mode"], "print")
+            self.assertEqual(payload["article_count"], 1)
+            for key in ("json", "markdown", "html", "pdf"):
+                path = Path(payload["outputs"][key])
+                self.assertTrue(path.exists(), key)
+                self.assertGreater(path.stat().st_size, 0, key)
+            self.assertIsInstance(payload["warnings"], list)
 
 
 if __name__ == "__main__":

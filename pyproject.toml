@@ -20,6 +20,9 @@ dependencies = [
   "requests>=2.32.3",
 ]
 
+[project.optional-dependencies]
+pretty = ["weasyprint>=62.0"]
+
 [project.scripts]
 morning-paper = "morning_paper.cli:main"
 

@@ -11,7 +11,7 @@ The current approved render family is derived from the 2026-04-12 style audit:
 - `x-article-print`
 - `x-article-to-print`
 - `morning-brief-print`
-- `templates/typewriter-v5.md`
+- `templates/typewriter.md`
 
 Do not treat extracted seed scripts as sufficient render authority by
 themselves.

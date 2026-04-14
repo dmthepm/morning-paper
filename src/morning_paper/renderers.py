@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import html
+import io
 import json
-import shutil
-import subprocess
+import os
+import sys
 import unicodedata
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict
 from datetime import UTC, datetime
 from importlib import resources
@@ -12,6 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fpdf import FPDF
+import yaml
 
 from .config import MorningPaperConfig
 from .models import SourceItem
@@ -81,6 +84,39 @@ def _display_time(timezone: str) -> str:
 
 def _package_template_text(name: str) -> str:
     return resources.files("morning_paper").joinpath("resources", name).read_text(encoding="utf-8")
+
+
+def _split_frontmatter(document: str) -> tuple[dict[str, object], str]:
+    lines = document.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}, document
+    try:
+        closing = lines[1:].index("---") + 1
+    except ValueError:
+        return {}, document
+    meta = yaml.safe_load("\n".join(lines[1:closing])) or {}
+    body = "\n".join(lines[closing + 1 :])
+    return meta, body
+
+
+def _load_weasyprint() -> tuple[object | None, str | None]:
+    if sys.platform == "darwin":
+        search_paths = ["/opt/homebrew/lib", "/usr/local/lib"]
+        current = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+        current_parts = [part for part in current.split(":") if part]
+        merged = current_parts[:]
+        for candidate in search_paths:
+            if Path(candidate).exists() and candidate not in merged:
+                merged.append(candidate)
+        if merged:
+            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = ":".join(merged)
+    import_buffer = io.StringIO()
+    try:
+        with redirect_stdout(import_buffer), redirect_stderr(import_buffer):
+            from weasyprint import HTML  # type: ignore
+    except (ImportError, OSError) as exc:
+        return None, str(exc)
+    return HTML, None
 
 
 def _html_paragraphs(text: str) -> str:
@@ -161,7 +197,7 @@ def _render_hn_cards(items: list[SourceItem]) -> str:
 
 
 def render_typewriter_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
-    template = _package_template_text("typewriter-v5.md")
+    template = _package_template_text("typewriter.md")
     banner = _banner_item(collected)
     rss_items = collected.get("rss") or []
     hn_items = collected.get("hacker_news") or []
@@ -287,6 +323,11 @@ def render_html(config: MorningPaperConfig, collected: dict[str, list[SourceItem
     return "\n".join(html_parts)
 
 
+def render_typewriter_html(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
+    markdown = render_typewriter_markdown(config, collected, date_str=date_str)
+    return _render_html_from_markdown(markdown)
+
+
 def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str, output_path: Path) -> None:
     pdf = FPDF(format="Letter")
     pdf.set_auto_page_break(auto=True, margin=12)
@@ -330,23 +371,32 @@ def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]
     pdf.output(str(output_path))
 
 
-def _render_typewriter_pdf(markdown_path: Path, output_path: Path) -> None:
-    expected = markdown_path.with_suffix(".pdf")
-    subprocess.run(["md-to-pdf", str(markdown_path)], check=True, capture_output=True, text=True)
-    if not expected.exists():
-        raise FileNotFoundError(f"md-to-pdf did not produce expected output: {expected}")
-    if expected != output_path:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(expected.read_bytes())
-
-
 def _render_html_from_markdown(markdown: str) -> str:
-    escaped = html.escape(markdown)
+    meta, body = _split_frontmatter(markdown)
+    css = str(meta.get("css", "")).strip()
+    title = html.escape(str(meta.get("title", "Morning Paper")))
+    if body.lstrip().startswith("<"):
+        rendered_body = body
+    else:
+        escaped = html.escape(body)
+        rendered_body = f"<pre>{escaped}</pre>"
     return (
-        "<!doctype html><html><head><meta charset='utf-8'><title>Morning Paper</title>"
-        "<style>body{font-family:Courier New,monospace;white-space:pre-wrap;max-width:8.5in;margin:0 auto;padding:0.5in;background:#f8f5ee;color:#111;}</style>"
-        f"</head><body>{escaped}</body></html>"
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        f"<title>{title}</title>"
+        f"<style>{css}</style>"
+        "</head><body>"
+        f"{rendered_body}"
+        "</body></html>"
     )
+
+
+def _render_typewriter_pdf(markdown: str, *, output_path: Path) -> None:
+    html_cls, error = _load_weasyprint()
+    if html_cls is None:
+        raise RuntimeError(error or "WeasyPrint unavailable")
+    html_doc = _render_html_from_markdown(markdown)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    html_cls(string=html_doc, base_url=str(output_path.parent)).write_pdf(str(output_path))
 
 
 def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> None:
@@ -374,6 +424,11 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
     paths = output_paths(config, date_str)
     paths["dir"].mkdir(parents=True, exist_ok=True)
     warnings: list[str] = []
+    markdown = (
+        render_typewriter_markdown(config, collected, date_str=date_str)
+        if config.outputs.renderer == "typewriter"
+        else render_markdown(config, collected, date_str=date_str)
+    )
     payload = {
         "generated_at": datetime.now(UTC).isoformat(),
         "date": date_str,
@@ -384,24 +439,26 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
     if config.outputs.json:
         paths["json"].write_text(json.dumps(payload, indent=2), encoding="utf-8")
     if config.outputs.markdown:
-        markdown = (
-            render_typewriter_markdown(config, collected, date_str=date_str)
-            if config.outputs.renderer == "typewriter"
-            else render_markdown(config, collected, date_str=date_str)
-        )
         paths["markdown"].write_text(markdown, encoding="utf-8")
     if config.outputs.html:
-        paths["html"].write_text(render_html(config, collected, date_str=date_str), encoding="utf-8")
+        html_text = (
+            render_typewriter_html(config, collected, date_str=date_str)
+            if config.outputs.renderer == "typewriter"
+            else render_html(config, collected, date_str=date_str)
+        )
+        paths["html"].write_text(html_text, encoding="utf-8")
     if config.outputs.pdf:
-        if config.outputs.renderer == "typewriter" and shutil.which("md-to-pdf"):
+        if config.outputs.renderer == "typewriter":
             try:
-                _render_typewriter_pdf(paths["markdown"], paths["pdf"])
+                _render_typewriter_pdf(markdown, output_path=paths["pdf"])
             except Exception as exc:
-                warnings.append(f"typewriter renderer failed, fell back to portable PDF: {exc}")
+                warnings.append(
+                    "WeasyPrint not available for typewriter renderer; "
+                    "fell back to portable PDF. Install `morning-paper[pretty]` for the full layout. "
+                    f"Detail: {exc}"
+                )
                 render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
         else:
-            if config.outputs.renderer == "typewriter" and not shutil.which("md-to-pdf"):
-                warnings.append("md-to-pdf not found; fell back to portable PDF renderer")
             render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
     return paths, warnings
 
@@ -431,14 +488,16 @@ def write_custom_markdown(
     if config.outputs.html:
         paths["html"].write_text(_render_html_from_markdown(markdown), encoding="utf-8")
     if config.outputs.pdf:
-        if config.outputs.renderer == "typewriter" and shutil.which("md-to-pdf"):
+        if config.outputs.renderer == "typewriter":
             try:
-                _render_typewriter_pdf(paths["markdown"], paths["pdf"])
+                _render_typewriter_pdf(markdown, output_path=paths["pdf"])
             except Exception as exc:
-                warnings.append(f"typewriter renderer failed, fell back to portable PDF: {exc}")
+                warnings.append(
+                    "WeasyPrint not available for typewriter renderer; "
+                    "fell back to portable PDF. Install `morning-paper[pretty]` for the full layout. "
+                    f"Detail: {exc}"
+                )
                 _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
         else:
-            if config.outputs.renderer == "typewriter" and not shutil.which("md-to-pdf"):
-                warnings.append("md-to-pdf not found; fell back to portable PDF renderer")
             _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
     return paths, warnings

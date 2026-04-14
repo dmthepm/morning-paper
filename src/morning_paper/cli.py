@@ -44,7 +44,7 @@ def doctor() -> int:
         REPO_ROOT / "src" / "morning_paper" / "config.py",
         REPO_ROOT / "src" / "morning_paper" / "image_tools.py",
         REPO_ROOT / "src" / "morning_paper" / "renderers.py",
-        REPO_ROOT / "src" / "morning_paper" / "resources" / "typewriter-v5.md",
+        REPO_ROOT / "src" / "morning_paper" / "resources" / "typewriter.md",
         REPO_ROOT / "src" / "morning_paper" / "sources.py",
     ]
     missing = [str(path.relative_to(REPO_ROOT)) for path in required if not path.exists()]
@@ -115,6 +115,8 @@ def build_command(args: list[str]) -> int:
         print(f"invalid config: {exc}", file=sys.stderr)
         return 1
     result = build_paper(config, date_str=date)
+    for warning in result.get("warnings", []):
+        print(f"warning: {warning}", file=sys.stderr)
     print(json.dumps(result, indent=2))
     return 0
 
@@ -172,6 +174,8 @@ def print_command(args: list[str]) -> int:
         slug=slug,
         metadata={"mode": "print", "urls": urls, "article_count": len(articles)},
     )
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
     print(
         json.dumps(
             {

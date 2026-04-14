@@ -2,22 +2,22 @@
 
 ## Current Status
 
-This extracted repo has not been pushed anywhere yet.
+This repo is public and active:
 
-Nothing in this bundle has been automatically deployed back to Thoth.
+- GitHub: `dmthepm/morning-paper`
+- public CLI path: `morning-paper init`, `build`, `print`, `doctor`
+- private harness compatibility scripts still exist, but they are not the public product surface
 
-The extracted assembly path is now real enough to smoke test:
+Current deployment reality:
 
-- `scripts/assemble_brief.py` is implemented and fixture-backed
-- `scripts/visual_review.py` is implemented as a starter full-page review tool
-- `scripts/smoke_test.sh` can run repeated end-to-end smoke tests and compare hashes
-- local compile checks pass
-- render still needs to happen on Thoth because this Mac is missing the full PDF review toolchain
+- the public package can build a paper on any machine with the core Python dependencies
+- the `typewriter` renderer upgrades to `WeasyPrint` when available
+- the package falls back to `fpdf2` when the richer renderer is unavailable
+- Thoth still has a separate private harness for the operator-specific Morning Brief deployment
 
 ## Durability Note
 
-`md-to-pdf` output is visually stable but not byte-stable. Headless Chrome embeds run-specific PDF metadata
-(creation/modification timestamps and localhost title metadata), so durability should be checked with:
+`typewriter` output should be judged on the artifact contract, not raw PDF byte hashes. Rich renderers may embed run-specific metadata, so durability should be checked with:
 
 - assembled markdown hash
 - page screenshot hash set
@@ -27,23 +27,22 @@ Do not use raw PDF SHA256 alone as the cutover gate.
 
 ## Intended Deployment Flow
 
-1. commit and push this repo to GitHub
-2. clone it onto Thoth in a stable path
-3. update the `06:00` and `07:00` Hermes cron jobs to call repo-owned scripts
-4. validate the runtime paths, review artifact generation, and Hermes-native Telegram routing
+1. publish to PyPI so `pipx` / `uvx` become first-class install paths
+2. keep the public package self-contained and portable
+3. let private harnesses call the CLI rather than fork the product logic
+4. validate both renderer lanes:
+   - `typewriter` with `morning-paper[pretty]`
+   - `portable` with core-only dependencies
 
 ## Thoth Target Shape
 
-Recommended eventual path:
-
-`/Users/thoth/projects/morning-brief`
+Recommended private harness path remains repo-backed and separate from the public package.
 
 ## Cutover Rule
 
-Do not point cron at this repo until:
+Do not point any private automation at a new public package cut until:
 
-- assembly entrypoint is real
-- visual review is real
-- fixture render tests exist
-- golden outputs are approved
-- Hermes cron paths are updated to repo-owned scripts with absolute Thoth paths
+- clean install tests pass
+- `build` and `print` both produce reviewable artifacts
+- fallback warnings are clear
+- the richer renderer path has been manually reviewed against the expected print style

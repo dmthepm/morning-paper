@@ -87,7 +87,7 @@ def fetch_article(url: str) -> Article:
 
 
 def render_article_markdown(config: MorningPaperConfig, articles: list[Article], *, date_str: str, images_dir: Path) -> str:
-    template = _package_template_text("typewriter-v5.md")
+    template = _package_template_text("typewriter.md")
     image_blocks: list[str] = []
     full_reads: list[str] = []
     for article in articles:
