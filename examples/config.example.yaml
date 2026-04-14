@@ -20,6 +20,7 @@ sources:
 
 outputs:
   directory: ~/.local/share/morning-paper
+  renderer: typewriter
   pdf: true
   html: true
   markdown: true

@@ -39,8 +39,8 @@ Important:
 - the initial extraction commit was a repo split, not final render authority
 - the current approved render family is grounded in the 2026-04-12 style audit:
   - tuned Morning Paper / Morning Brief PDFs on Thoth
-  - `x-article-print`
-  - `x-article-to-print`
+  - `x-article-print` as the canonical article-print reference
+  - `x-article-to-print` as legacy migration material only
   - `morning-brief-print`
   - `templates/typewriter-v5.md`
 - public render changes should follow that canon, not improvise from the seed scripts alone
@@ -77,15 +77,17 @@ The product cut for `v0.1` is:
 
 - no Thoth path assumptions
 - HN + RSS only
-- print-ready PDF output
+- `typewriter-v5` as the default renderer
 - markdown/HTML/JSON artifacts
 - no LLM required
+- `portable` PDF fallback when `md-to-pdf` is not installed
 
 Quick start:
 
 ```bash
 morning-paper init
 morning-paper build
+morning-paper print https://example.com
 ```
 
 That creates a config at `~/.config/morning-paper/config.yaml` and outputs a
@@ -104,6 +106,7 @@ There are now two lanes:
 - public product lane:
   - `init`
   - `build`
+  - `print`
 - legacy compatibility lane for the private Thoth deployment:
   - `pass1`
   - `pass2`
@@ -120,6 +123,29 @@ Important:
 - the public `init/build` path is the portable product surface
 - if you invoke a legacy command from a normal package install, Morning Paper
   will tell you to use `init` and `build` instead of failing with a traceback
+- the canonical public renderer is now `typewriter-v5`
+- `portable` remains only as the fallback path when the richer renderer is unavailable
+
+## Renderer Dependencies
+
+Morning Paper now has two renderer modes:
+
+- `typewriter` (default)
+  - best-looking output
+  - uses package-owned `typewriter-v5`
+  - prefers `md-to-pdf`
+- `portable`
+  - pure Python fallback
+  - lower visual quality
+
+The default config uses:
+
+```yaml
+outputs:
+  renderer: typewriter
+```
+
+If `md-to-pdf` is not installed, Morning Paper falls back cleanly and reports that in the build output.
 
 ## Repo Layout
 
@@ -165,9 +191,9 @@ See:
 
 ## Roadmap
 
-1. Harden the portable `init/build` path with fixtures and golden tests.
+1. Replace the remaining fallback article-print behavior with the full package-owned premium render path.
 2. Add optional LLM scoring as an extra, not a requirement.
-3. Add source plugin interfaces for X and YouTube.
+3. Harden `print <url...>` for X article extraction and multi-article composition.
 4. Keep the Thoth harness thin and private.
 5. Reduce the legacy script lane over time.
 

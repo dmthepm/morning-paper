@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import html
 import json
+import shutil
+import subprocess
 import unicodedata
 from dataclasses import asdict
 from datetime import UTC, datetime
+from importlib import resources
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fpdf import FPDF
 
@@ -20,6 +24,17 @@ def _safe_filename(label: str) -> str:
 def output_paths(config: MorningPaperConfig, date_str: str) -> dict[str, Path]:
     slug = _safe_filename(config.name)
     out_dir = config.outputs.directory / date_str
+    return {
+        "dir": out_dir,
+        "json": out_dir / f"{slug}.json",
+        "markdown": out_dir / f"{slug}.md",
+        "html": out_dir / f"{slug}.html",
+        "pdf": out_dir / f"{slug}.pdf",
+    }
+
+
+def custom_output_paths(config: MorningPaperConfig, date_str: str, *, slug: str) -> dict[str, Path]:
+    out_dir = config.outputs.directory / date_str / slug
     return {
         "dir": out_dir,
         "json": out_dir / f"{slug}.json",
@@ -53,6 +68,125 @@ def _banner_item(collected: dict[str, list[SourceItem]]) -> SourceItem | None:
         reverse=True,
     )
     return candidates[0] if candidates else None
+
+
+def _display_date(date_str: str) -> str:
+    return datetime.fromisoformat(date_str).strftime("%d %B %Y").lstrip("0").upper()
+
+
+def _display_time(timezone: str) -> str:
+    now = datetime.now(ZoneInfo(timezone))
+    return now.strftime("%H%M %Z")
+
+
+def _package_template_text(name: str) -> str:
+    return resources.files("morning_paper").joinpath("resources", name).read_text(encoding="utf-8")
+
+
+def _html_paragraphs(text: str) -> str:
+    parts = [segment.strip() for segment in (text or "").split("\n") if segment.strip()]
+    return "\n".join(f"<p>{html.escape(part)}</p>" for part in parts[:4])
+
+
+def _render_info_row(banner: SourceItem | None, rss_count: int, hn_count: int, renderer: str) -> str:
+    banner_value = html.escape((banner.title[:64] + "…") if banner and len(banner.title) > 64 else (banner.title if banner else "No banner"))
+    runtime_value = "Typewriter renderer" if renderer == "typewriter" else "Portable renderer"
+    return "\n".join(
+        [
+            '<div class="info-block"><div class="info-label">Banner</div><div class="info-value">' + banner_value + "</div></div>",
+            f'<div class="info-block"><div class="info-label">Signals</div><div class="info-value">{rss_count}</div></div>',
+            f'<div class="info-block"><div class="info-label">Hacker News</div><div class="info-value">{hn_count}</div></div>',
+            f'<div class="info-block"><div class="info-label">Renderer</div><div class="info-value">{html.escape(runtime_value)}</div></div>',
+        ]
+    )
+
+
+def _render_signal_cards(items: list[SourceItem]) -> str:
+    blocks: list[str] = []
+    pair_buffer: list[str] = []
+    for item in items:
+        card = (
+            '<div class="tweet">'
+            f'<div class="tweet-header"><span class="tweet-author">{html.escape(item.source_name)}</span>'
+            f'<span class="tweet-meta">{html.escape(item.published_at[:10] if item.published_at else "signal")}</span></div>'
+            f'<div class="tweet-text">{html.escape(item.title)}</div>'
+            f'<div class="tweet-stats">{html.escape(item.summary[:180])}</div>'
+            "</div>"
+        )
+        if len((item.summary or item.title)) < 180:
+            pair_buffer.append(card)
+            if len(pair_buffer) == 2:
+                blocks.append('<div class="tweet-pair">' + "".join(pair_buffer) + "</div>")
+                pair_buffer = []
+        else:
+            if pair_buffer:
+                blocks.append('<div class="tweet-pair">' + "".join(pair_buffer) + "</div>")
+                pair_buffer = []
+            blocks.append(card)
+    if pair_buffer:
+        blocks.append('<div class="tweet-pair">' + "".join(pair_buffer) + "</div>")
+    return "\n".join(blocks) or "<p>No signals available.</p>"
+
+
+def _render_full_reads(items: list[SourceItem], *, limit: int = 2) -> list[str]:
+    reads: list[str] = []
+    for item in items[:limit]:
+        reads.append(
+            '<div class="full-read">'
+            f'<div class="full-read-title">{html.escape(item.title)}</div>'
+            f'<div class="full-read-source">{html.escape(item.source_name)}</div>'
+            f'<div class="full-read-body">{_html_paragraphs(item.summary or item.url)}</div>'
+            "</div>"
+        )
+    while len(reads) < limit:
+        reads.append("<p>No full read available.</p>")
+    return reads
+
+
+def _render_hn_cards(items: list[SourceItem]) -> str:
+    cards: list[str] = []
+    for index, item in enumerate(items, 1):
+        cards.append(
+            '<div class="hn-card">'
+            '<div class="hn-card-header">'
+            f'<span class="hn-rank">#{index}</span>'
+            f'<span class="hn-domain">{html.escape(item.source_name)}</span>'
+            "</div>"
+            f'<div class="hn-title">{html.escape(item.title)}</div>'
+            f'<div class="hn-meta">{html.escape(item.summary)}</div>'
+            f'<div class="hn-desc">{html.escape(item.url)}</div>'
+            "</div>"
+        )
+    return "\n".join(cards) or "<p>No HN items available.</p>"
+
+
+def render_typewriter_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
+    template = _package_template_text("typewriter-v5.md")
+    banner = _banner_item(collected)
+    rss_items = collected.get("rss") or []
+    hn_items = collected.get("hacker_news") or []
+    reads = _render_full_reads(rss_items if rss_items else hn_items, limit=2)
+    replacements = {
+        "{DATE}": _display_date(date_str),
+        "{TIME}": _display_time(config.timezone),
+        "{LOCATION}": "AT HOME",
+        '<!-- Banner, tweet count, HN count, runtime -->': _render_info_row(
+            banner, len(rss_items), len(hn_items), config.outputs.renderer
+        ),
+        '<!-- Tweets: short ones (< 180 chars) paired 2-col, long ones full-width -->': _render_signal_cards(rss_items),
+        '<!-- Full Read content -->': reads[0],
+        '<!-- Second Full Read -->': reads[1],
+        '<!-- HN cards go here -->': _render_hn_cards(hn_items),
+        '<!-- Community content -->': "<p>Private harness only.</p>",
+        '<!-- Agency content -->': "<p>Private harness only.</p>",
+        '<!-- Ops content -->': "<p>Private harness only.</p>",
+        '<!-- Pipeline status -->': "<p>Portable build path active.</p>",
+        '<!-- Action items -->': "<p>Review the banner story and tune your feeds.</p>",
+        '<!-- Reference links -->': "<p>Generated by Morning Paper.</p>",
+    }
+    for needle, value in replacements.items():
+        template = template.replace(needle, value)
+    return template
 
 
 def render_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
@@ -196,21 +330,115 @@ def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]
     pdf.output(str(output_path))
 
 
-def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> dict[str, Path]:
+def _render_typewriter_pdf(markdown_path: Path, output_path: Path) -> None:
+    expected = markdown_path.with_suffix(".pdf")
+    subprocess.run(["md-to-pdf", str(markdown_path)], check=True, capture_output=True, text=True)
+    if not expected.exists():
+        raise FileNotFoundError(f"md-to-pdf did not produce expected output: {expected}")
+    if expected != output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(expected.read_bytes())
+
+
+def _render_html_from_markdown(markdown: str) -> str:
+    escaped = html.escape(markdown)
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><title>Morning Paper</title>"
+        "<style>body{font-family:Courier New,monospace;white-space:pre-wrap;max-width:8.5in;margin:0 auto;padding:0.5in;background:#f8f5ee;color:#111;}</style>"
+        f"</head><body>{escaped}</body></html>"
+    )
+
+
+def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> None:
+    pdf = FPDF(format="Letter")
+    pdf.set_auto_page_break(auto=True, margin=12)
+    pdf.add_page()
+    width = pdf.w - pdf.l_margin - pdf.r_margin
+    pdf.set_title(f"{config.name} — {date_str}")
+    pdf.set_author("Morning Paper")
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.cell(width, 10, _pdf_text(config.name), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 10)
+    for raw_line in markdown.splitlines():
+        line = raw_line.strip()
+        if not line:
+            pdf.ln(3)
+            continue
+        line = _pdf_text(line.replace("# ", "").replace("## ", "").replace("### ", ""))
+        pdf.multi_cell(width, 5, line)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    pdf.output(str(output_path))
+
+
+def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> tuple[dict[str, Path], list[str]]:
     paths = output_paths(config, date_str)
     paths["dir"].mkdir(parents=True, exist_ok=True)
+    warnings: list[str] = []
     payload = {
         "generated_at": datetime.now(UTC).isoformat(),
         "date": date_str,
         "name": config.name,
+        "renderer": config.outputs.renderer,
         "items": {key: [asdict(item) for item in items] for key, items in collected.items()},
     }
     if config.outputs.json:
         paths["json"].write_text(json.dumps(payload, indent=2), encoding="utf-8")
     if config.outputs.markdown:
-        paths["markdown"].write_text(render_markdown(config, collected, date_str=date_str), encoding="utf-8")
+        markdown = (
+            render_typewriter_markdown(config, collected, date_str=date_str)
+            if config.outputs.renderer == "typewriter"
+            else render_markdown(config, collected, date_str=date_str)
+        )
+        paths["markdown"].write_text(markdown, encoding="utf-8")
     if config.outputs.html:
         paths["html"].write_text(render_html(config, collected, date_str=date_str), encoding="utf-8")
     if config.outputs.pdf:
-        render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
-    return paths
+        if config.outputs.renderer == "typewriter" and shutil.which("md-to-pdf"):
+            try:
+                _render_typewriter_pdf(paths["markdown"], paths["pdf"])
+            except Exception as exc:
+                warnings.append(f"typewriter renderer failed, fell back to portable PDF: {exc}")
+                render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
+        else:
+            if config.outputs.renderer == "typewriter" and not shutil.which("md-to-pdf"):
+                warnings.append("md-to-pdf not found; fell back to portable PDF renderer")
+            render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
+    return paths, warnings
+
+
+def write_custom_markdown(
+    config: MorningPaperConfig,
+    markdown: str,
+    *,
+    date_str: str,
+    slug: str,
+    metadata: dict[str, object] | None = None,
+) -> tuple[dict[str, Path], list[str]]:
+    paths = custom_output_paths(config, date_str, slug=slug)
+    paths["dir"].mkdir(parents=True, exist_ok=True)
+    warnings: list[str] = []
+    if config.outputs.json:
+        payload = {
+            "generated_at": datetime.now(UTC).isoformat(),
+            "date": date_str,
+            "name": config.name,
+            "renderer": config.outputs.renderer,
+            "metadata": metadata or {},
+        }
+        paths["json"].write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    if config.outputs.markdown:
+        paths["markdown"].write_text(markdown, encoding="utf-8")
+    if config.outputs.html:
+        paths["html"].write_text(_render_html_from_markdown(markdown), encoding="utf-8")
+    if config.outputs.pdf:
+        if config.outputs.renderer == "typewriter" and shutil.which("md-to-pdf"):
+            try:
+                _render_typewriter_pdf(paths["markdown"], paths["pdf"])
+            except Exception as exc:
+                warnings.append(f"typewriter renderer failed, fell back to portable PDF: {exc}")
+                _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
+        else:
+            if config.outputs.renderer == "typewriter" and not shutil.which("md-to-pdf"):
+                warnings.append("md-to-pdf not found; fell back to portable PDF renderer")
+            _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
+    return paths, warnings

@@ -39,6 +39,7 @@ class SourcesConfig:
 @dataclass(slots=True)
 class OutputsConfig:
     directory: Path = DEFAULT_OUTPUT_DIR
+    renderer: str = "typewriter"
     pdf: bool = True
     html: bool = True
     markdown: bool = True
@@ -86,6 +87,12 @@ def _validate_output_directory(path: Path) -> Path:
     return path
 
 
+def _validate_renderer(value: str) -> str:
+    if value not in {"typewriter", "portable"}:
+        raise ConfigError("outputs.renderer must be one of: typewriter, portable")
+    return value
+
+
 def load_config(path: Path) -> MorningPaperConfig:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     sources = data.get("sources") or {}
@@ -115,6 +122,7 @@ def load_config(path: Path) -> MorningPaperConfig:
             directory=_validate_output_directory(
                 _expand_path(outputs.get("directory"), default=DEFAULT_OUTPUT_DIR)
             ),
+            renderer=_validate_renderer(str(outputs.get("renderer", "typewriter"))),
             pdf=bool(outputs.get("pdf", True)),
             html=bool(outputs.get("html", True)),
             markdown=bool(outputs.get("markdown", True)),
@@ -144,6 +152,7 @@ sources:
 
 outputs:
   directory: ~/.local/share/morning-paper
+  renderer: typewriter
   pdf: true
   html: true
   markdown: true
