@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import html
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -23,6 +23,7 @@ class Article:
     body: str
     image_url: str = ""
     profile_image_url: str = ""
+    blocks: list[tuple[str, str]] = field(default_factory=list)
 
 
 def _clean_text(value: str) -> str:
@@ -61,11 +62,19 @@ def _reader_metadata(url: str) -> dict[str, object]:
     try:
         reader = _reader_text(url)
     except Exception:
-        return {"paragraphs": [], "title": "", "author": "", "image_url": "", "profile_image_url": ""}
+        return {
+            "paragraphs": [],
+            "blocks": [],
+            "title": "",
+            "author": "",
+            "image_url": "",
+            "profile_image_url": "",
+        }
     title = ""
     author = ""
     image_url = ""
     profile_image_url = ""
+    blocks: list[tuple[str, str]] = []
     title_match = re.search(r"^Title:\s*(.+)$", reader, flags=re.MULTILINE)
     if title_match:
         title = title_match.group(1).strip()
@@ -80,29 +89,63 @@ def _reader_metadata(url: str) -> dict[str, object]:
         image_url = (preferred[0] if preferred else image_matches[0]).replace("&name=small", "&name=large")
         if profile:
             profile_image_url = profile[0]
+
     paragraphs: list[str] = []
     noise = (
         "markdown content:",
         "[subscribe]",
-        "http://",
-        "https://",
         "published time:",
         "image:",
     )
+    preview_noise = {
+        "sarah wooders",
+        "@sarahwooders",
+        "why memory isn't a plugin (it's the harness)",
+    }
+
+    current_kind: str | None = None
+    current_lines: list[str] = []
+
+    def flush_current() -> None:
+        nonlocal current_kind, current_lines
+        if not current_kind or not current_lines:
+            current_kind = None
+            current_lines = []
+            return
+        text = " ".join(part.strip() for part in current_lines if part.strip()).strip()
+        if text:
+            blocks.append((current_kind, text))
+            if current_kind in {"paragraph", "blockquote", "callout"}:
+                paragraphs.append(text)
+        current_kind = None
+        current_lines = []
+
     for raw in reader.splitlines():
         line = raw.strip()
         if not line:
+            flush_current()
             continue
         lowered = line.lower()
         if any(token in lowered for token in noise):
+            continue
+        if lowered in preview_noise:
+            flush_current()
             continue
         if lowered.startswith("#"):
             continue
         if lowered.startswith("title:") or lowered.startswith("url source:"):
             continue
         if line.startswith("[!["):
+            flush_current()
             continue
-        if len(line) < 40:
+        image_match = re.match(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)", line)
+        if image_match:
+            flush_current()
+            candidate = image_match.group(1).replace("&name=small", "&name=large")
+            if "/profile_images/" not in candidate:
+                blocks.append(("image", candidate))
+            continue
+        if len(line) < 18 and not line.startswith(">") and not line.startswith("💡"):
             continue
         if line in {")", "(", "].", ".)"}:
             continue
@@ -110,9 +153,64 @@ def _reader_metadata(url: str) -> dict[str, object]:
             continue
         if re.fullmatch(r"[\W_]+", line):
             continue
-        paragraphs.append(line)
+        if line.startswith("💡"):
+            flush_current()
+            blocks.append(("callout", line.lstrip("💡").strip()))
+            paragraphs.append(line.lstrip("💡").strip())
+            continue
+        if line.startswith(">"):
+            cleaned = line.lstrip(">").strip()
+            if not cleaned:
+                continue
+            if current_kind != "blockquote":
+                flush_current()
+                current_kind = "blockquote"
+            current_lines.append(cleaned)
+            continue
+        if line.startswith("http://") or line.startswith("https://"):
+            flush_current()
+            continue
+        if current_kind != "paragraph":
+            flush_current()
+            current_kind = "paragraph"
+        current_lines.append(line)
+    flush_current()
+
+    normalized_blocks: list[tuple[str, str]] = []
+    for kind, text in blocks:
+        cleaned = re.sub(r"^[).,\s]+", "", text).strip()
+        if not cleaned:
+            continue
+        lowered = cleaned.lower()
+        if lowered.startswith("thank you to a few people"):
+            break
+        if lowered.startswith("this is why we are building"):
+            break
+        if lowered in {"examples of agent harnesses include", "sarah wooders wrote a"}:
+            continue
+        if lowered.startswith("on why “memory isn’t a plugin") or lowered.startswith('on why "memory isn'):
+            continue
+        if kind == "paragraph" and len(cleaned) < 34:
+            continue
+        if (
+            normalized_blocks
+            and kind == "paragraph"
+            and normalized_blocks[-1][0] == "paragraph"
+            and (
+                len(normalized_blocks[-1][1]) < 75
+                or not re.search(r"[.!?\"”:]$", normalized_blocks[-1][1])
+                or cleaned[:1].islower()
+            )
+        ):
+            previous = normalized_blocks[-1][1]
+            normalized_blocks[-1] = ("paragraph", f"{previous} {cleaned}".strip())
+            continue
+        normalized_blocks.append((kind, cleaned))
+    blocks = normalized_blocks
+    paragraphs = [text for kind, text in blocks if kind in {"paragraph", "blockquote", "callout"}]
     return {
         "paragraphs": paragraphs,
+        "blocks": blocks,
         "title": title,
         "author": author,
         "image_url": image_url,
@@ -157,6 +255,7 @@ def fetch_article(url: str) -> Article:
         body=body,
         image_url=image_url,
         profile_image_url=str(reader_meta.get("profile_image_url") or ""),
+        blocks=list(reader_meta.get("blocks") or []),
     )
 
 
@@ -164,29 +263,31 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
     date_label = datetime.fromisoformat(date_str).strftime("%A, %B %d, %Y")
     css = """
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9pt; line-height: 1.38; color: #111; background: #fff; }
-@page { size: Letter; margin: 0.5in 0.48in 0.62in 0.48in; }
-.paper-header { text-align: center; margin-bottom: 0.1in; }
-.paper-date { font-size: 17.5pt; font-weight: 700; letter-spacing: 0.03em; }
-.paper-subtitle { font-size: 7.6pt; color: #666; margin-top: 0.035in; letter-spacing: 0.065em; }
-.paper-rule { border-bottom: 1.8px solid #111; margin-top: 0.07in; }
-.article { margin-top: 0.08in; }
-.article-title { font-size: 12.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.06in; }
-.article-body { column-count: 2; column-gap: 0.18in; font-size: 8.8pt; line-height: 1.32; color: #000; }
+body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9pt; line-height: 1.36; color: #090909; background: #fff; }
+@page { size: Letter; margin: 0.44in 0.42in 0.58in 0.42in; }
+.paper-header { text-align: center; margin: 0 0 0.08in 0; }
+.paper-date { font-size: 18.2pt; font-weight: 700; letter-spacing: 0.03em; }
+.paper-subtitle { font-size: 8.1pt; color: #4f4f4f; margin-top: 0.02in; letter-spacing: 0.065em; }
+.paper-rule { border-bottom: 2.2px solid #111; margin-top: 0.05in; }
+.article { margin-top: 0.05in; }
+.article-title { font-size: 13.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.05in 0; }
+.article-body { column-count: 2; column-gap: 0.17in; font-size: 9.05pt; line-height: 1.24; color: #050505; }
 .article-body::after { content: ""; display: block; clear: both; }
-.meta-card { float: left; width: 1.55in; border: 1.2px solid #111; padding: 0.055in; font-size: 7pt; background: #fff; margin: 0.01in 0.12in 0.08in 0; break-inside: avoid; }
-.meta-top { display: grid; grid-template-columns: 0.44in 1fr; gap: 0.06in; align-items: start; }
-.meta-avatar { width: 0.42in; height: 0.42in; object-fit: cover; border: 1px solid #bbb; }
-.meta-author { font-weight: 700; margin-bottom: 0.03in; }
-.meta-handle { color: #555; margin-bottom: 0.04in; }
-.meta-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.04in; margin: 0.05in 0; }
-.meta-stat-label { font-size: 5.5pt; color: #666; text-transform: uppercase; }
-.meta-stat-value { font-size: 7pt; font-weight: 700; }
-.meta-image { width: 100%; margin-top: 0.06in; border: 1px solid #cfcfcf; }
-.article-body p { margin: 0 0 0.05in 0; text-align: justify; text-indent: 0.13in; }
+.meta-card { float: left; width: 1.6in; border: 1.4px solid #111; padding: 0.055in; font-size: 7pt; background: #fff; margin: 0.01in 0.11in 0.07in 0; break-inside: avoid; }
+.meta-avatar { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid #b5b5b5; margin-bottom: 0.055in; }
+.meta-author { font-size: 8.1pt; font-weight: 700; margin-bottom: 0.02in; }
+.meta-handle { font-size: 6.9pt; color: #222; margin-bottom: 0.03in; }
+.meta-date { font-size: 6.4pt; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+.article-body p { margin: 0 0 0.045in 0; text-align: justify; text-indent: 0.12in; }
 .article-body p:first-child { text-indent: 0; }
-.article-quote { font-style: italic; font-size: 7.6pt; margin-top: 0.08in; color: #222; }
-.article-link { font-size: 6.4pt; color: #444; margin-top: 0.03in; word-break: break-word; }
+.article-body .article-callout { font-weight: 700; margin: 0.055in 0; text-indent: 0; }
+.article-body blockquote { margin: 0.07in 0.04in 0.08in 0.14in; padding-left: 0.11in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.2pt; color: #111; break-inside: avoid; }
+.article-body blockquote p { text-indent: 0; margin: 0; }
+.article-image { margin: 0.06in 0 0.08in 0; break-inside: avoid; }
+.article-image img { display: block; width: 100%; border: 1px solid #c9c9c9; }
+.article-image--wide { column-span: all; }
+.article-source { font-size: 6.6pt; color: #333; margin-top: 0.02in; }
+.article-source a { color: #333; text-decoration: none; }
 a { color: #111; text-decoration: underline; }
 """
     sections: list[str] = [
@@ -214,15 +315,7 @@ a { color: #111; text-decoration: underline; }
     )
 
     for article in articles:
-        relative_image = ""
         relative_avatar = ""
-        if article.image_url:
-            try:
-                image_name = f"{_safe_filename(article.title)[:32] or 'article'}.png"
-                img_path = process_for_print(article.image_url, output_path=images_dir / image_name)
-                relative_image = img_path.relative_to(images_dir.parent).as_posix()
-            except Exception:
-                relative_image = ""
         if article.profile_image_url:
             try:
                 avatar_name = f"{_safe_filename(article.author or article.source_name)[:24] or 'author'}-avatar.png"
@@ -234,30 +327,61 @@ a { color: #111; text-decoration: underline; }
                 relative_avatar = avatar_path.relative_to(images_dir.parent).as_posix()
             except Exception:
                 relative_avatar = ""
-        paragraphs = [p.strip() for p in article.body.split("\n\n") if p.strip()]
-        body_html = "".join(f"<p>{html.escape(p)}</p>" for p in paragraphs[:30])
+        rendered_images: dict[str, str] = {}
+        image_counter = 0
+
+        def local_image(url: str) -> str:
+            nonlocal image_counter
+            if url in rendered_images:
+                return rendered_images[url]
+            image_counter += 1
+            image_name = f"{_safe_filename(article.title)[:24] or 'article'}-{image_counter}.png"
+            img_path = process_for_print(url, output_path=images_dir / image_name)
+            rendered_images[url] = img_path.relative_to(images_dir.parent).as_posix()
+            return rendered_images[url]
+
+        block_items = article.blocks[:80] if article.blocks else [("paragraph", p.strip()) for p in article.body.split("\n\n") if p.strip()]
+        body_parts: list[str] = []
+        inserted_images = 0
+        paragraph_count = 0
+        for kind, value in block_items:
+            if kind == "image":
+                if inserted_images >= 3:
+                    continue
+                try:
+                    relative_image = local_image(value)
+                except Exception:
+                    continue
+                image_class = "article-image article-image--wide" if inserted_images == 0 else "article-image"
+                body_parts.append(
+                    f'<figure class="{image_class}"><img src="{html.escape(relative_image)}" alt="{html.escape(article.title)}" /></figure>'
+                )
+                inserted_images += 1
+                continue
+            if kind == "blockquote":
+                body_parts.append(f"<blockquote><p>{html.escape(value)}</p></blockquote>")
+                continue
+            if kind == "callout":
+                body_parts.append(f'<p class="article-callout"><strong>{html.escape(value)}</strong></p>')
+                continue
+            if not value:
+                continue
+            paragraph_count += 1
+            body_parts.append(f"<p>{html.escape(value)}</p>")
+        body_html = "".join(body_parts)
         meta_card = [
             '<div class="meta-card">',
-            '<div class="meta-top">',
             (
                 f'<img class="meta-avatar" src="{html.escape(relative_avatar)}" alt="{html.escape(article.author or article.source_name)}" />'
                 if relative_avatar
-                else '<div></div>'
+                else ""
             ),
-            '<div>',
             f'<div class="meta-author">{html.escape(article.author or article.source_name)}</div>',
-            f'<div class="meta-handle">{html.escape(article.source_name)}</div>',
-            '</div>',
-            '</div>',
-            '<div class="meta-stats">',
-            '<div><div class="meta-stat-label">Date</div><div class="meta-stat-value">' + html.escape(date_str) + "</div></div>",
-            '<div><div class="meta-stat-label">Source</div><div class="meta-stat-value">' + html.escape(urlparse(article.url).netloc) + "</div></div>",
-            '<div><div class="meta-stat-label">Mode</div><div class="meta-stat-value">Print</div></div>',
-            "</div>",
+            f'<div class="meta-handle">{html.escape(article.source_name)} · {html.escape(urlparse(article.url).netloc)}</div>',
+            f'<div class="meta-date">{html.escape(date_label)}</div>',
         ]
-        if relative_image:
-            meta_card.append(f'<img class="meta-image" src="{html.escape(relative_image)}" alt="{html.escape(article.title)}" />')
         meta_card.append("</div>")
+        display_source = article.url.replace("https://", "").replace("http://", "")
         sections.extend(
             [
                 '<section class="article">',
@@ -266,7 +390,7 @@ a { color: #111; text-decoration: underline; }
                 "".join(meta_card),
                 body_html,
                 "</div>",
-                f'<div class="article-link"><a href="{html.escape(article.url)}">{html.escape(article.url)}</a></div>',
+                f'<div class="article-source">Source: <a href="{html.escape(article.url)}">{html.escape(display_source)}</a></div>',
                 "</section>",
             ]
         )
