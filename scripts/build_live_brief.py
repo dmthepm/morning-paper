@@ -329,6 +329,8 @@ def path_map(repo_root: Path, project_root: Path, hermes_home: Path, date_str: s
     return {
         "template": repo_root / "templates" / "typewriter-v5.md",
         "candidates": project_root / "staging" / f"candidates-{date_str}.md",
+        "signals": project_root / "staging" / f"signals-{date_str}.md",
+        "hn": project_root / "staging" / f"hn-top-{date_str}.md",
         "rabbit_holes": project_root / "staging" / f"rabbit-holes-{date_str}.md",
         "content_drafts": project_root / "staging" / "briefs" / f"{date_str}-content-drafts.md",
         "context_summary": hermes_home / "devon-context-summary.md",
@@ -341,7 +343,7 @@ def path_map(repo_root: Path, project_root: Path, hermes_home: Path, date_str: s
 
 
 def ensure_inputs(paths: dict[str, Path]) -> None:
-    required = ("template", "candidates", "rabbit_holes", "content_drafts", "context_summary")
+    required = ("template", "candidates", "signals", "hn", "rabbit_holes", "content_drafts", "context_summary")
     missing = [str(paths[name]) for name in required if not paths[name].exists()]
     if missing:
         raise FileNotFoundError("Missing required input(s):\n- " + "\n- ".join(missing))
@@ -449,18 +451,35 @@ def fetch_weather() -> str:
 
 
 def fetch_paperclip_status() -> str:
-    """Check Paperclip API health. Returns 'Paperclip: OK' or 'Paperclip: DEGRADED'."""
+    """Return a concise runtime status string for the header row."""
+    api_ok = False
     try:
         import urllib.request, json
         url = "http://127.0.0.1:3100/api/health"
         req = urllib.request.Request(url, headers={"User-Agent": "Hermes/1.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.load(resp)
-            if data.get("status") == "ok":
-                return "Paperclip: OK"
-            return "Paperclip: DEGRADED"
+            api_ok = data.get("status") == "ok"
     except Exception:
-        return "Paperclip: UNAVAILABLE"
+        api_ok = False
+
+    drift = "drift unknown"
+    try:
+        proc = subprocess.run(
+            ["git", "rev-list", "--left-right", "--count", "origin/master...HEAD"],
+            cwd="/Users/thoth/projects/paperclip-ai",
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+        behind, ahead = proc.stdout.strip().split()
+        drift = f"behind {behind}, ahead {ahead}"
+    except Exception:
+        pass
+
+    if api_ok:
+        return f"Paperclip up · {drift}"
+    return f"Paperclip down · {drift}"
 
 
 def main() -> int:
@@ -499,6 +518,10 @@ def main() -> int:
         str(paths["template"]),
         "--candidates",
         str(paths["candidates"]),
+        "--signals",
+        str(paths["signals"]),
+        "--hn",
+        str(paths["hn"]),
         "--rabbit-holes",
         str(paths["rabbit_holes"]),
         "--content-drafts",
@@ -526,6 +549,13 @@ def main() -> int:
     ]
     assemble = run(assemble_cmd, cwd=repo_root)
 
+    # ── Page-count gate ──────────────────────────────────────────────────────
+    # If brief is below 10 pages, top it up:
+    #   1. Inject real full reads from YouTube research
+    #   2. Append supplemental candidate titles if still short
+    page_gate = ensure_min_pages(paths["output_md"], target_pages=10)
+    print(json.dumps({"page_gate": page_gate}, indent=2), file=sys.stderr)
+
     # ── Structural validation ────────────────────────────────────────────────
     validation_report = paths["output_md"].with_suffix(".validation.json")
     golden_dir = repo_root / "tests" / "golden" / "2026-04-05"
@@ -539,15 +569,8 @@ def main() -> int:
         str(golden_dir),
     ], cwd=repo_root)
     if validation.returncode != 0:
-        print(f"Validation failed, aborting.", file=sys.stderr)
+        print("Validation failed after final assembly/page-top-up, aborting.", file=sys.stderr)
         sys.exit(1)
-
-    # ── Page-count gate ──────────────────────────────────────────────────────
-    # If brief is below 10 pages, top it up:
-    #   1. Inject real full reads from YouTube research
-    #   2. Append supplemental candidate titles if still short
-    page_gate = ensure_min_pages(paths["output_md"], target_pages=10)
-    print(json.dumps({"page_gate": page_gate}, indent=2), file=sys.stderr)
 
     render = run(
         [
@@ -621,6 +644,8 @@ def main() -> int:
         "hermes_home": str(hermes_home),
         "paths": {key: str(value) for key, value in paths.items()},
         "security": security,
+        "page_gate": page_gate,
+        "validation_stdout": validation.stdout.strip().splitlines()[-20:],
         "assemble_stdout": assemble.stdout.strip().splitlines()[-20:],
         "render_stdout": render.stdout.strip().splitlines()[-20:],
         "review_stdout": review.stdout.strip().splitlines()[-20:],

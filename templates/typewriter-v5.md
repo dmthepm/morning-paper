@@ -211,6 +211,14 @@ css: |
     border-left: 2px solid #000000;
     background: rgba(0,0,0,0.02);
   }
+  .activity-log {
+    margin: 0.04in 0;
+    padding: 0.03in 0.06in;
+    border-left: 2px solid #000000;
+    background: rgba(0,0,0,0.02);
+  }
+  .activity-log p { margin-bottom: 0.03in; }
+  .activity-log p:last-child { margin-bottom: 0; }
   .draft-label { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-bottom: 0.02in; }
   .draft-body { font-size: 7.5pt; line-height: 1.45; color: #000000; }
   .draft-body p { margin-bottom: 0.03in; }
@@ -252,16 +260,16 @@ css: |
 </div>
 
 <div class="info-row">
-  <!-- Weather, Paperclip, Banner -->
+  <!-- Banner, tweet count, HN count, runtime -->
 </div>
 
 ## I. SIGNALS
 <!-- Tweets: short ones (< 180 chars) paired 2-col, long ones full-width -->
 
-## II. FULL READ
+## II. MORNING PAPER
 <!-- Full Read content -->
 
-## III. FULL READ
+## III. MORNING PAPER
 <!-- Second Full Read -->
 
 <!-- HN section: keep BOTH the section header and subhead as HTML below. Do not emit markdown ## headings or markdown italic subheads here. -->
@@ -285,7 +293,7 @@ css: |
 ## VIII. OVERNIGHT PIPELINE
 <!-- Pipeline status -->
 
-## IX. ACTION REQUESTED
+## IX. ACTION REQUIRED
 <!-- Action items -->
 
 ## X. REFERENCES

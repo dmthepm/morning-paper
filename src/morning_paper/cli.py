@@ -13,6 +13,7 @@ SCRIPT_MAP = {
     "pass3": REPO_ROOT / "scripts" / "run_pass3.py",
     "assemble": REPO_ROOT / "scripts" / "assemble_brief.py",
     "render": REPO_ROOT / "scripts" / "build_live_brief.py",
+    "digest": REPO_ROOT / "scripts" / "send_brief_digest.py",
 }
 
 
@@ -56,8 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     for name in SCRIPT_MAP:
-        cmd = sub.add_parser(name)
-        cmd.add_argument("args", nargs=argparse.REMAINDER)
+        sub.add_parser(name, add_help=False)
 
     sub.add_parser("doctor")
     sub.add_parser("smoke")
@@ -65,11 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
-    ns = parser.parse_args(argv)
+    ns, extra = parser.parse_known_args(argv)
 
     if ns.command in SCRIPT_MAP:
-        return run_script(SCRIPT_MAP[ns.command], ns.args)
+        return run_script(SCRIPT_MAP[ns.command], extra)
     if ns.command == "doctor":
         return doctor()
     if ns.command == "smoke":

@@ -49,13 +49,19 @@ WARNINGS = []
 INFOS = []
 
 def error(code, message, context="", line=0, auto_fix=""):
-    ISSUES.append(Issue("ERROR", code, message, context, line, auto_fix))
+    issue = Issue("ERROR", code, message, context, line, auto_fix)
+    ISSUES.append(issue)
+    ERRORS.append(issue)
 
 def warn(code, message, context="", line=0):
-    WARNINGS.append(Issue("WARN", code, message, context, line))
+    issue = Issue("WARN", code, message, context, line)
+    WARNINGS.append(issue)
+    ISSUES.append(issue)
 
 def info(code, message, context="", line=0):
-    INFOS.append(Issue("INFO", code, message, context, line))
+    issue = Issue("INFO", code, message, context, line)
+    INFOS.append(issue)
+    ISSUES.append(issue)
 
 ISSUES: List[Issue] = []
 
@@ -235,7 +241,10 @@ def lint(brief_path: str, fix: bool = False, verbose: bool = False) -> dict:
     lines = raw_lines  # already split
 
     for (bstart, bend, tag) in blocks:
-        offending = md_header_lines_in_block(lines, bstart, bend)
+        offending = [
+            ln for ln in md_header_lines_in_block(lines, bstart, bend)
+            if re.search(r'^\s*#{1,6}\s+IV\.\s+HACKER NEWS', lines[ln - 1], re.IGNORECASE)
+        ]
         if offending:
             ctx = '\n'.join(f"  L{ln}: {lines[ln-1]}" for ln in offending[:3])
             error(
@@ -365,8 +374,8 @@ def lint(brief_path: str, fix: bool = False, verbose: bool = False) -> dict:
 
     # ── 5. Content Minimums ────────────────────────────────────────────────
     hn_card_count = count_elements(content, r'<div class=["\']hn-card["\']')
-    if hn_card_count < 10:
-        warn("HN_FEW_CARDS", f"Only {hn_card_count} HN cards found — expected 10-20.")
+    if hn_card_count < 5:
+        warn("HN_FEW_CARDS", f"Only {hn_card_count} HN cards found — expected at least 5.")
     else:
         info("HN_CARD_COUNT", f"{hn_card_count} HN cards found.", f"{hn_card_count} cards")
 

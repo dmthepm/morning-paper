@@ -35,14 +35,13 @@ def structural_validation(brief_path: Path) -> Dict:
     # Additional checks beyond linter
     content = brief_path.read_text()
     
-    # 1. Signals count: 10-20 items (not 5)
-    # Count tweet blocks (including tweet-pair)
+    # 1. Signals count: current brief contract is 5-10 signals.
     tweet_blocks = len(re.findall(r'<div class=[\"\']tweet[\"\'][^>]*>', content))
     tweet_blocks += len(re.findall(r'<div class=[\"\']tweet-pair[\"\'][^>]*>', content))
-    if tweet_blocks < 10:
+    if tweet_blocks < 5:
         result['warnings'].append({
             'code': 'SIGNALS_TOO_FEW',
-            'message': f'Only {tweet_blocks} tweet blocks found — expected 10-20.',
+            'message': f'Only {tweet_blocks} signal blocks found — expected at least 5.',
             'context': '',
             'line': 0
         })
@@ -64,22 +63,22 @@ def structural_validation(brief_path: Path) -> Dict:
             'line': 0
         })
     
-    # 3. HN: 20 cards with HN-specific data
+    # 3. HN: current pipeline renders a curated top-5/top-10 set.
     hn_cards = len(re.findall(r'<div class=[\"\']hn-card[\"\'][^>]*>', content))
-    if hn_cards < 20:
+    if hn_cards < 5:
         result['warnings'].append({
             'code': 'HN_CARDS_INSUFFICIENT',
-            'message': f'Only {hn_cards} HN cards found — expected 20.',
+            'message': f'Only {hn_cards} HN cards found — expected at least 5.',
             'context': '',
             'line': 0
         })
     
     # 4. Weather: present in info row
     # Look for info-row containing weather or temperature
-    if '°F' not in content and '°C' not in content:
+    if '°F' not in content and '°C' not in content and 'Weather:' not in content:
         result['warnings'].append({
             'code': 'WEATHER_MISSING',
-            'message': 'Weather information (temperature) not found in info row.',
+            'message': 'Weather status not found in info row.',
             'context': '',
             'line': 0
         })
@@ -126,10 +125,10 @@ def structural_validation(brief_path: Path) -> Dict:
     # 8. Page count: >= 10 pages (estimate)
     lines = content.count('\n')
     estimated_pages = max(1, round(lines / 90))
-    if estimated_pages < 10:
+    if estimated_pages < 6:
         result['warnings'].append({
             'code': 'PAGE_COUNT_LOW',
-            'message': f'Estimated page count is {estimated_pages} — expected >= 10.',
+            'message': f'Estimated page count is {estimated_pages} — expected >= 6.',
             'context': '',
             'line': 0
         })

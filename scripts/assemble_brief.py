@@ -162,32 +162,28 @@ def parse_candidates(text: str) -> list[dict[str, str]]:
     return items
 
 
-def render_signals(items: list[dict[str, str]]) -> str:
-    blocks = []
-    for item in items:
-        # For READWISE: no real author, show READWISE as the metadata label
-        # For HN: show HN username (author) + source domain
-        # Never use tweet text (item["title"]) as the author name
-        source = item.get("source", "")
-        if source == "READWISE":
-            author_display = "READWISE HIGHLIGHT"
-            meta_parts = ["READWISE"]
-        elif source.startswith("HN"):
-            # HN items may have author in a separate field; use source as meta
-            author_display = "HACKER NEWS"
-            meta_parts = [source]
-        else:
-            # For blog/other sources, use the source as the author label
-            author_display = source.upper() if source else "SIGNAL"
-            meta_parts = [source] if source else []
+def x_handle_from_item(item: dict[str, str]) -> str:
+    link = item.get("link") or ""
+    match = re.match(r"^https?://(?:www\.)?(?:x|twitter)\.com/([^/?#]+)/status/", link)
+    if match:
+        return f"@{match.group(1)}"
+    source = item.get("source", "")
+    if source.startswith("X / "):
+        return source.split("X / ", 1)[1].strip()
+    return "Saved X"
 
-        body = html.escape(item.get("title", "")[:280])
+
+def render_signals(items: list[dict[str, str]]) -> str:
+    cards: list[str] = []
+    for item in items:
+        author_display = x_handle_from_item(item)
+        meta_parts = ["X signal"]
         if item.get("score"):
-            score_str = str(item["score"])
-            meta_parts.append(f"score {score_str}")
+            meta_parts.append(f"score {item['score']}")
         meta = " — ".join(meta_parts)
+        body = html.escape(item.get("title", "")[:320])
         link = html.escape(item.get("link") or "")
-        blocks.append(
+        cards.append(
             "\n".join(
                 [
                     '<div class="tweet">',
@@ -201,7 +197,21 @@ def render_signals(items: list[dict[str, str]]) -> str:
                 ]
             )
         )
-    return "\n".join(blocks)
+    rendered: list[str] = []
+    i = 0
+    while i < len(cards):
+        current = items[i]
+        current_short = len(current.get("title", "")) <= 180
+        if i + 1 < len(cards):
+            nxt = items[i + 1]
+            next_short = len(nxt.get("title", "")) <= 180
+            if current_short and next_short:
+                rendered.append('<div class="tweet-pair">\n' + cards[i] + "\n" + cards[i + 1] + "\n</div>")
+                i += 2
+                continue
+        rendered.append(cards[i])
+        i += 1
+    return "\n".join(rendered)
 
 
 def extract_markdown_sections(text: str) -> list[Section]:
@@ -255,6 +265,7 @@ def markdown_to_html_paragraphs(text: str, *, limit: int = 8) -> str:
 
 
 def render_full_read(title: str, body: str) -> str:
+    title = re.sub(r"^Full Read:\s*", "", title, flags=re.IGNORECASE).strip()
     lines = [line.rstrip() for line in body.splitlines() if line.strip()]
     source = ""
     paragraphs: list[str] = []
@@ -282,8 +293,8 @@ def render_full_read(title: str, body: str) -> str:
 
 def render_hn_cards(items: list[dict[str, str]]) -> str:
     blocks = []
-    for idx, item in enumerate(items[:10], start=1):
-        tag = "BANNER" if "banner" in item.get("score", "").lower() or "[banner]" in item.get("score", "").lower() else "SIGNAL"
+    for idx, item in enumerate(items[:20], start=1):
+        tag = "TOP" if idx <= 3 else "HN"
         blocks.append(
             "\n".join(
                 [
@@ -405,19 +416,17 @@ def render_references(candidates: list[dict[str, str]]) -> str:
 
 
 def build_info_row(
-    context_summary: str,
-    candidates: list[dict[str, str]],
-    weather_text: str = "Weather: unavailable",
-    paperclip_status: str = "Paperclip: OK",
+    *,
+    top_story: str,
+    signal_count: int,
+    hn_count: int,
+    runtime_status: str,
 ) -> str:
-    summary = first_non_heading_paragraph(context_summary)
-    top_story = candidates[0]["title"] if candidates else "No candidate stories"
-    story_count = str(len(candidates))
     blocks = [
-        ("Weather", weather_text),
-        ("Paperclip", paperclip_status),
-        ("Top Story", top_story[:120] if top_story else "No candidate stories"),
-        ("Signals", story_count),
+        ("Banner", top_story[:120] if top_story else "No candidate stories"),
+        ("Tweets", str(signal_count)),
+        ("Hacker News", str(hn_count)),
+        ("Runtime", runtime_status),
     ]
     html_blocks = []
     for label, value in blocks:
@@ -525,6 +534,8 @@ def assemble(
     time_label: str,
     location: str,
     candidates_text: str,
+    signals_text: str,
+    hn_text: str,
     rabbit_holes_text: str,
     content_drafts_text: str,
     context_summary_text: str,
@@ -535,6 +546,8 @@ def assemble(
     input_paths: list[Path],
 ) -> str:
     candidates = parse_candidates(candidates_text)
+    signal_items = parse_candidates(signals_text)
+    hn_items = parse_candidates(hn_text)
     draft_sections = section_map(content_drafts_text)
 
     full_read_keys = [key for key in draft_sections if key.lower().startswith("full read")]
@@ -553,9 +566,14 @@ def assemble(
     template_text = template_text.replace("{TIME}", time_label)
     template_text = template_text.replace("{LOCATION}", location)
 
-    info_row = build_info_row(context_summary_text, candidates, weather_text, paperclip_status_text)
+    info_row = build_info_row(
+        top_story=candidates[0]["title"] if candidates else "No candidate stories",
+        signal_count=len(signal_items),
+        hn_count=len(hn_items),
+        runtime_status=paperclip_status_text,
+    )
     template_text = re.sub(
-        r'<div class="info-row">\s*<!-- Weather, Paperclip, Banner -->\s*</div>',
+        r'<div class="info-row">\s*<!-- .*? -->\s*</div>',
         info_row,
         template_text,
         count=1,
@@ -563,10 +581,10 @@ def assemble(
     )
 
     replacements = [
-        (r"Tweets: short ones \(< 180 chars\) paired 2-col, long ones full-width", render_signals(candidates)),
+        (r"Tweets: short ones \(< 180 chars\) paired 2-col, long ones full-width", render_signals(signal_items)),
         (r"Full Read content", full_read_1),
         (r"Second Full Read", full_read_2),
-        (r"HN cards go here", render_hn_cards(candidates)),
+        (r"HN cards go here", render_hn_cards(hn_items)),
         (r"Community content", render_skool_or_context(content_drafts_text, context_summary_text)),
         (r"Agency content", render_content_drafts(content_drafts_text)),
         (r"Ops content", render_operations(context_summary_text, rabbit_holes_text, activity_log_text, maintenance_log_text)),
@@ -583,6 +601,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Assemble a canonical Morning Brief markdown artifact.")
     parser.add_argument("--template", required=True, help="Path to the extracted template markdown")
     parser.add_argument("--candidates", required=True, help="Path to candidates markdown")
+    parser.add_argument("--signals", required=True, help="Path to signals markdown")
+    parser.add_argument("--hn", required=True, help="Path to Hacker News markdown")
     parser.add_argument("--rabbit-holes", required=True, dest="rabbit_holes", help="Path to rabbit-holes markdown")
     parser.add_argument("--content-drafts", required=True, dest="content_drafts", help="Path to content-drafts markdown")
     parser.add_argument("--context-summary", required=True, dest="context_summary", help="Path to Devon context summary")
@@ -600,6 +620,8 @@ def main() -> int:
     input_paths = [
         Path(args.template),
         Path(args.candidates),
+        Path(args.signals),
+        Path(args.hn),
         Path(args.rabbit_holes),
         Path(args.content_drafts),
         Path(args.context_summary),
@@ -624,6 +646,8 @@ def main() -> int:
         time_label=args.time_label,
         location=args.location,
         candidates_text=read_text(Path(args.candidates)),
+        signals_text=read_text(Path(args.signals)),
+        hn_text=read_text(Path(args.hn)),
         rabbit_holes_text=read_text(Path(args.rabbit_holes)),
         content_drafts_text=read_text(Path(args.content_drafts)),
         context_summary_text=read_text(Path(args.context_summary)),

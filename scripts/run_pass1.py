@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -20,6 +21,13 @@ from brief_runtime import (
     source_domain,
     write_markdown,
 )
+
+
+def x_handle_from_url(url: str) -> str:
+    match = re.match(r"^https?://(?:www\.)?(?:x|twitter)\.com/([^/?#]+)/status/", url)
+    if not match:
+        return ""
+    return f"@{match.group(1)}"
 
 
 def recent_readwise_highlights(limit: int = 80) -> list[dict]:
@@ -114,13 +122,15 @@ def candidate_from_highlight(item: dict, previous_text: str) -> Candidate | None
     if not title:
         return None
     url = item.get("url") or item.get("readwise_url") or ""
+    handle = x_handle_from_url(url)
+    source = f"X / {handle}" if handle else "READWISE"
     score = candidate_score(title, item.get("text", ""), source="READWISE")
     if score < 55:
         return None
     already = "YES" if title.lower() in previous_text or url.lower() in previous_text else "NO"
     return Candidate(
         title=title,
-        source="READWISE",
+        source=source,
         score=score,
         why=sentence_excerpt(item.get("text", ""), max_sentences=2, max_chars=220),
         link=url,
@@ -164,6 +174,26 @@ def candidate_from_hn(item: dict, previous_text: str) -> Candidate | None:
     )
 
 
+def hn_card_from_item(item: dict, previous_text: str) -> Candidate | None:
+    title = clean_line(item.get("title", ""))
+    if not title:
+        return None
+    url = item.get("url") or f"https://news.ycombinator.com/item?id={item.get('objectID')}"
+    already = "YES" if title.lower() in previous_text or url.lower() in previous_text else "NO"
+    return Candidate(
+        title=title,
+        source=f"HN / {source_domain(url)}",
+        score=int(item.get("points") or 0),
+        why=(
+            f"{item.get('points', 0)} points · {item.get('num_comments', 0)} comments"
+            + (f" · by {item.get('author')}" if item.get("author") else "")
+        ),
+        link=url,
+        seed_quality="HN front page",
+        already_covered=already,
+    )
+
+
 def candidate_from_blogwatcher(item: dict, previous_text: str) -> Candidate | None:
     title = clean_line(item.get("title", "")[:140])
     if not title or not item.get("url"):
@@ -199,6 +229,19 @@ def dedupe(candidates: list[Candidate]) -> list[Candidate]:
     return output
 
 
+def signal_selection(candidates: list[Candidate], *, limit: int = 6) -> list[Candidate]:
+    signals = [
+        c for c in candidates
+        if c.link and ("x.com/" in c.link or "twitter.com/" in c.link)
+    ]
+    return sorted(signals, key=lambda c: (-c.score, c.title))[:limit]
+
+
+def hn_selection(candidates: list[Candidate], *, limit: int = 20) -> list[Candidate]:
+    hn = [c for c in candidates if c.source.startswith("HN / ")]
+    return sorted(hn, key=lambda c: (-c.score, c.title))[:limit]
+
+
 def mixed_selection(candidates: list[Candidate], *, limit: int = 5) -> list[Candidate]:
     readwise = [c for c in candidates if c.source == "READWISE"]
     hn = [c for c in candidates if c.source.startswith("HN / ")]
@@ -222,8 +265,8 @@ def mixed_selection(candidates: list[Candidate], *, limit: int = 5) -> list[Cand
     return selected[:limit]
 
 
-def to_markdown(date_str: str, candidates: list[Candidate]) -> str:
-    lines = [f"# Story Seeds — {date_str}", "", "## Story Seeds", ""]
+def to_markdown(date_str: str, candidates: list[Candidate], title: str = "Story Seeds") -> str:
+    lines = [f"# {title} — {date_str}", "", f"## {title}", ""]
     if not candidates:
         lines.append("No qualifying story seeds found.")
         return "\n".join(lines)
@@ -259,7 +302,8 @@ def main() -> int:
         if candidate:
             candidates.append(candidate)
 
-    for item in hn_front_page():
+    front_page = hn_front_page()
+    for item in front_page:
         candidate = candidate_from_hn(item, previous_text)
         if candidate:
             candidates.append(candidate)
@@ -270,10 +314,25 @@ def main() -> int:
             candidates.append(candidate)
 
     ranked = [c for c in dedupe(candidates) if c.already_covered == "NO" or c.score >= 85]
-    final = mixed_selection(ranked, limit=5)
+    story_seeds = mixed_selection(ranked, limit=5)
+    signals = signal_selection(ranked, limit=6)
+    hn_cards = [card for item in front_page if (card := hn_card_from_item(item, previous_text))]
+
     output = project_root / "staging" / f"candidates-{args.date}.md"
-    write_markdown(output, to_markdown(args.date, final))
-    print(json.dumps({"date": args.date, "output": str(output), "count": len(final)}, indent=2))
+    signals_output = project_root / "staging" / f"signals-{args.date}.md"
+    hn_output = project_root / "staging" / f"hn-top-{args.date}.md"
+    write_markdown(output, to_markdown(args.date, story_seeds, "Story Seeds"))
+    write_markdown(signals_output, to_markdown(args.date, signals, "Signals"))
+    write_markdown(hn_output, to_markdown(args.date, hn_cards, "Hacker News"))
+    print(json.dumps({
+        "date": args.date,
+        "candidates_output": str(output),
+        "signals_output": str(signals_output),
+        "hn_output": str(hn_output),
+        "story_seed_count": len(story_seeds),
+        "signals_count": len(signals),
+        "hn_count": len(hn_cards),
+    }, indent=2))
     return 0
 
 

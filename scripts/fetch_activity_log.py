@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.request
 from datetime import datetime, timezone, timedelta
@@ -41,121 +42,164 @@ def fetch_activity(since_iso: str) -> list[dict]:
         return [{"error": str(exc)}]
 
 
+def parse_created_at(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        if value.endswith("Z"):
+            value = value[:-1] + "+00:00"
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def first_line(text: str, *, limit: int = 120) -> str:
+    if not text:
+        return ""
+    line = text.strip().splitlines()[0].strip()
+    line = re.sub(r"^\s*#{1,6}\s*", "", line)
+    line = re.sub(r"^\s*[-*+]\s*", "", line)
+    line = line.replace("`", "")
+    line = re.sub(r"\s+", " ", line)
+    return line[:limit].rstrip()
+
+
+def filter_recent_events(events: list[dict], since: datetime) -> list[dict]:
+    filtered: list[dict] = []
+    for event in events:
+        created_at = parse_created_at(event.get("createdAt", ""))
+        if created_at is None or created_at < since:
+            continue
+        filtered.append(event)
+    return filtered
+
+
 def format_activity_log(events: list[dict]) -> str:
     """Format activity events into Morning Brief activity log markdown."""
 
-    # Filter out read_marked and heartbeat.cancelled — noise
-    skip_actions = {"issue.read_marked", "heartbeat.cancelled", "heartbeat.completed"}
+    skip_actions = {
+        "issue.read_marked",
+        "heartbeat.cancelled",
+        "heartbeat.completed",
+        "heartbeat.invoked",
+        "routine.run_triggered",
+        "issue.checkout_lock_adopted",
+        "issue.checkout_lock_created",
+        "issue.checkout_lock_released",
+        "issue.checkout_lock_denied",
+        "session.created",
+        "company.created",
+        "agent.created",
+        "goal.created",
+        "project.created",
+        "label.created",
+    }
     relevant = [e for e in events if e.get("action", "") not in skip_actions]
 
     if not relevant:
-        return ""
+        return "**No meaningful Paperclip activity in the last 24 hours.**"
 
-    # Group events
-    created: list[tuple] = []
-    completed: list[tuple] = []
-    in_progress: list[tuple] = []
-    comments: list[tuple] = []
-    agent_updates: list[tuple] = []
-    other: list[tuple] = []
-    heartbeat_count = 0
+    created: list[str] = []
+    completed: list[str] = []
+    in_progress: list[str] = []
+    comments: list[str] = []
+    agent_updates: list[str] = []
+    seen: set[str] = set()
 
     for event in relevant:
         action = event.get("action", "")
         details = event.get("details", {}) or {}
-        ts = event.get("createdAt", "")[:10]  # YYYY-MM-DD
 
-        if action == "heartbeat.invoked":
-            heartbeat_count += 1
-        elif action == "issue.created":
+        if action == "issue.created":
             ident = details.get("identifier", "?")
-            title = details.get("title", "")[:60]
-            created.append((ts, f"Opened [{ident}](paperclip://issue/{ident}): {title}"))
+            title = first_line(details.get("title", ""))
+            if not title:
+                continue
+            key = f"create:{ident}:{title}"
+            if key not in seen:
+                created.append(f"Opened {ident}: {title}")
+                seen.add(key)
         elif action == "issue.updated":
             ident = details.get("identifier", "?")
-            title = details.get("title", "")[:60]
+            title = first_line(details.get("title", ""))
             new_status = details.get("status", "")
             prev = details.get("_previous", {})
             prev_status = prev.get("status", "")
             if new_status == "done":
-                completed.append((ts, f"Completed [{ident}](paperclip://issue/{ident}): {title}"))
+                key = f"done:{ident}:{title}"
+                if key not in seen:
+                    line = f"Completed {ident}"
+                    if title:
+                        line += f": {title}"
+                    completed.append(line)
+                    seen.add(key)
             elif new_status in ("todo", "in_progress") and prev_status in ("backlog", None, ""):
-                in_progress.append((ts, f"Started [{ident}](paperclip://issue/{ident}): {title}"))
+                key = f"start:{ident}:{title}"
+                if key not in seen:
+                    line = f"Started {ident}"
+                    if title:
+                        line += f": {title}"
+                    in_progress.append(line)
+                    seen.add(key)
         elif action == "issue.comment_added":
             ident = details.get("identifier", "?")
-            snippet = (details.get("bodySnippet", "") or "")[:80]
-            comments.append((ts, f"Commented on [{ident}](paperclip://issue/{ident}): {snippet}"))
+            snippet = first_line(details.get("bodySnippet", ""), limit=100)
+            if not snippet or snippet.lower() in {"approve", "ok", "done"}:
+                continue
+            key = f"comment:{ident}:{snippet}"
+            if key not in seen:
+                comments.append(f"Commented on {ident}: {snippet}")
+                seen.add(key)
         elif action == "agent.updated":
             keys = details.get("changedTopLevelKeys", []) or details.get("changedAdapterConfigKeys", []) or []
             agent_id = event.get("entityId", "")[:8]
             if keys:
-                agent_updates.append((ts, f"Updated agent `{agent_id[:8]}` config: {', '.join(keys[:3])}"))
-        elif action == "label.created":
-            name = details.get("name", "?")
-            other.append((ts, f"Created label: {name}"))
-        elif action == "project.created":
-            name = details.get("name", "?")
-            other.append((ts, f"Created project: {name}"))
-        elif action == "goal.created":
-            title = (details.get("title", "") or "")[:80]
-            if title:
-                other.append((ts, f"Created goal: {title}"))
-        elif action not in skip_actions:
-            other.append((ts, f"{action}: {str(details)[:80]}"))
+                key = f"agent:{agent_id}:{','.join(keys[:3])}"
+                if key not in seen:
+                    agent_updates.append(f"Updated agent `{agent_id}` config: {', '.join(keys[:3])}")
+                    seen.add(key)
 
     lines: list[str] = []
     total = len(relevant)
 
     # Summary line
-    summary_parts = [f"{total} events"]
-    if heartbeat_count > 0:
-        summary_parts.append(f"{heartbeat_count} heartbeats")
+    summary_parts = [f"{total} meaningful events"]
     if created:
         summary_parts.append(f"{len(created)} issues opened")
     if completed:
         summary_parts.append(f"{len(completed)} completed")
+    if comments:
+        summary_parts.append(f"{len(comments)} notable comments")
     lines.append(f"**{' · '.join(summary_parts)}**")
     lines.append("")
 
-    # Completed issues (most important)
     if completed:
         lines.append("**Completed:**")
-        for _, line in completed[-5:]:  # last 5
+        for line in completed[-4:]:
             lines.append(f"- {line}")
         lines.append("")
 
-    # Started issues
     if in_progress:
         lines.append("**Started:**")
-        for _, line in in_progress[-5:]:
+        for line in in_progress[-4:]:
             lines.append(f"- {line}")
         lines.append("")
 
-    # Opened issues
     if created:
         lines.append("**Opened:**")
-        for _, line in created[-5:]:
+        for line in created[-4:]:
             lines.append(f"- {line}")
         lines.append("")
 
-    # Agent updates
     if agent_updates:
         lines.append("**Agent updates:**")
-        for _, line in agent_updates[-3:]:
+        for line in agent_updates[-2:]:
             lines.append(f"- {line}")
         lines.append("")
 
-    # Comments
     if comments:
-        lines.append("**Comments:**")
-        for _, line in comments[-5:]:
-            lines.append(f"- {line}")
-        lines.append("")
-
-    # Other
-    if other:
-        lines.append("**Other:**")
-        for _, line in other[-5:]:
+        lines.append("**Notable comments:**")
+        for line in comments[-3:]:
             lines.append(f"- {line}")
 
     return "\n".join(lines)
@@ -174,7 +218,7 @@ def main() -> int:
     if events and isinstance(events[0], dict) and "error" in events[0]:
         output = f"<!-- Activity log unavailable: {events[0]['error']} -->"
     else:
-        output = format_activity_log(events)
+        output = format_activity_log(filter_recent_events(events, since))
 
     if args.output:
         Path(args.output).write_text(output, encoding="utf-8")
