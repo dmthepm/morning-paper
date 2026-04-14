@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -52,30 +51,27 @@ def smoke() -> int:
     return subprocess.call(["bash", str(script)], cwd=REPO_ROOT)
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Morning Paper CLI")
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    for name in SCRIPT_MAP:
-        sub.add_parser(name, add_help=False)
-
-    sub.add_parser("doctor")
-    sub.add_parser("smoke")
-    return parser
+def print_help() -> int:
+    commands = ", ".join([*SCRIPT_MAP, "doctor", "smoke"])
+    print("usage: morning-paper {" + commands + "} [args...]")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    parser = build_parser()
-    ns, extra = parser.parse_known_args(argv)
+    if not argv or argv[0] in {"-h", "--help", "help"}:
+        return print_help()
 
-    if ns.command in SCRIPT_MAP:
-        return run_script(SCRIPT_MAP[ns.command], extra)
-    if ns.command == "doctor":
+    command, extra = argv[0], argv[1:]
+
+    if command in SCRIPT_MAP:
+        return run_script(SCRIPT_MAP[command], extra)
+    if command == "doctor":
         return doctor()
-    if ns.command == "smoke":
+    if command == "smoke":
         return smoke()
-    parser.error(f"unknown command: {ns.command}")
+    print(f"unknown command: {command}", file=sys.stderr)
+    print_help()
     return 2
 
 
