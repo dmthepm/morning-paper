@@ -1,26 +1,26 @@
 # Morning Paper example configuration
 
-name: example-paper
+name: Morning Paper
 timezone: America/Los_Angeles
-
-providers:
-  llm:
-    provider: openrouter
-    model: minimax/minimax-m2.7
+profile: |
+  Add a short note about who this paper is for and what should matter most.
+  Example: AI tools, operator software, media, and founder signal.
 
 sources:
-  - type: rss
-    name: example-feed
-    url: https://example.com/feed.xml
-
-passes:
-  pass1:
-    max_candidates: 5
-  pass2:
-    enrich: true
-  pass3:
-    draft_outputs: true
+  hacker_news:
+    enabled: true
+    limit: 20
+  rss:
+    - name: Simon Willison
+      url: https://simonwillison.net/atom/everything/
+      limit: 5
+    - name: Lenny's Newsletter
+      url: https://www.lennysnewsletter.com/feed
+      limit: 5
 
 outputs:
-  staging_dir: ./staging
-  template: ./templates/typewriter-v5.md
+  directory: ~/.local/share/morning-paper
+  pdf: true
+  html: true
+  markdown: true
+  json: true

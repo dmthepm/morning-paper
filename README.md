@@ -62,12 +62,40 @@ The boundary is deliberate:
 ## Install
 
 ```bash
+pip install git+https://github.com/dmthepm/morning-paper.git
+```
+
+For local development:
+
+```bash
 pip install -e .
 ```
+
+## Portable v0.1
+
+The product cut for `v0.1` is:
+
+- no Thoth path assumptions
+- HN + RSS only
+- print-ready PDF output
+- markdown/HTML/JSON artifacts
+- no LLM required
+
+Quick start:
+
+```bash
+morning-paper init
+morning-paper build
+```
+
+That creates a config at `~/.config/morning-paper/config.yaml` and outputs a
+paper under `~/.local/share/morning-paper/<date>/`.
 
 ## CLI
 
 ```bash
+morning-paper init
+morning-paper build
 morning-paper pass1 --help
 morning-paper pass2 --help
 morning-paper pass3 --help
@@ -77,16 +105,24 @@ morning-paper doctor
 morning-paper smoke
 ```
 
-This initial CLI is a compatibility wrapper around the extracted seed scripts.
-The next step is to move the useful logic into importable package modules and
-shrink the script layer.
+There are now two lanes:
+
+- public product lane:
+  - `init`
+  - `build`
+- legacy compatibility lane for the private Thoth deployment:
+  - `pass1`
+  - `pass2`
+  - `pass3`
+  - `assemble`
+  - `render`
+  - `digest`
 
 Important:
 
-- some extracted seed scripts still contain Thoth-specific paths
-- that is intentional for the first extraction commit
-- the migration plan is to move those assumptions behind config and private
-  harness adapters, not keep them in the public engine forever
+- the extracted seed scripts still contain Thoth-specific paths
+- those remain for the private deployment only
+- the public `init/build` path is the portable product surface
 
 ## Repo Layout
 
@@ -132,11 +168,11 @@ See:
 
 ## Roadmap
 
-1. Extract generic logic from the seed scripts into package modules.
-2. Add a real config schema and example configs.
-3. Add source plugin interfaces.
+1. Harden the portable `init/build` path with fixtures and golden tests.
+2. Add optional LLM scoring as an extra, not a requirement.
+3. Add source plugin interfaces for X and YouTube.
 4. Keep the Thoth harness thin and private.
-5. Repoint Thoth cron to the public CLI plus private config.
+5. Reduce the legacy script lane over time.
 
 ## License
 

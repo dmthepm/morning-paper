@@ -1,7 +1,4 @@
-scripts/__pycache__/
-tests/fixtures/*/smoke-runs/
-*.pyc
-.DS_Store
-.venv/
-dist/
-build/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/

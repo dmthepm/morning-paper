@@ -12,7 +12,12 @@ license = { file = "LICENSE" }
 authors = [
   { name = "Devon Meadows" }
 ]
-dependencies = []
+dependencies = [
+  "feedparser>=6.0.11",
+  "fpdf2>=2.8.2",
+  "PyYAML>=6.0.2",
+  "requests>=2.32.3",
+]
 
 [project.scripts]
 morning-paper = "morning_paper.cli:main"
