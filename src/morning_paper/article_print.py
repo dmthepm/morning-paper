@@ -22,6 +22,7 @@ class Article:
     source_name: str
     body: str
     image_url: str = ""
+    profile_image_url: str = ""
 
 
 def _clean_text(value: str) -> str:
@@ -56,11 +57,29 @@ def _reader_text(url: str) -> str:
     return response.text
 
 
-def _reader_paragraphs(url: str) -> list[str]:
+def _reader_metadata(url: str) -> dict[str, object]:
     try:
         reader = _reader_text(url)
     except Exception:
-        return []
+        return {"paragraphs": [], "title": "", "author": "", "image_url": "", "profile_image_url": ""}
+    title = ""
+    author = ""
+    image_url = ""
+    profile_image_url = ""
+    title_match = re.search(r"^Title:\s*(.+)$", reader, flags=re.MULTILINE)
+    if title_match:
+        title = title_match.group(1).strip()
+        x_match = re.match(r'^(.*?) on X: "(.*)" / X$', title)
+        if x_match:
+            author = x_match.group(1).strip()
+            title = x_match.group(2).strip()
+    image_matches = re.findall(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)", reader)
+    if image_matches:
+        preferred = [match for match in image_matches if "/media/" in match]
+        profile = [match for match in image_matches if "/profile_images/" in match]
+        image_url = (preferred[0] if preferred else image_matches[0]).replace("&name=small", "&name=large")
+        if profile:
+            profile_image_url = profile[0]
     paragraphs: list[str] = []
     noise = (
         "markdown content:",
@@ -79,14 +98,30 @@ def _reader_paragraphs(url: str) -> list[str]:
             continue
         if lowered.startswith("#"):
             continue
+        if lowered.startswith("title:") or lowered.startswith("url source:"):
+            continue
+        if line.startswith("[!["):
+            continue
         if len(line) < 40:
             continue
+        if line in {")", "(", "].", ".)"}:
+            continue
+        if line.endswith("(") or line.endswith(")") or line.endswith(")."):
+            continue
+        if re.fullmatch(r"[\W_]+", line):
+            continue
         paragraphs.append(line)
-    return paragraphs
+    return {
+        "paragraphs": paragraphs,
+        "title": title,
+        "author": author,
+        "image_url": image_url,
+        "profile_image_url": profile_image_url,
+    }
 
 
 def _extract_body(url: str, raw_html: str) -> str:
-    reader_paragraphs = _reader_paragraphs(url)
+    reader_paragraphs = _reader_metadata(url).get("paragraphs", [])
     if reader_paragraphs:
         return "\n\n".join(reader_paragraphs[:18])
     cleaned = _clean_text(raw_html)
@@ -98,13 +133,21 @@ def fetch_article(url: str) -> Article:
     response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     response.raise_for_status()
     raw_html = response.text
+    reader_meta = _reader_metadata(url)
     title = _meta_content(raw_html, "og:title")
     if not title:
         match = re.search(r"<title>(.*?)</title>", raw_html, flags=re.IGNORECASE | re.DOTALL)
         title = _clean_text(match.group(1)) if match else url
-    author = _meta_content(raw_html, "author") or _meta_content(raw_html, "twitter:creator")
-    site_name = _meta_content(raw_html, "og:site_name") or urlparse(url).netloc
-    image_url = _meta_content(raw_html, "og:image")
+    if reader_meta.get("title") and (title == url or "on x:" in title.lower() or title.lower() == "x"):
+        title = str(reader_meta["title"])
+    author = _meta_content(raw_html, "author") or _meta_content(raw_html, "twitter:creator") or str(reader_meta.get("author") or "")
+    parsed = urlparse(url)
+    handle = ""
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if parsed.netloc.endswith("x.com") and path_parts:
+        handle = f"@{path_parts[0]}"
+    site_name = handle or _meta_content(raw_html, "og:site_name") or parsed.netloc
+    image_url = _meta_content(raw_html, "og:image") or str(reader_meta.get("image_url") or "")
     body = _extract_body(url, raw_html)
     return Article(
         url=url,
@@ -113,6 +156,7 @@ def fetch_article(url: str) -> Article:
         source_name=site_name,
         body=body,
         image_url=image_url,
+        profile_image_url=str(reader_meta.get("profile_image_url") or ""),
     )
 
 
@@ -126,10 +170,12 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .paper-date { font-size: 18pt; font-weight: 700; letter-spacing: 0.04em; }
 .paper-subtitle { font-size: 7pt; color: #666; margin-top: 0.04in; letter-spacing: 0.08em; }
 .paper-rule { border-bottom: 1.5px solid #111; margin-top: 0.08in; }
-.article { margin-top: 0.14in; break-inside: avoid; }
+  .article { margin-top: 0.14in; }
 .article-title { font-size: 12pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.08in; }
-.article-grid { display: grid; grid-template-columns: 1.35in 1fr; gap: 0.18in; align-items: start; }
+.article-grid { display: grid; grid-template-columns: 1.6in 1fr; gap: 0.18in; align-items: start; }
 .meta-card { border: 1px solid #111; padding: 0.06in; font-size: 7pt; background: #fff; }
+.meta-top { display: grid; grid-template-columns: 0.44in 1fr; gap: 0.06in; align-items: start; }
+.meta-avatar { width: 0.42in; height: 0.42in; object-fit: cover; border: 1px solid #bbb; }
 .meta-author { font-weight: 700; margin-bottom: 0.03in; }
 .meta-handle { color: #555; margin-bottom: 0.04in; }
 .meta-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.04in; margin: 0.05in 0; }
@@ -168,6 +214,7 @@ a { color: #111; text-decoration: underline; }
 
     for article in articles:
         relative_image = ""
+        relative_avatar = ""
         if article.image_url:
             try:
                 image_name = f"{_safe_filename(article.title)[:32] or 'article'}.png"
@@ -175,12 +222,32 @@ a { color: #111; text-decoration: underline; }
                 relative_image = img_path.relative_to(images_dir.parent).as_posix()
             except Exception:
                 relative_image = ""
+        if article.profile_image_url:
+            try:
+                avatar_name = f"{_safe_filename(article.author or article.source_name)[:24] or 'author'}-avatar.png"
+                avatar_path = process_for_print(
+                    article.profile_image_url,
+                    output_path=images_dir / avatar_name,
+                    max_width=220,
+                )
+                relative_avatar = avatar_path.relative_to(images_dir.parent).as_posix()
+            except Exception:
+                relative_avatar = ""
         paragraphs = [p.strip() for p in article.body.split("\n\n") if p.strip()]
         body_html = "".join(f"<p>{html.escape(p)}</p>" for p in paragraphs[:18])
         meta_card = [
             '<div class="meta-card">',
+            '<div class="meta-top">',
+            (
+                f'<img class="meta-avatar" src="{html.escape(relative_avatar)}" alt="{html.escape(article.author or article.source_name)}" />'
+                if relative_avatar
+                else '<div></div>'
+            ),
+            '<div>',
             f'<div class="meta-author">{html.escape(article.author or article.source_name)}</div>',
             f'<div class="meta-handle">{html.escape(article.source_name)}</div>',
+            '</div>',
+            '</div>',
             '<div class="meta-stats">',
             '<div><div class="meta-stat-label">Date</div><div class="meta-stat-value">' + html.escape(date_str) + "</div></div>",
             '<div><div class="meta-stat-label">Source</div><div class="meta-stat-value">' + html.escape(urlparse(article.url).netloc) + "</div></div>",
