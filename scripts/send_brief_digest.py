@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Send the Morning Brief review digest through the Hermes Telegram wrapper.
+Send the Morning Paper review digest through the Hermes Telegram wrapper.
 """
 
 from __future__ import annotations
@@ -190,7 +190,7 @@ def send_message(tg_send: Path, message: str, *, dry_run: bool = False) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Send the Morning Brief digest via tg-send.sh")
+    parser = argparse.ArgumentParser(description="Send the Morning Paper digest via tg-send.sh")
     parser.add_argument("--date", default=la_date())
     parser.add_argument("--brief-md")
     parser.add_argument("--brief-pdf")
@@ -208,7 +208,7 @@ def main() -> int:
     if not brief_md.exists():
         send_message(
             tg_send,
-            f"Morning Brief review build missing for {date}. Expected markdown at {brief_md}.",
+            f"Morning Paper review build missing for {date}. Expected markdown at {brief_md}.",
             dry_run=args.dry_run,
         )
         return 0
@@ -219,11 +219,11 @@ def main() -> int:
     pages = page_count(brief_pdf)
     heading_lines = "\n".join(f"- {h}" for h in headings[:8])
     pdf_link = f"[PDF]({brief_pdf})"
-    github_link = f"[GitHub brief](https://github.com/dmthepm/thoth-workspace/briefs/{date}-brief-review.md)"
+    github_link = f"[GitHub paper](https://github.com/dmthepm/thoth-workspace/briefs/{date}-brief-review.md)"
 
     # Build single digest with everything
     digest_parts = []
-    digest_parts.append(f"Morning Brief review ready — {date}")
+    digest_parts.append(f"Morning Paper review ready — {date}")
     digest_parts.append(f"Pages: {pages if pages is not None else 'unknown'}")
     digest_parts.append("Sections:")
     digest_parts.append(heading_lines)

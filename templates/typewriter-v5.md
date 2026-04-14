@@ -5,7 +5,7 @@ pdf_options:
   printBackground: true
   displayHeaderFooter: true
   headerTemplate: "<span></span>"
-  footerTemplate: "<div style='font-size:7pt;color:#111111;font-family:Courier New,monospace;width:100%;margin:0 0.55in;'><div style='display:flex;justify-content:space-between;align-items:baseline;'><span>Date: <span class='date'></span></span><span style='text-align:center;'>Morning Brief</span><span style='text-align:right;'>Page <span class='pageNumber'></span> of <span class='totalPages'></span></span></div></div>"
+  footerTemplate: "<div style='font-size:7pt;color:#111111;font-family:Courier New,monospace;width:100%;margin:0 0.55in;'><div style='display:flex;justify-content:space-between;align-items:baseline;'><span>Date: <span class='date'></span></span><span style='text-align:center;'>Morning Paper</span><span style='text-align:right;'>Page <span class='pageNumber'></span> of <span class='totalPages'></span></span></div></div>"
 css: |
   @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
 
@@ -254,7 +254,7 @@ css: |
 ---
 
 <div class="page-1-header">
-  <div class="page-1-title">Morning Brief</div>
+  <div class="page-1-title">Morning Paper</div>
   <div class="page-1-date">{DATE} — {TIME} — {LOCATION}</div>
   <div class="page-1-rule"></div>
 </div>

@@ -74,9 +74,9 @@ def inspect_pages(pages: list[dict[str, object]]) -> tuple[list[str], list[str]]
         if hn_header_lines and not any(line.startswith("IV.") for line in top_lines):
             flags.append("HN_HEADER_ODD")
             warnings.append(f"Page {page['page']} mentions Hacker News but heading format may be off.")
-        if int(page["page"]) == 1 and "Morning Brief" not in preview:
+        if int(page["page"]) == 1 and all(title not in preview for title in ("Morning Brief", "Morning Paper")):
             flags.append("TITLE_MISSING")
-            errors.append("Page 1 does not appear to contain the Morning Brief title.")
+            errors.append("Page 1 does not appear to contain the Morning Paper title.")
     return errors, warnings
 
 
