@@ -165,15 +165,16 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
     css = """
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9pt; line-height: 1.38; color: #111; background: #fff; }
-@page { size: Letter; margin: 0.62in 0.55in 0.72in 0.55in; }
-.paper-header { text-align: center; margin-bottom: 0.14in; }
-.paper-date { font-size: 18pt; font-weight: 700; letter-spacing: 0.04em; }
-.paper-subtitle { font-size: 7pt; color: #666; margin-top: 0.04in; letter-spacing: 0.08em; }
-.paper-rule { border-bottom: 1.5px solid #111; margin-top: 0.08in; }
-  .article { margin-top: 0.14in; }
-.article-title { font-size: 12pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.08in; }
-.article-grid { display: grid; grid-template-columns: 1.6in 1fr; gap: 0.18in; align-items: start; }
-.meta-card { border: 1px solid #111; padding: 0.06in; font-size: 7pt; background: #fff; }
+@page { size: Letter; margin: 0.5in 0.48in 0.62in 0.48in; }
+.paper-header { text-align: center; margin-bottom: 0.1in; }
+.paper-date { font-size: 17.5pt; font-weight: 700; letter-spacing: 0.03em; }
+.paper-subtitle { font-size: 7.6pt; color: #666; margin-top: 0.035in; letter-spacing: 0.065em; }
+.paper-rule { border-bottom: 1.8px solid #111; margin-top: 0.07in; }
+.article { margin-top: 0.08in; }
+.article-title { font-size: 12.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.06in; }
+.article-body { column-count: 2; column-gap: 0.18in; font-size: 8.8pt; line-height: 1.32; color: #000; }
+.article-body::after { content: ""; display: block; clear: both; }
+.meta-card { float: left; width: 1.55in; border: 1.2px solid #111; padding: 0.055in; font-size: 7pt; background: #fff; margin: 0.01in 0.12in 0.08in 0; break-inside: avoid; }
 .meta-top { display: grid; grid-template-columns: 0.44in 1fr; gap: 0.06in; align-items: start; }
 .meta-avatar { width: 0.42in; height: 0.42in; object-fit: cover; border: 1px solid #bbb; }
 .meta-author { font-weight: 700; margin-bottom: 0.03in; }
@@ -181,11 +182,11 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .meta-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.04in; margin: 0.05in 0; }
 .meta-stat-label { font-size: 5.5pt; color: #666; text-transform: uppercase; }
 .meta-stat-value { font-size: 7pt; font-weight: 700; }
-.meta-image { width: 100%; margin-top: 0.07in; border: 1px solid #cfcfcf; }
-.article-body { column-count: 2; column-gap: 0.22in; font-size: 8.3pt; line-height: 1.44; }
-.article-body p { margin: 0 0 0.07in 0; text-align: justify; }
+.meta-image { width: 100%; margin-top: 0.06in; border: 1px solid #cfcfcf; }
+.article-body p { margin: 0 0 0.05in 0; text-align: justify; text-indent: 0.13in; }
+.article-body p:first-child { text-indent: 0; }
 .article-quote { font-style: italic; font-size: 7.6pt; margin-top: 0.08in; color: #222; }
-.article-link { font-size: 6.5pt; color: #444; margin-top: 0.08in; word-break: break-word; }
+.article-link { font-size: 6.4pt; color: #444; margin-top: 0.03in; word-break: break-word; }
 a { color: #111; text-decoration: underline; }
 """
     sections: list[str] = [
@@ -234,7 +235,7 @@ a { color: #111; text-decoration: underline; }
             except Exception:
                 relative_avatar = ""
         paragraphs = [p.strip() for p in article.body.split("\n\n") if p.strip()]
-        body_html = "".join(f"<p>{html.escape(p)}</p>" for p in paragraphs[:18])
+        body_html = "".join(f"<p>{html.escape(p)}</p>" for p in paragraphs[:30])
         meta_card = [
             '<div class="meta-card">',
             '<div class="meta-top">',
@@ -261,11 +262,9 @@ a { color: #111; text-decoration: underline; }
             [
                 '<section class="article">',
                 f'<div class="article-title">{html.escape(article.title)}</div>',
-                '<div class="article-grid">',
-                "".join(meta_card),
                 '<div class="article-body">',
+                "".join(meta_card),
                 body_html,
-                "</div>",
                 "</div>",
                 f'<div class="article-link"><a href="{html.escape(article.url)}">{html.escape(article.url)}</a></div>',
                 "</section>",
