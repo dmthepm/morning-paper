@@ -96,13 +96,7 @@ paper under `~/.local/share/morning-paper/<date>/`.
 ```bash
 morning-paper init
 morning-paper build
-morning-paper pass1 --help
-morning-paper pass2 --help
-morning-paper pass3 --help
-morning-paper assemble --help
-morning-paper render --help
 morning-paper doctor
-morning-paper smoke
 ```
 
 There are now two lanes:
@@ -117,12 +111,15 @@ There are now two lanes:
   - `assemble`
   - `render`
   - `digest`
+  - `smoke`
 
 Important:
 
 - the extracted seed scripts still contain Thoth-specific paths
 - those remain for the private deployment only
 - the public `init/build` path is the portable product surface
+- if you invoke a legacy command from a normal package install, Morning Paper
+  will tell you to use `init` and `build` instead of failing with a traceback
 
 ## Repo Layout
 

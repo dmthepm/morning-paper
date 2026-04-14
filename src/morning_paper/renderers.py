@@ -4,7 +4,7 @@ import html
 import json
 import unicodedata
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fpdf import FPDF
@@ -200,7 +200,7 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
     paths = output_paths(config, date_str)
     paths["dir"].mkdir(parents=True, exist_ok=True)
     payload = {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(UTC).isoformat(),
         "date": date_str,
         "name": config.name,
         "items": {key: [asdict(item) for item in items] for key, items in collected.items()},

@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from .builder import build_paper
-from .config import DEFAULT_CONFIG_DIR, DEFAULT_CONFIG_PATH, load_config, render_default_config
+from .config import DEFAULT_CONFIG_PATH, ConfigError, load_config, render_default_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -22,7 +22,11 @@ SCRIPT_MAP = {
 
 def run_script(script: Path, args: list[str]) -> int:
     if not script.exists():
-        print(f"missing script: {script}", file=sys.stderr)
+        print(
+            "This command requires the private Morning Brief harness. "
+            "Use `morning-paper init` and `morning-paper build` instead.",
+            file=sys.stderr,
+        )
         return 1
     cmd = [sys.executable, str(script), *args]
     return subprocess.call(cmd, cwd=REPO_ROOT)
@@ -30,12 +34,11 @@ def run_script(script: Path, args: list[str]) -> int:
 
 def doctor() -> int:
     required = [
-        REPO_ROOT / "scripts" / "run_pass1.py",
-        REPO_ROOT / "scripts" / "run_pass2.py",
-        REPO_ROOT / "scripts" / "run_pass3.py",
-        REPO_ROOT / "scripts" / "assemble_brief.py",
-        REPO_ROOT / "scripts" / "build_live_brief.py",
-        REPO_ROOT / "templates" / "typewriter-v5.md",
+        REPO_ROOT / "src" / "morning_paper" / "cli.py",
+        REPO_ROOT / "src" / "morning_paper" / "builder.py",
+        REPO_ROOT / "src" / "morning_paper" / "config.py",
+        REPO_ROOT / "src" / "morning_paper" / "renderers.py",
+        REPO_ROOT / "src" / "morning_paper" / "sources.py",
     ]
     missing = [str(path.relative_to(REPO_ROOT)) for path in required if not path.exists()]
     if missing:
@@ -99,7 +102,11 @@ def build_command(args: list[str]) -> int:
         print(f"missing config: {config_path}", file=sys.stderr)
         print("run `morning-paper init` first or pass --config", file=sys.stderr)
         return 1
-    config = load_config(config_path)
+    try:
+        config = load_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
     result = build_paper(config, date_str=date)
     print(json.dumps(result, indent=2))
     return 0
@@ -108,7 +115,11 @@ def build_command(args: list[str]) -> int:
 def smoke() -> int:
     script = REPO_ROOT / "scripts" / "smoke_test.sh"
     if not script.exists():
-        print(f"missing smoke script: {script}", file=sys.stderr)
+        print(
+            "This command requires the private Morning Brief harness. "
+            "Use `morning-paper init` and `morning-paper build` instead.",
+            file=sys.stderr,
+        )
         return 1
     return subprocess.call(["bash", str(script)], cwd=REPO_ROOT)
 

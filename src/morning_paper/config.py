@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -9,6 +11,10 @@ import yaml
 DEFAULT_CONFIG_DIR = Path.home() / ".config" / "morning-paper"
 DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
 DEFAULT_OUTPUT_DIR = Path.home() / ".local" / "share" / "morning-paper"
+
+
+class ConfigError(ValueError):
+    pass
 
 
 @dataclass(slots=True)
@@ -54,6 +60,32 @@ def _expand_path(raw: str | Path | None, *, default: Path) -> Path:
     return Path(raw).expanduser().resolve()
 
 
+def _validate_timezone(value: str) -> str:
+    try:
+        ZoneInfo(value)
+    except Exception as exc:
+        raise ConfigError(f"invalid timezone: {value}") from exc
+    return value
+
+
+def _validate_limit(value: int, *, label: str) -> int:
+    if not 1 <= value <= 100:
+        raise ConfigError(f"{label} must be between 1 and 100")
+    return value
+
+
+def _validate_output_directory(path: Path) -> Path:
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        raise ConfigError(f"cannot create output directory: {path}") from exc
+    if not path.is_dir():
+        raise ConfigError(f"output directory is not a directory: {path}")
+    if not os.access(path, os.W_OK):
+        raise ConfigError(f"output directory is not writable: {path}")
+    return path
+
+
 def load_config(path: Path) -> MorningPaperConfig:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     sources = data.get("sources") or {}
@@ -63,24 +95,26 @@ def load_config(path: Path) -> MorningPaperConfig:
         RssFeedConfig(
             name=str(feed["name"]),
             url=str(feed["url"]),
-            limit=int(feed.get("limit", 5)),
+            limit=_validate_limit(int(feed.get("limit", 5)), label=f"rss limit for {feed['name']}"),
         )
         for feed in (sources.get("rss") or [])
         if feed.get("name") and feed.get("url")
     ]
     return MorningPaperConfig(
         name=str(data.get("name", "Morning Paper")),
-        timezone=str(data.get("timezone", "America/Los_Angeles")),
+        timezone=_validate_timezone(str(data.get("timezone", "America/Los_Angeles"))),
         profile=str(data.get("profile", "")).strip(),
         sources=SourcesConfig(
             hacker_news=HackerNewsConfig(
                 enabled=bool(hn.get("enabled", True)),
-                limit=int(hn.get("limit", 20)),
+                limit=_validate_limit(int(hn.get("limit", 20)), label="hacker_news.limit"),
             ),
             rss=rss_feeds,
         ),
         outputs=OutputsConfig(
-            directory=_expand_path(outputs.get("directory"), default=DEFAULT_OUTPUT_DIR),
+            directory=_validate_output_directory(
+                _expand_path(outputs.get("directory"), default=DEFAULT_OUTPUT_DIR)
+            ),
             pdf=bool(outputs.get("pdf", True)),
             html=bool(outputs.get("html", True)),
             markdown=bool(outputs.get("markdown", True)),
