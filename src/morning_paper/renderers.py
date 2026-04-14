@@ -14,6 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fpdf import FPDF
+from markdown_it import MarkdownIt
 import yaml
 
 from .config import MorningPaperConfig
@@ -84,6 +85,9 @@ def _display_time(timezone: str) -> str:
 
 def _package_template_text(name: str) -> str:
     return resources.files("morning_paper").joinpath("resources", name).read_text(encoding="utf-8")
+
+
+_MARKDOWN = MarkdownIt("commonmark", {"html": True, "linkify": True})
 
 
 def _split_frontmatter(document: str) -> tuple[dict[str, object], str]:
@@ -375,11 +379,7 @@ def _render_html_from_markdown(markdown: str) -> str:
     meta, body = _split_frontmatter(markdown)
     css = str(meta.get("css", "")).strip()
     title = html.escape(str(meta.get("title", "Morning Paper")))
-    if body.lstrip().startswith("<"):
-        rendered_body = body
-    else:
-        escaped = html.escape(body)
-        rendered_body = f"<pre>{escaped}</pre>"
+    rendered_body = _MARKDOWN.render(body)
     return (
         "<!doctype html><html><head><meta charset='utf-8'>"
         f"<title>{title}</title>"
@@ -400,6 +400,14 @@ def _render_typewriter_pdf(markdown: str, *, output_path: Path) -> None:
 
 
 def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> None:
+    _meta, body = _split_frontmatter(markdown)
+    rendered_body = _MARKDOWN.render(body)
+    plain = html.unescape(rendered_body)
+    plain = plain.replace("</p>", "\n\n").replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+    plain = plain.replace("</li>", "\n").replace("</h1>", "\n").replace("</h2>", "\n").replace("</h3>", "\n")
+    import re
+    plain = re.sub(r"<[^>]+>", " ", plain)
+    plain = "\n".join(line.strip() for line in plain.splitlines())
     pdf = FPDF(format="Letter")
     pdf.set_auto_page_break(auto=True, margin=12)
     pdf.add_page()
@@ -409,7 +417,7 @@ def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date
     pdf.set_font("Helvetica", "B", 18)
     pdf.cell(width, 10, _pdf_text(config.name), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 10)
-    for raw_line in markdown.splitlines():
+    for raw_line in plain.splitlines():
         line = raw_line.strip()
         if not line:
             pdf.ln(3)

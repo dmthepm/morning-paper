@@ -16,11 +16,11 @@ css: |
     font-size: 9pt;
     line-height: 1.38;
     color: #1a1a1a;
-    background: #f9f7f1;
+    background: #ffffff;
   }
 
   @media print {
-    body { background: #f9f7f1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { size: Letter; margin: 0.6in 0.55in 0.6in 0.55in; }
   }
 
@@ -82,7 +82,7 @@ css: |
     margin: 0.05in 0;
     padding: 0.04in 0.07in;
     border-left: 2.5px solid #000000;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.015);
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -102,7 +102,7 @@ css: |
   .tweet-pair .tweet {
     flex: 1 1 calc(50% - 0.05in);
     min-width: 0;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.015);
   }
   .tweet-pair .tweet:only-child { flex: 1 1 100%; }
 
@@ -152,7 +152,7 @@ css: |
     margin-bottom: 0.06in;
     padding-left: 0.05in;
     border-left: 2px solid #000000;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.015);
   }
   .hn-card-header {
     display: flex;
@@ -182,7 +182,7 @@ css: |
     margin: 0.05in 0;
     padding: 0.04in 0.07in;
     border-left: 2.5px solid #000000;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.015);
   }
   .skool-post-header { display: flex; justify-content: space-between; margin-bottom: 0.03in; }
   .skool-author { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -194,7 +194,7 @@ css: |
   .win-card {
     margin: 0.03in 0;
     padding: 0.025in 0.05in;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.015);
     border-left: 2px solid #000000;
   }
   .win-header { display: flex; gap: 0.1in; margin-bottom: 0.015in; }
@@ -209,13 +209,13 @@ css: |
     margin: 0.04in 0;
     padding: 0.03in 0.06in;
     border-left: 2px solid #000000;
-    background: rgba(0,0,0,0.02);
+    background: rgba(0,0,0,0.012);
   }
   .activity-log {
     margin: 0.04in 0;
     padding: 0.03in 0.06in;
     border-left: 2px solid #000000;
-    background: rgba(0,0,0,0.02);
+    background: rgba(0,0,0,0.012);
   }
   .activity-log p { margin-bottom: 0.03in; }
   .activity-log p:last-child { margin-bottom: 0; }
@@ -228,7 +228,7 @@ css: |
     margin: 0.06in 0;
     padding: 0.04in 0.07in;
     border-left: 3px solid #000000;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.015);
   }
   .action-required h2 {
     font-size: 8pt;
