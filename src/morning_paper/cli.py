@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 from datetime import datetime
+from importlib import import_module, resources
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -37,17 +38,27 @@ def run_script(script: Path, args: list[str]) -> int:
 
 
 def doctor() -> int:
-    required = [
-        REPO_ROOT / "src" / "morning_paper" / "cli.py",
-        REPO_ROOT / "src" / "morning_paper" / "article_print.py",
-        REPO_ROOT / "src" / "morning_paper" / "builder.py",
-        REPO_ROOT / "src" / "morning_paper" / "config.py",
-        REPO_ROOT / "src" / "morning_paper" / "image_tools.py",
-        REPO_ROOT / "src" / "morning_paper" / "renderers.py",
-        REPO_ROOT / "src" / "morning_paper" / "resources" / "typewriter.md",
-        REPO_ROOT / "src" / "morning_paper" / "sources.py",
+    missing: list[str] = []
+    required_modules = [
+        "morning_paper.cli",
+        "morning_paper.article_print",
+        "morning_paper.builder",
+        "morning_paper.config",
+        "morning_paper.image_tools",
+        "morning_paper.renderers",
+        "morning_paper.sources",
     ]
-    missing = [str(path.relative_to(REPO_ROOT)) for path in required if not path.exists()]
+    for module_name in required_modules:
+        try:
+            import_module(module_name)
+        except Exception:
+            missing.append(module_name)
+    try:
+        resource = resources.files("morning_paper").joinpath("resources", "typewriter.md")
+        if not resource.is_file():
+            missing.append("morning_paper/resources/typewriter.md")
+    except Exception:
+        missing.append("morning_paper/resources/typewriter.md")
     if missing:
         print("doctor: missing required files:", file=sys.stderr)
         for item in missing:
