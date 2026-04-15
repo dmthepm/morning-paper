@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from .article_print import ArticleExtractionError, fetch_article, render_article_markdown
 from .builder import build_paper
 from .config import DEFAULT_CONFIG_PATH, ConfigError, load_config, render_default_config
-from .renderers import TypewriterRendererUnavailable, write_custom_markdown, _safe_filename
+from .renderers import TypewriterRendererUnavailable, _load_weasyprint, write_custom_markdown, _safe_filename
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -64,7 +64,14 @@ def doctor() -> int:
         for item in missing:
             print(f"- {item}", file=sys.stderr)
         return 1
+    _, renderer_error = _load_weasyprint()
+    if renderer_error:
+        print("doctor: ok")
+        print("renderer: portable only")
+        print("hint: install `morning-paper[pretty]` for the typewriter renderer")
+        return 0
     print("doctor: ok")
+    print("renderer: typewriter ready")
     return 0
 
 
@@ -228,7 +235,7 @@ def smoke() -> int:
 
 
 def print_help() -> int:
-    commands = ", ".join(["init", "build", "print", *SCRIPT_MAP, "doctor", "smoke"])
+    commands = ", ".join(["init", "build", "print", "doctor", "--version"])
     print("usage: morning-paper {" + commands + "} [args...]")
     return 0
 

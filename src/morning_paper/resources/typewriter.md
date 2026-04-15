@@ -113,6 +113,14 @@ css: |
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  .featured-reads {
+    margin-top: 0.03in;
+  }
+  .featured-reads .full-read + .full-read {
+    margin-top: 0.08in;
+    padding-top: 0.06in;
+    border-top: 1px solid #d8d8d8;
+  }
   .full-read-title { font-size: 9pt; font-weight: 700; color: #000000; margin-bottom: 0.02in; line-height: 1.3; }
   .full-read-source { font-size: 7pt; color: #555; margin-bottom: 0.04in; text-transform: uppercase; letter-spacing: 0.04em; }
   .full-read-body { font-size: 8.5pt; line-height: 1.45; color: #000000; }
@@ -149,8 +157,8 @@ css: |
   .hn-card {
     break-inside: avoid;
     page-break-inside: avoid;
-    margin-bottom: 0.06in;
-    padding-left: 0.05in;
+    margin-bottom: 0.045in;
+    padding-left: 0.04in;
     border-left: 2px solid #000000;
     background: rgba(0,0,0,0.015);
   }
@@ -163,8 +171,8 @@ css: |
   }
   .hn-rank { font-weight: 700; font-size: 7.5pt; }
   .hn-domain { font-size: 6pt; color: #555; text-transform: uppercase; letter-spacing: 0.03em; margin-left: auto; }
-  .hn-title { font-size: 8pt; color: #000000; font-weight: 700; line-height: 1.35; }
-  .hn-meta { font-size: 6.5pt; color: #555; margin-top: 0.02in; }
+  .hn-title { font-size: 7.5pt; color: #000000; font-weight: 700; line-height: 1.28; }
+  .hn-meta { font-size: 6.1pt; color: #555; margin-top: 0.015in; }
   .hn-tag {
     display: inline-block;
     font-size: 5.5pt;
@@ -176,7 +184,7 @@ css: |
     color: #f9f7f1;
     border-radius: 2px;
   }
-  .hn-desc { font-size: 7pt; color: #000000; line-height: 1.4; margin-top: 0.03in; }
+  .hn-desc { font-size: 6.4pt; color: #000000; line-height: 1.26; margin-top: 0.02in; }
 
   .skool-post {
     margin: 0.05in 0;
@@ -266,35 +274,19 @@ css: |
 ## I. SIGNALS
 <!-- Tweets: short ones (< 180 chars) paired 2-col, long ones full-width -->
 
-## II. MORNING PAPER
-<!-- Full Read content -->
-
-## III. MORNING PAPER
-<!-- Second Full Read -->
+## II. FEATURED READS
+<div class="featured-reads">
+<!-- Featured Reads -->
+</div>
 
 <!-- HN section: keep BOTH the section header and subhead as HTML below. Do not emit markdown ## headings or markdown italic subheads here. -->
 <div class="hn-section">
-  <h1>IV. HACKER NEWS — TOP 20</h1>
+  <h1>III. HACKER NEWS — TOP 20</h1>
   <p class="subhead">news.ycombinator.com — {DATE} — via HN Algolia API</p>
   <div class="hn-cards" style="columns: 2; column-gap: 0.08in;">
     <!-- HN cards go here -->
   </div>
 </div>
 
-## V. MAIN BRANCH — SKOOL COMMUNITY
-<!-- Community content -->
-
-## VI. HIGH-TICKET AGENCY
-<!-- Agency content -->
-
-## VII. OPERATIONS
-<!-- Ops content -->
-
-## VIII. OVERNIGHT PIPELINE
-<!-- Pipeline status -->
-
-## IX. ACTION REQUIRED
-<!-- Action items -->
-
-## X. REFERENCES
+## IV. REFERENCES
 <!-- Reference links -->
