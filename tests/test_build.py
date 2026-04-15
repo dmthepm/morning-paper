@@ -410,14 +410,15 @@ class CliSurfaceTest(unittest.TestCase):
     def test_doctor_prints_update_notice_when_pypi_newer(self) -> None:
         stdout = io.StringIO()
         with patch("morning_paper.cli._load_weasyprint", return_value=(None, "missing")):
-            with patch("morning_paper.cli.requests.get", return_value=_FakeResponse(text=json.dumps({"info": {"version": "0.1.4"}}))):
+            with patch("morning_paper.cli.requests.get", return_value=_FakeResponse(text=json.dumps({"info": {"version": "0.1.5"}}))):
                 with redirect_stdout(stdout):
                     rc = cli.doctor()
         self.assertEqual(rc, 0)
         output = stdout.getvalue()
         self.assertIn("doctor: ok", output)
-        self.assertIn("renderer: portable only", output)
-        self.assertIn("update available: 0.1.4 (you have 0.1.3)", output)
+        self.assertIn("renderer: typewriter unavailable", output)
+        self.assertIn("fallback-only install", output)
+        self.assertIn("update available: 0.1.5 (you have 0.1.4)", output)
         self.assertIn("pip install --upgrade morning-paper", output)
 
     def test_doctor_skips_update_notice_when_offline(self) -> None:
@@ -429,6 +430,7 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         output = stdout.getvalue()
         self.assertIn("doctor: ok", output)
+        self.assertIn("renderer: typewriter unavailable", output)
         self.assertNotIn("update available", output)
 
     def test_roadmap_command_prints_guidance(self) -> None:

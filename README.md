@@ -18,15 +18,12 @@ No database. No Docker. No SaaS requirement.
 
 ## Quick Start
 
-```bash
-pip install morning-paper
-morning-paper init
-```
-
-For the actual high-quality print path:
+For the real product-quality print path, install the pretty renderer:
 
 ```bash
 pip install "morning-paper[pretty]"
+morning-paper init
+morning-paper doctor
 morning-paper build
 ```
 
@@ -35,6 +32,45 @@ That writes your paper under:
 ```text
 ~/.local/share/morning-paper/<date>/
 ```
+
+If you only want the basic fallback install:
+
+```bash
+pip install morning-paper
+```
+
+That path is functional, but it is not the renderer you should judge the product by.
+
+## Platform Support
+
+- macOS
+  - recommended
+  - install `morning-paper[pretty]`
+  - may also need:
+
+```bash
+brew install pango gdk-pixbuf
+```
+
+- Linux
+  - recommended
+  - install `morning-paper[pretty]`
+  - may also need system libraries for WeasyPrint such as pango/cairo packages from your distro
+
+- Windows
+  - CLI works
+  - `portable` fallback works more reliably today
+  - `typewriter` via `WeasyPrint` is best-effort, not the strongest supported path yet
+
+## Install Notes
+
+Use `morning-paper doctor` after install.
+
+- `renderer: typewriter ready`
+  - you are on the real print path
+- `renderer: typewriter unavailable`
+  - you are on a fallback-only install
+  - high-quality print output is not available until the pretty stack is working
 
 On macOS, the richer renderer may also need:
 
@@ -78,11 +114,13 @@ Morning Paper currently supports two renderers:
 
 - `typewriter`
   - the primary product look
+  - the recommended install path
   - requires the pretty print stack
   - uses `WeasyPrint`
 - `portable`
   - explicit pure Python fallback
   - lower fidelity
+  - do not use this as your default judgment of Morning Paper's design quality
   - only use this if you intentionally want the simpler output
 
 Default config:

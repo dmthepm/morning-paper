@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-04-15
+
+### Changed
+- `doctor` now states plainly whether you are on the real typewriter print path or a fallback-only install
+- README install guidance now recommends `morning-paper[pretty]` as the primary product path
+- Platform messaging is now explicit: macOS/Linux are the main pretty-renderer targets, Windows is best-effort
+
 ## [0.1.3] - 2026-04-15
 
 ### Added

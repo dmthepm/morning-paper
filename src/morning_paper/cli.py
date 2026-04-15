@@ -75,6 +75,17 @@ def _print_update_notice() -> None:
     print("run: pip install --upgrade morning-paper")
 
 
+def _pretty_install_hint_lines() -> list[str]:
+    lines = ['recommended install: pip install "morning-paper[pretty]"']
+    if sys.platform == "darwin":
+        lines.append("macOS may also need: brew install pango gdk-pixbuf")
+    elif sys.platform.startswith("linux"):
+        lines.append("Linux may also need system libraries for WeasyPrint (for example pango/cairo packages)")
+    elif sys.platform.startswith("win"):
+        lines.append("Windows typewriter support is best-effort today; portable mode is more reliable")
+    return lines
+
+
 def run_script(script: Path, args: list[str]) -> int:
     if not script.exists():
         print(
@@ -118,12 +129,15 @@ def doctor() -> int:
     _, renderer_error = _load_weasyprint()
     if renderer_error:
         print("doctor: ok")
-        print("renderer: portable only")
-        print("hint: install `morning-paper[pretty]` for the typewriter renderer")
+        print("renderer: typewriter unavailable")
+        print("status: fallback-only install; high-quality print output is not available yet")
+        for line in _pretty_install_hint_lines():
+            print(line)
         _print_update_notice()
         return 0
     print("doctor: ok")
     print("renderer: typewriter ready")
+    print("status: high-quality print path available")
     _print_update_notice()
     return 0
 
