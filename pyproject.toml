@@ -45,6 +45,8 @@ dependencies = [
 
 [project.optional-dependencies]
 pretty = ["weasyprint>=62.0"]
+twitter = ["twscrape"]
+local = ["trafilatura"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]

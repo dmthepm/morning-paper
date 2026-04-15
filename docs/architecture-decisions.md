@@ -196,6 +196,8 @@ Decision date: 2026-04-14
 
 Default extractor: **Jina Reader** (`https://r.jina.ai/{url}`)
 
+Request headers include `X-With-Images: true` which returns 33-90% more content on X Articles with better heading and image preservation.
+
 Why Jina over trafilatura as the default:
 - Zero pip dependency (just a `requests.get` call)
 - Returns clean markdown with inline image URLs (tested: X articles return 8+ images as direct `pbs.twimg.com` URLs)

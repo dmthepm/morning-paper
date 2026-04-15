@@ -25,6 +25,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Broken or shell-like X article extracts now fail cleanly instead of producing garbage PDFs
 - Inline X/media images are trimmed and embedded more reliably in printed articles
 
+## [0.1.1] - 2026-04-14
+
+### Added
+- Content validation gate: rejects shell/timeout/short/fetch-error content before rendering
+- Clean error messages for failed article extraction
+- Python 3.10 compatibility fix (datetime.UTC → timezone.utc)
+- GitHub Actions CI and PyPI trusted publishing workflows
+
+### Fixed
+- Typewriter renderer now requires the pretty stack; no silent bad PDF fallback
+- Legacy private commands show clear guidance instead of crashing on public installs
+
 ## [0.1.0] - 2026-04-14
 
 Initial public release.
