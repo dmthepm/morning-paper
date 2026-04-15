@@ -586,7 +586,8 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .article-lead blockquote p, .article-flow blockquote p { text-indent: 0; margin: 0; }
 .article-image { margin: var(--mp-image-gap-top) 0.01in var(--mp-image-gap-bottom) 0.01in; break-inside: avoid-column; }
 .article-image img { display: block; width: 100%; max-height: var(--mp-image-max-height); object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
-.article-lead-col .article-image:first-child { margin-top: 0; }
+.article-lead-col > .article-image:first-child { margin-top: 0; }
+.article-lead-col > .article-image:first-child img { margin-top: 0; }
 .article-source { font-size: 6.6pt; color: var(--mp-color-text); margin-top: 0.015in; }
 .article-source a { color: var(--mp-color-text); text-decoration: none; }
 a { color: var(--mp-color-text); text-decoration: underline; }
