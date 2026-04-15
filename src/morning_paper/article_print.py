@@ -595,22 +595,41 @@ a { color: #000; text-decoration: underline; }
                 parts.append(f"<p>{html.escape(value)}</p>")
             return parts
 
-        pre_image_blocks: list[tuple[str, str]] = []
+        intro_text_blocks: list[tuple[str, str]] = []
         remaining_blocks = list(block_items)
+        text_seen = 0
+        split_index = 0
         for idx, block in enumerate(block_items):
             if block[0] == "image":
-                remaining_blocks = block_items[idx:]
+                split_index = idx
                 break
-            pre_image_blocks.append(block)
+            intro_text_blocks.append(block)
+            if block[0] != "image":
+                text_seen += 1
+            if text_seen >= 4:
+                split_index = idx + 1
+                break
         else:
-            remaining_blocks = []
+            split_index = len(block_items)
+        remaining_blocks = block_items[split_index:]
 
         intro_left_blocks: list[tuple[str, str]] = []
         intro_right_blocks: list[tuple[str, str]] = []
-        if pre_image_blocks:
-            intro_left_blocks.append(pre_image_blocks[0])
-            intro_right_blocks.extend(pre_image_blocks[1:4])
-            remaining_blocks = pre_image_blocks[4:] + remaining_blocks
+        if intro_text_blocks:
+            intro_left_blocks.append(intro_text_blocks[0])
+            intro_right_blocks.extend(intro_text_blocks[1:4])
+        if len(intro_right_blocks) < 3 and remaining_blocks:
+            pulled: list[tuple[str, str]] = []
+            kept: list[tuple[str, str]] = []
+            text_budget = 3 - len(intro_right_blocks)
+            for block in remaining_blocks:
+                if text_budget > 0 and block[0] in {"paragraph", "blockquote", "callout"}:
+                    pulled.append(block)
+                    text_budget -= 1
+                else:
+                    kept.append(block)
+            intro_right_blocks.extend(pulled)
+            remaining_blocks = kept
 
         remaining_blocks = delay_initial_image(remaining_blocks, text_blocks_before_image=2)
         body_html = "".join(render_blocks(remaining_blocks))
