@@ -287,7 +287,6 @@ def _reader_metadata(url: str) -> dict[str, object]:
             and normalized_blocks[-1][0] == "paragraph"
             and (
                 len(normalized_blocks[-1][1]) < 75
-                or not re.search(r"[.!?\"”:]$", normalized_blocks[-1][1])
                 or cleaned[:1].islower()
             )
         ):
