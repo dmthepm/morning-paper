@@ -8,7 +8,7 @@ from importlib import import_module, resources
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .article_print import fetch_article, render_article_markdown
+from .article_print import ArticleExtractionError, fetch_article, render_article_markdown
 from .builder import build_paper
 from .config import DEFAULT_CONFIG_PATH, ConfigError, load_config, render_default_config
 from .renderers import TypewriterRendererUnavailable, write_custom_markdown, _safe_filename
@@ -173,7 +173,11 @@ def print_command(args: list[str]) -> int:
     except ConfigError as exc:
         print(f"invalid config: {exc}", file=sys.stderr)
         return 1
-    articles = [fetch_article(url) for url in urls]
+    try:
+        articles = [fetch_article(url) for url in urls]
+    except ArticleExtractionError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     bundle_title = title or articles[0].title
     slug = _safe_filename(bundle_title)[:48] or "article-print"

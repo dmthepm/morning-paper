@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import yaml
+import requests
 
 from morning_paper import cli
 
@@ -21,7 +22,7 @@ class _FakeResponse:
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
-            raise RuntimeError(f"http error: {self.status_code}")
+            raise requests.HTTPError(f"http error: {self.status_code}")
 
 
 def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
@@ -44,7 +45,18 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
             )
         )
     if "r.jina.ai" in url:
-        return _FakeResponse(text="Reader View\n\nExample body paragraph one.\n\nExample body paragraph two.")
+        return _FakeResponse(
+            text=(
+                "Reader View\n\n"
+                "Example body paragraph one with enough content to exercise the article "
+                "printer correctly and ensure the validation gate sees a real extracted body.\n\n"
+                "Example body paragraph two continues the sample article with enough detail "
+                "to exceed the minimum content threshold and still look like a legitimate "
+                "reader-mode extraction instead of a shell response.\n\n"
+                "Example body paragraph three adds more material so the rendered bundle has "
+                "substantial printable content."
+            )
+        )
     if "example.com/article" in url:
         return _FakeResponse(
             text="""
@@ -56,6 +68,20 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
     <meta name="author" content="Devon" />
   </head>
   <body><article><p>Body paragraph one.</p><p>Body paragraph two.</p></article></body>
+</html>
+"""
+        )
+    if "example.com/short" in url:
+        return _FakeResponse(
+            text="""
+<html>
+  <head>
+    <title>Short Example</title>
+    <meta property="og:title" content="Short Example" />
+    <meta property="og:site_name" content="Example" />
+    <meta name="author" content="Devon" />
+  </head>
+  <body><article><p>Too short.</p></article></body>
 </html>
 """
         )
@@ -160,6 +186,112 @@ class BuildFlowTest(unittest.TestCase):
 
             self.assertEqual(rc, 1)
             self.assertIn("typewriter renderer requires the pretty print stack", stderr.getvalue())
+
+    def test_print_fails_cleanly_for_shell_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            rc = cli.main(["init", "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+
+            def fake_shell_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
+                if "r.jina.ai" in url:
+                    return _FakeResponse(
+                        text=(
+                            "Title: X\n\n"
+                            "Markdown Content:\n"
+                            "Warning: This page explicitly specify a timeout. "
+                            "People on X are the first to know. "
+                            "This page maybe not yet fully loaded.\n"
+                        )
+                    )
+                return _FakeResponse(
+                    text="""
+<html>
+  <head><title>X</title></head>
+  <body>People on X are the first to know.</body>
+</html>
+"""
+                )
+
+            stderr = io.StringIO()
+            with patch("morning_paper.article_print.requests.get", side_effect=fake_shell_get):
+                with patch("sys.stderr", stderr):
+                    rc = cli.main(
+                        [
+                            "print",
+                            "https://x.com/example/status/123",
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-04-14",
+                        ]
+                    )
+
+            self.assertEqual(rc, 1)
+            self.assertIn("X.com requires authenticated or rendered access", stderr.getvalue())
+
+    def test_print_fails_cleanly_for_short_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            rc = cli.main(["init", "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            config["outputs"]["renderer"] = "portable"
+            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+
+            def fake_short_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
+                if "r.jina.ai" in url:
+                    return _FakeResponse(text="Reader View\n\nToo short.\n")
+                return _fake_get(url, timeout=timeout, **kwargs)
+
+            stderr = io.StringIO()
+            with patch("morning_paper.article_print.requests.get", side_effect=fake_short_get):
+                with patch("sys.stderr", stderr):
+                    rc = cli.main(
+                        [
+                            "print",
+                            "https://example.com/short",
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-04-14",
+                        ]
+                    )
+
+            self.assertEqual(rc, 1)
+            self.assertIn("Could not extract enough article content", stderr.getvalue())
+
+    def test_print_fails_cleanly_for_fetch_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            rc = cli.main(["init", "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+
+            def fake_broken_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
+                if "broken.example.com" in url:
+                    return _FakeResponse(text="missing", status_code=404)
+                return _fake_get(url, timeout=timeout, **kwargs)
+
+            stderr = io.StringIO()
+            with patch("morning_paper.article_print.requests.get", side_effect=fake_broken_get):
+                with patch("sys.stderr", stderr):
+                    rc = cli.main(
+                        [
+                            "print",
+                            "https://broken.example.com/article",
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-04-14",
+                        ]
+                    )
+
+            self.assertEqual(rc, 1)
+            self.assertIn("Could not fetch article", stderr.getvalue())
 
 
 if __name__ == "__main__":

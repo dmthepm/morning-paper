@@ -14,6 +14,34 @@ from .image_tools import process_for_print
 from .renderers import _display_date, _display_time, _package_template_text, _render_info_row, _safe_filename
 
 
+class ArticleExtractionError(RuntimeError):
+    pass
+
+
+SKIP_DOMAINS = {
+    "github.com",
+    "www.github.com",
+    "youtube.com",
+    "www.youtube.com",
+    "youtu.be",
+    "news.ycombinator.com",
+    "instagram.com",
+    "www.instagram.com",
+    "linkedin.com",
+    "www.linkedin.com",
+}
+
+FAILURE_MARKERS = (
+    "this page explicitly specify a timeout",
+    "this page maybe not yet fully loaded",
+    "people on x are the first to know",
+    "don't miss what's happening",
+    "join x today",
+    "log in to x",
+    "sign up for x",
+)
+
+
 @dataclass(slots=True)
 class Article:
     url: str
@@ -56,6 +84,48 @@ def _reader_text(url: str) -> str:
     response = requests.get(_reader_url(url), timeout=40)
     response.raise_for_status()
     return response.text
+
+
+def _normalized_domain(url: str) -> str:
+    return urlparse(url).netloc.lower()
+
+
+def _validate_article_content(url: str, *, title: str, body: str, blocks: list[tuple[str, str]]) -> None:
+    domain = _normalized_domain(url)
+    if domain in SKIP_DOMAINS:
+        raise ArticleExtractionError(
+            f"Could not extract article from this URL. `{domain}` is not supported by the public article printer yet."
+        )
+
+    text_fragments = [title, body]
+    text_fragments.extend(value for kind, value in blocks if kind != "image")
+    combined = "\n".join(part for part in text_fragments if part).strip()
+    lowered = combined.lower()
+
+    if any(marker in lowered for marker in FAILURE_MARKERS):
+        if domain.endswith("x.com") or domain.endswith("twitter.com"):
+            raise ArticleExtractionError(
+                "Could not extract article from this URL. X.com requires authenticated or rendered access for this post."
+            )
+        raise ArticleExtractionError(
+            "Could not extract article from this URL. The fetched page returned a shell or timeout response instead of article content."
+        )
+
+    real_text = re.sub(r"\s+", " ", combined)
+    if len(real_text) < 200:
+        raise ArticleExtractionError(
+            "Could not extract enough article content to render a print page. Try another URL or a source with full readable text."
+        )
+
+    normalized_title = title.strip().lower()
+    if normalized_title in {"x", "twitter / x", "x / x"}:
+        if domain.endswith("x.com") or domain.endswith("twitter.com"):
+            raise ArticleExtractionError(
+                "Could not extract article from this X URL. The page title did not resolve to the actual post."
+            )
+        raise ArticleExtractionError(
+            "Could not extract a valid article title from this URL."
+        )
 
 
 def _reader_metadata(url: str) -> dict[str, object]:
@@ -228,8 +298,18 @@ def _extract_body(url: str, raw_html: str) -> str:
 
 
 def fetch_article(url: str) -> Article:
-    response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
-    response.raise_for_status()
+    domain = _normalized_domain(url)
+    if domain in SKIP_DOMAINS:
+        raise ArticleExtractionError(
+            f"Could not extract article from this URL. `{domain}` is not supported by the public article printer yet."
+        )
+    try:
+        response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise ArticleExtractionError(
+            f"Could not fetch article from `{url}`. The source returned an HTTP or network error. Detail: {exc}"
+        ) from exc
     raw_html = response.text
     reader_meta = _reader_metadata(url)
     title = _meta_content(raw_html, "og:title")
@@ -247,6 +327,8 @@ def fetch_article(url: str) -> Article:
     site_name = handle or _meta_content(raw_html, "og:site_name") or parsed.netloc
     image_url = _meta_content(raw_html, "og:image") or str(reader_meta.get("image_url") or "")
     body = _extract_body(url, raw_html)
+    blocks = list(reader_meta.get("blocks") or [])
+    _validate_article_content(url, title=title, body=body, blocks=blocks)
     return Article(
         url=url,
         title=title,
@@ -255,7 +337,7 @@ def fetch_article(url: str) -> Article:
         body=body,
         image_url=image_url,
         profile_image_url=str(reader_meta.get("profile_image_url") or ""),
-        blocks=list(reader_meta.get("blocks") or []),
+        blocks=blocks,
     )
 
 
