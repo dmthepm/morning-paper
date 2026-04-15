@@ -291,6 +291,37 @@ def _reader_metadata(url: str) -> dict[str, object]:
     }
 
 
+def _fetch_x_profile_metadata(handle: str) -> dict[str, str]:
+    try:
+        reader = _reader_text(f"https://x.com/{handle.lstrip('@')}")
+    except Exception:
+        return {}
+    profile_matches = re.findall(r"https://pbs\.twimg\.com/profile_images/[^)\s]+", reader)
+    if not profile_matches:
+        return {}
+    profile_image_url = profile_matches[0]
+    profile_image_url = re.sub(r"_200x200(?=\.)", "_400x400", profile_image_url)
+    return {"profile_image_url": profile_image_url}
+
+
+def _fetch_unavatar_profile_image(handle: str) -> str:
+    handle = handle.lstrip("@").strip()
+    if not handle:
+        return ""
+    url = f"https://unavatar.io/x/{handle}"
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except Exception:
+        return ""
+    if len(response.content) < 1000:
+        return ""
+    content_type = response.headers.get("content-type", "")
+    if "image" not in content_type.lower():
+        return ""
+    return url
+
+
 def _extract_body(url: str, raw_html: str) -> str:
     reader_paragraphs = _reader_metadata(url).get("paragraphs", [])
     if reader_paragraphs:
@@ -331,6 +362,12 @@ def fetch_article(url: str) -> Article:
     image_url = _meta_content(raw_html, "og:image") or str(reader_meta.get("image_url") or "")
     body = _extract_body(url, raw_html)
     blocks = list(reader_meta.get("blocks") or [])
+    profile_image_url = str(reader_meta.get("profile_image_url") or "")
+    if handle:
+        profile_image_url = _fetch_unavatar_profile_image(handle) or profile_image_url
+        if not profile_image_url:
+            profile_meta = _fetch_x_profile_metadata(handle)
+            profile_image_url = profile_meta.get("profile_image_url") or profile_image_url
     _validate_article_content(url, title=title, body=body, blocks=blocks)
     return Article(
         url=url,
@@ -339,7 +376,7 @@ def fetch_article(url: str) -> Article:
         source_name=site_name,
         body=body,
         image_url=image_url,
-        profile_image_url=str(reader_meta.get("profile_image_url") or ""),
+        profile_image_url=profile_image_url,
         blocks=blocks,
     )
 
@@ -349,31 +386,31 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
     css = """
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9.15pt; line-height: 1.34; color: #050505; background: #fff; }
-@page { size: Letter; margin: 0.36in 0.38in 0.52in 0.38in; }
-.paper-header { text-align: center; margin: 0 0 0.05in 0; }
+@page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
+.paper-header { text-align: center; margin: 0 0 0.08in 0; }
 .paper-date { font-size: 18.8pt; font-weight: 700; letter-spacing: 0.03em; }
-.paper-subtitle { font-size: 8.5pt; color: #3f3f3f; margin-top: 0.015in; letter-spacing: 0.07em; }
+.paper-subtitle { font-size: 8.7pt; color: #222; margin-top: 0.018in; letter-spacing: 0.07em; }
 .paper-rule { border-bottom: 2.6px solid #111; margin-top: 0.04in; }
-.article { margin-top: 0.035in; }
-.article-title { font-size: 13.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.04in 0; }
-.article-body { column-count: 2; column-gap: 0.15in; font-size: 9.15pt; line-height: 1.22; color: #050505; }
+.article { margin-top: 0.055in; }
+.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.05in 0; color: #000; }
+.article-byline { width: calc(50% - 0.11in); border: 1.55px solid #111; padding: 0.055in 0.07in; display: flex; gap: 0.08in; align-items: center; margin: 0 0 0.085in 0; break-inside: avoid; page-break-inside: avoid; }
+.byline-avatar { width: 0.64in; height: 0.64in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
+.byline-copy { min-width: 0; }
+.byline-name { font-size: 8.8pt; font-weight: 700; color: #000; line-height: 1.08; margin-bottom: 0.01in; }
+.byline-meta { font-size: 6.9pt; color: #000; line-height: 1.18; }
+.byline-kicker { font-size: 6.7pt; color: #444; letter-spacing: 0.02em; margin-top: 0.015in; }
+.article-body { column-count: 2; column-gap: 0.19in; font-size: 9.15pt; line-height: 1.22; color: #000; }
 .article-body::after { content: ""; display: block; clear: both; }
-.meta-card { float: left; width: 1.48in; border: 1.45px solid #111; padding: 0.05in; font-size: 7pt; background: #fff; margin: 0.005in 0.1in 0.06in 0; break-inside: avoid; }
-.meta-avatar { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid #9f9f9f; margin-bottom: 0.045in; background: #f7f7f7; }
-.meta-author { font-size: 8.35pt; font-weight: 700; margin-bottom: 0.02in; line-height: 1.15; }
-.meta-handle { font-size: 6.9pt; color: #191919; margin-bottom: 0.02in; }
-.meta-kicker { font-size: 6.3pt; color: #4f4f4f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.02in; }
-.meta-date { font-size: 6.2pt; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
-.article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.11in; }
+.article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.11in; color: #000; }
 .article-body p:first-child { text-indent: 0; }
-.article-body .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; }
-.article-body blockquote { margin: 0.06in 0.02in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #111; break-inside: avoid; }
+.article-body .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
+.article-body blockquote { margin: 0.06in 0.03in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #000; break-inside: avoid; }
 .article-body blockquote p { text-indent: 0; margin: 0; }
-.article-image { margin: 0.04in 0 0.06in 0; break-inside: avoid; }
-.article-image img { display: block; width: 100%; max-height: 1.9in; object-fit: contain; border: 1px solid #c9c9c9; background: #fff; }
-.article-source { font-size: 6.6pt; color: #333; margin-top: 0.015in; }
-.article-source a { color: #333; text-decoration: none; }
-a { color: #111; text-decoration: underline; }
+.article-image { margin: 0.055in 0.01in 0.075in 0.01in; break-inside: avoid; }
+.article-image img { display: block; width: 100%; max-height: 1.95in; object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
+.article-source { font-size: 6.6pt; color: #000; margin-top: 0.015in; }
+.article-source a { color: #000; text-decoration: none; }
+a { color: #000; text-decoration: underline; }
 """
     sections: list[str] = [
         "---",
@@ -453,26 +490,27 @@ a { color: #111; text-decoration: underline; }
             paragraph_count += 1
             body_parts.append(f"<p>{html.escape(value)}</p>")
         body_html = "".join(body_parts)
-        meta_card = [
-            '<div class="meta-card">',
+        byline = [
+            '<div class="article-byline">',
             (
-                f'<img class="meta-avatar" src="{html.escape(relative_avatar)}" alt="{html.escape(article.author or article.source_name)}" />'
+                f'<img class="byline-avatar" src="{html.escape(relative_avatar)}" alt="{html.escape(article.author or article.source_name)}" />'
                 if relative_avatar
                 else ""
             ),
-            f'<div class="meta-author">{html.escape(article.author or article.source_name)}</div>',
-            f'<div class="meta-handle">{html.escape(article.source_name)}</div>',
-            f'<div class="meta-kicker">{html.escape(urlparse(article.url).netloc)}</div>',
-            f'<div class="meta-date">{html.escape(date_label)}</div>',
+            '<div class="byline-copy">',
+            f'<div class="byline-name">{html.escape(article.author or article.source_name)}</div>',
+            f'<div class="byline-meta">{html.escape(article.source_name)} · {html.escape(date_label)}</div>',
+            f'<div class="byline-kicker">{html.escape(urlparse(article.url).netloc)}</div>',
+            "</div>",
+            "</div>",
         ]
-        meta_card.append("</div>")
         display_source = article.url.replace("https://", "").replace("http://", "")
         sections.extend(
             [
                 '<section class="article">',
                 f'<div class="article-title">{html.escape(article.title)}</div>',
+                "".join(byline),
                 '<div class="article-body">',
-                "".join(meta_card),
                 body_html,
                 "</div>",
                 f'<div class="article-source">Source: <a href="{html.escape(article.url)}">{html.escape(display_source)}</a></div>',
