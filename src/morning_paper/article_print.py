@@ -559,6 +559,7 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
   --mp-byline-padding-x: 0.105in;
   --mp-byline-gap-x: 0.115in;
   --mp-byline-meta-gap: 0.018in;
+  --mp-lead-gap-bottom: 0.03in;
 }
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: var(--mp-body-size); line-height: 1.34; color: var(--mp-color-text); background: #fff; }
 @page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
@@ -568,6 +569,8 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .paper-rule { border-bottom: 2.6px solid var(--mp-color-rule); margin-top: 0.055in; }
 .article { margin-top: var(--mp-article-top-gap); }
 .article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 var(--mp-title-gap-bottom) 0; color: var(--mp-color-text); }
+.article-lead { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--mp-column-gap); align-items: start; margin-bottom: var(--mp-lead-gap-bottom); }
+.article-lead-col { min-width: 0; }
 .article-flow { column-count: 2; column-gap: var(--mp-column-gap); column-fill: auto; font-size: var(--mp-body-size); line-height: var(--mp-body-line-height); color: var(--mp-color-text); }
 .article-byline { width: auto; border: var(--mp-byline-border) solid var(--mp-color-rule); padding: var(--mp-byline-padding-y) var(--mp-byline-padding-x); display: grid; grid-template-columns: var(--mp-byline-avatar) 1fr; column-gap: var(--mp-byline-gap-x); align-items: center; margin: 0 0 var(--mp-byline-gap-bottom) 0; break-inside: avoid-column; page-break-inside: avoid; box-sizing: border-box; }
 .byline-avatar { width: var(--mp-byline-avatar); height: var(--mp-byline-avatar); object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; }
@@ -577,12 +580,13 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .byline-stats { font-size: var(--mp-byline-stats-size); color: var(--mp-color-text); line-height: 1.12; margin-top: var(--mp-byline-meta-gap); }
 .byline-kicker { font-size: var(--mp-byline-kicker-size); color: var(--mp-color-text); letter-spacing: 0.003em; margin-top: var(--mp-byline-meta-gap); }
 .byline-divider { margin: 0 0.08em; color: #666; }
-.article-flow p { margin: 0 0 0.04in 0; text-align: justify; text-indent: var(--mp-paragraph-indent); color: var(--mp-color-text); }
-.article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
-.article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
-.article-flow blockquote p { text-indent: 0; margin: 0; }
+.article-lead p, .article-flow p { margin: 0 0 0.04in 0; text-align: justify; text-indent: var(--mp-paragraph-indent); color: var(--mp-color-text); }
+.article-lead .article-callout, .article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
+.article-lead blockquote, .article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
+.article-lead blockquote p, .article-flow blockquote p { text-indent: 0; margin: 0; }
 .article-image { margin: var(--mp-image-gap-top) 0.01in var(--mp-image-gap-bottom) 0.01in; break-inside: avoid-column; }
 .article-image img { display: block; width: 100%; max-height: var(--mp-image-max-height); object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
+.article-lead-col .article-image:first-child { margin-top: 0; }
 .article-source { font-size: 6.6pt; color: var(--mp-color-text); margin-top: 0.015in; }
 .article-source a { color: var(--mp-color-text); text-decoration: none; }
 a { color: var(--mp-color-text); text-decoration: underline; }
@@ -693,7 +697,33 @@ a { color: var(--mp-color-text); text-decoration: underline; }
             return parts
 
         block_items = delay_initial_image(list(block_items), text_blocks_before_image=5)
-        body_html = "".join(render_blocks(block_items))
+        lead_left_blocks: list[tuple[str, str]] = []
+        lead_right_blocks: list[tuple[str, str]] = []
+        remaining_blocks = list(block_items)
+        first_image_index = next((idx for idx, block in enumerate(block_items) if block[0] == "image"), -1)
+        if first_image_index > 0:
+            lead_left_blocks = block_items[:first_image_index]
+            right_text_budget = 3
+            consumed_indexes: set[int] = {first_image_index}
+            lead_right_blocks.append(block_items[first_image_index])
+            for idx in range(first_image_index + 1, len(block_items)):
+                kind, _value = block_items[idx]
+                if kind == "image":
+                    break
+                if kind == "callout":
+                    continue
+                if kind in {"paragraph", "blockquote"} and right_text_budget > 0:
+                    lead_right_blocks.append(block_items[idx])
+                    consumed_indexes.add(idx)
+                    right_text_budget -= 1
+                    continue
+            remaining_blocks = [
+                block for idx, block in enumerate(block_items)
+                if idx not in consumed_indexes and not (idx < first_image_index)
+            ]
+        body_html = "".join(render_blocks(remaining_blocks))
+        lead_left_html = "".join(render_blocks(lead_left_blocks))
+        lead_right_html = "".join(render_blocks(lead_right_blocks))
         byline_meta = article.handle or article.source_name
         affiliation = _affiliation_line(article)
         if affiliation:
@@ -733,8 +763,16 @@ a { color: var(--mp-color-text); text-decoration: underline; }
             [
                 '<section class="article">',
                 f'<div class="article-title">{html.escape(article.title)}</div>',
-                '<div class="article-flow">',
+                '<div class="article-lead">',
+                '<div class="article-lead-col">',
                 "".join(byline),
+                lead_left_html,
+                '</div>',
+                '<div class="article-lead-col">',
+                lead_right_html,
+                '</div>',
+                '</div>',
+                '<div class="article-flow">',
                 body_html,
                 "</div>",
                 f'<div class="article-source">Source: <a href="{html.escape(article.url)}">{html.escape(display_source)}</a></div>',
