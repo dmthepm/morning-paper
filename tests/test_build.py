@@ -4,7 +4,7 @@ import io
 import json
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
@@ -12,6 +12,7 @@ import yaml
 import requests
 
 from morning_paper import cli
+from morning_paper.config import MorningPaperConfig
 
 
 class _FakeResponse:
@@ -171,6 +172,39 @@ class BuildFlowTest(unittest.TestCase):
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
             self.assertIsInstance(payload["warnings"], list)
+
+    def test_print_uses_built_in_defaults_when_config_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            missing_config = tmp_path / "missing.yaml"
+            output_dir = tmp_path / "out"
+            default_config = MorningPaperConfig()
+            default_config.outputs.directory = output_dir
+            default_config.outputs.renderer = "portable"
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with patch("morning_paper.cli.DEFAULT_CONFIG_PATH", missing_config):
+                with patch("morning_paper.article_print.requests.get", side_effect=_fake_get):
+                    with patch("morning_paper.cli.MorningPaperConfig", return_value=default_config):
+                        with redirect_stdout(stdout), redirect_stderr(stderr):
+                            rc = cli.main(
+                                [
+                                    "print",
+                                    "https://example.com/article",
+                                    "--date",
+                                    "2026-04-14",
+                                ]
+                            )
+            self.assertEqual(rc, 0)
+            self.assertIn("using built-in defaults for one-off print", stderr.getvalue())
+
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["mode"], "print")
+            for key in ("json", "markdown", "html", "pdf"):
+                path = Path(payload["outputs"][key])
+                self.assertTrue(path.exists(), key)
+                self.assertGreater(path.stat().st_size, 0, key)
 
     def test_default_typewriter_fails_cleanly_without_pretty_stack(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

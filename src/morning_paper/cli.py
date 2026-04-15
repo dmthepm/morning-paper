@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from .article_print import ArticleExtractionError, fetch_article, render_article_markdown
 from .builder import build_paper
-from .config import DEFAULT_CONFIG_PATH, ConfigError, load_config, render_default_config
+from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_config, render_default_config
 from .renderers import TypewriterRendererUnavailable, _load_weasyprint, write_custom_markdown, _safe_filename
 
 
@@ -143,6 +143,12 @@ def build_command(args: list[str]) -> int:
     return 0
 
 
+def _load_print_config(config_path: Path) -> tuple[MorningPaperConfig, bool]:
+    if config_path.exists():
+        return load_config(config_path), True
+    return MorningPaperConfig(), False
+
+
 def print_command(args: list[str]) -> int:
     config_path = DEFAULT_CONFIG_PATH
     date = None
@@ -171,15 +177,14 @@ def print_command(args: list[str]) -> int:
     if not urls:
         print("print requires at least one URL", file=sys.stderr)
         return 2
-    if not config_path.exists():
-        print(f"missing config: {config_path}", file=sys.stderr)
-        print("run `morning-paper init` first or pass --config", file=sys.stderr)
-        return 1
     try:
-        config = load_config(config_path)
+        config, has_user_config = _load_print_config(config_path)
     except ConfigError as exc:
         print(f"invalid config: {exc}", file=sys.stderr)
         return 1
+    if not has_user_config:
+        print("using built-in defaults for one-off print", file=sys.stderr)
+        print("run `morning-paper init` to customize feeds, timezone, and output paths", file=sys.stderr)
     try:
         articles = [fetch_article(url) for url in urls]
     except ArticleExtractionError as exc:
