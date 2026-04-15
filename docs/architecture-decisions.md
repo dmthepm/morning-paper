@@ -346,3 +346,23 @@ Rule:
 - the visual snapshot should remain narrow and intentional
 - update the baseline only when a layout change is explicitly desired
 - do not broaden this into a giant screenshot matrix before the main print lane settles
+
+## 18. Relationship to Research Tools
+
+Decision date: 2026-04-14
+
+Morning Paper is a newspaper builder, not a research engine.
+
+Research tools such as `last30days` or similar multi-source report builders should produce markdown or structured output. Morning Paper's job is to stage and print that material cleanly.
+
+Relationship:
+- research tool -> produces markdown or structured article output
+- Morning Paper -> stages, lays out, and prints it
+
+Reason:
+- we do not want to duplicate every research or scraping workflow inside the newspaper renderer
+- the extractor boundary exists so different content sources can plug in, but the core product remains the printed output
+
+Rule:
+- when a workflow is primarily about discovery, synthesis, or report generation across many sources, it belongs in a research tool
+- when the goal is to turn selected material into a durable, readable paper, it belongs in Morning Paper

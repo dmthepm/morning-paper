@@ -89,7 +89,14 @@ def _reader_url(url: str) -> str:
 
 
 def _reader_text(url: str) -> str:
-    response = requests.get(_reader_url(url), timeout=40)
+    response = requests.get(
+        _reader_url(url),
+        timeout=40,
+        headers={
+            "Accept": "text/markdown",
+            "X-With-Images": "true",
+        },
+    )
     response.raise_for_status()
     return response.text
 
