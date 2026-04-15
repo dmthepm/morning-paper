@@ -18,17 +18,15 @@ No database. No Docker. No SaaS requirement.
 
 ## Quick Start
 
-Today, install from GitHub:
-
 ```bash
-pip install git+https://github.com/dmthepm/morning-paper.git
+pip install morning-paper
 morning-paper init
 ```
 
 For the actual high-quality print path:
 
 ```bash
-pip install "morning-paper[pretty] @ git+https://github.com/dmthepm/morning-paper.git"
+pip install "morning-paper[pretty]"
 morning-paper build
 ```
 
@@ -133,10 +131,9 @@ morning-paper doctor
 
 ## Roadmap
 
-1. Publish `v0.1.0` to PyPI for `pip install morning-paper`
-2. Keep improving article print fidelity in the `typewriter` renderer
-3. Add queueing and staging commands for agent-driven daily workflows
-4. Add optional LLM scoring without making it a requirement
+1. Keep improving article print fidelity in the `typewriter` renderer
+2. Add queueing and staging commands for agent-driven daily workflows
+3. Add optional LLM scoring without making it a requirement
 
 ## Contributing
 

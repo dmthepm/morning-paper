@@ -22,7 +22,7 @@ Initial public release.
 - `typewriter` renderer with optional `WeasyPrint` support
 - `portable` PDF fallback using `fpdf2`
 - Config validation for timezone, source limits, and output directory
-- Guard messages for private harness commands in normal package installs
+- Guard messages for internal-only commands when installed as a public package
 
 ### Sources
 - Hacker News (no auth required)

@@ -4,7 +4,7 @@ name: Morning Paper
 timezone: America/Los_Angeles
 profile: |
   Add a short note about who this paper is for and what should matter most.
-  Example: AI tools, operator software, media, and founder signal.
+  Example: early-stage AI tools, operator software, media, and founder signal.
 
 sources:
   hacker_news:
