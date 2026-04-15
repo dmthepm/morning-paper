@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import requests
 
 from .config import MorningPaperConfig
+from .extractors import ExtractedArticleContent, UnknownArticleExtractorError, get_article_extractor, register_article_extractor
 from .image_tools import process_for_print
 from .renderers import _display_date, _display_time, _package_template_text, _render_info_row, _safe_filename
 
@@ -307,6 +308,24 @@ def _reader_metadata(url: str) -> dict[str, object]:
     }
 
 
+class JinaArticleExtractor:
+    name = "jina"
+
+    def extract(self, url: str) -> ExtractedArticleContent:
+        metadata = _reader_metadata(url)
+        return ExtractedArticleContent(
+            title=str(metadata.get("title") or ""),
+            author=str(metadata.get("author") or ""),
+            image_url=str(metadata.get("image_url") or ""),
+            profile_image_url=str(metadata.get("profile_image_url") or ""),
+            paragraphs=list(metadata.get("paragraphs") or []),
+            blocks=list(metadata.get("blocks") or []),
+        )
+
+
+register_article_extractor(JinaArticleExtractor())
+
+
 def _fetch_x_profile_metadata(handle: str) -> dict[str, str]:
     try:
         reader = _reader_text(f"https://x.com/{handle.lstrip('@')}")
@@ -424,21 +443,24 @@ def _affiliation_line(article: Article) -> str:
     return ""
 
 
-def _extract_body(url: str, raw_html: str) -> str:
-    reader_paragraphs = _reader_metadata(url).get("paragraphs", [])
-    if reader_paragraphs:
-        return "\n\n".join(reader_paragraphs[:18])
+def _extract_body(raw_html: str, extracted: ExtractedArticleContent) -> str:
+    if extracted.paragraphs:
+        return "\n\n".join(extracted.paragraphs[:18])
     cleaned = _clean_text(raw_html)
     sentences = re.split(r"(?<=[.!?])\s+", cleaned)
     return "\n\n".join(sentence for sentence in sentences[:18] if sentence)[:4500]
 
 
-def fetch_article(url: str) -> Article:
+def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
     domain = _normalized_domain(url)
     if domain in SKIP_DOMAINS:
         raise ArticleExtractionError(
             f"Could not extract article from this URL. `{domain}` is not supported by the public article printer yet."
         )
+    try:
+        extractor = get_article_extractor(extractor_name)
+    except UnknownArticleExtractorError as exc:
+        raise ArticleExtractionError(str(exc)) from exc
     try:
         response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         response.raise_for_status()
@@ -447,14 +469,14 @@ def fetch_article(url: str) -> Article:
             f"Could not fetch article from `{url}`. The source returned an HTTP or network error. Detail: {exc}"
         ) from exc
     raw_html = response.text
-    reader_meta = _reader_metadata(url)
+    extracted = extractor.extract(url)
     title = _meta_content(raw_html, "og:title")
     if not title:
         match = re.search(r"<title>(.*?)</title>", raw_html, flags=re.IGNORECASE | re.DOTALL)
         title = _clean_text(match.group(1)) if match else url
-    if reader_meta.get("title") and (title == url or "on x:" in title.lower() or title.lower() == "x"):
-        title = str(reader_meta["title"])
-    author = _meta_content(raw_html, "author") or _meta_content(raw_html, "twitter:creator") or str(reader_meta.get("author") or "")
+    if extracted.title and (title == url or "on x:" in title.lower() or title.lower() == "x"):
+        title = extracted.title
+    author = _meta_content(raw_html, "author") or _meta_content(raw_html, "twitter:creator") or extracted.author
     parsed = urlparse(url)
     handle = ""
     path_parts = [part for part in parsed.path.split("/") if part]
@@ -465,10 +487,10 @@ def fetch_article(url: str) -> Article:
     if x_post:
         fx_meta = _fetch_fxtwitter_metadata(*x_post)
     site_name = handle or _meta_content(raw_html, "og:site_name") or parsed.netloc
-    image_url = _meta_content(raw_html, "og:image") or str(reader_meta.get("image_url") or "")
-    body = _extract_body(url, raw_html)
-    blocks = list(reader_meta.get("blocks") or [])
-    profile_image_url = str(reader_meta.get("profile_image_url") or "")
+    image_url = _meta_content(raw_html, "og:image") or extracted.image_url
+    body = _extract_body(raw_html, extracted)
+    blocks = list(extracted.blocks or [])
+    profile_image_url = extracted.profile_image_url
     if fx_meta.get("profile_image_url"):
         profile_image_url = str(fx_meta["profile_image_url"])
     elif handle:

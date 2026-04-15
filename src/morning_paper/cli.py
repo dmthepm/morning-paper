@@ -44,6 +44,7 @@ def doctor() -> int:
         "morning_paper.article_print",
         "morning_paper.builder",
         "morning_paper.config",
+        "morning_paper.extractors",
         "morning_paper.image_tools",
         "morning_paper.renderers",
         "morning_paper.sources",
@@ -186,7 +187,7 @@ def print_command(args: list[str]) -> int:
         print("using built-in defaults for one-off print", file=sys.stderr)
         print("run `morning-paper init` to customize feeds, timezone, and output paths", file=sys.stderr)
     try:
-        articles = [fetch_article(url) for url in urls]
+        articles = [fetch_article(url, extractor_name=config.article_extractor) for url in urls]
     except ArticleExtractionError as exc:
         print(str(exc), file=sys.stderr)
         return 1

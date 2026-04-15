@@ -255,3 +255,72 @@ Reason:
 - FxTwitter returns the durable social metadata we need in one JSON response.
 - Jina remains the better source for article body extraction and inline media.
 - The split keeps the renderer honest: social metadata from a social metadata endpoint, long-form body from the article reader.
+
+## 14. Typewriter Design Tokens
+
+Decision date: 2026-04-14
+
+The print layout should not rely on scattered magic numbers.
+
+We keep the typewriter stylesheet lightweight, but all primary visual controls should live in CSS custom properties at the top of the template:
+
+- page spacing
+- column gap
+- body size and line height
+- paragraph indent
+- byline avatar size
+- byline typography
+- image spacing and max height
+- text and rule colors
+
+Reason:
+- WeasyPrint supports CSS custom properties directly.
+- This keeps layout tuning coherent without introducing Sass, Tailwind, or a build step.
+- New styles can inherit the same token model later instead of duplicating hard-coded values.
+
+Rule:
+- if a layout tweak changes a core visual dimension, prefer changing or adding a token instead of editing scattered declarations.
+
+## 15. Pluggable Article Extractors
+
+Decision date: 2026-04-14
+
+Morning Paper should treat article extraction as a replaceable backend, not a permanent Jina implementation detail.
+
+Current shape:
+- extractor interface: `src/morning_paper/extractors.py`
+- current registered extractor: `jina`
+- config field: `article_extractor: jina`
+- `fetch_article()` resolves the configured extractor, then applies shared validation, metadata enrichment, and rendering
+
+Reason:
+- Jina is useful, but it is not the only future parser.
+- Different extractors will preserve different levels of fidelity for X articles, essays, paywalled pages, or saved-reader exports.
+- The renderer and design system should survive extractor changes unchanged.
+
+Contract:
+- an extractor returns normalized article content:
+  - title
+  - author
+  - blocks
+  - paragraphs
+  - primary image refs
+  - profile image ref when available
+- validation, image processing, FxTwitter enrichment, and PDF rendering remain outside the extractor
+
+Rule:
+- new extractors should register through the extractor registry instead of branching renderer logic around source-specific hacks.
+
+## 16. Skill Distribution for Agent Runtimes
+
+Decision date: 2026-04-14
+
+Morning Paper should ship a simple skill file for agent runtimes that discover tools from repo-local instructions.
+
+Path:
+- `.claude/skills/morning-paper/SKILL.md`
+
+Purpose:
+- make the CLI discoverable in Claude Code style runtimes
+- provide a stable command contract for Hermes/OpenClaw-style agent environments
+- keep runtime integration thin: skills call the CLI, they do not reimplement the pipeline

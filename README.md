@@ -88,9 +88,13 @@ Morning Paper currently supports two renderers:
 Default config:
 
 ```yaml
+article_extractor: jina
+
 outputs:
   renderer: typewriter
 ```
+
+`jina` is the current default article extractor, but extraction is now a replaceable backend. The print renderer, validation, image pipeline, and metadata enrichment are designed to survive extractor upgrades.
 
 If `typewriter` cannot render, Morning Paper now fails clearly instead of
 silently generating a lower-quality PDF. If you explicitly want the simpler

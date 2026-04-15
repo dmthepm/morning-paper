@@ -231,6 +231,14 @@ class BuildFlowTest(unittest.TestCase):
         self.assertIn("LangChain", article.bio or "")
         self.assertEqual(article.profile_image_url, "https://pbs.twimg.com/profile_images/example_avatar_200x200.jpg")
 
+    def test_fetch_article_fails_cleanly_for_unknown_extractor(self) -> None:
+        from morning_paper.article_print import ArticleExtractionError, fetch_article
+
+        with self.assertRaises(ArticleExtractionError) as ctx:
+            fetch_article("https://example.com/article", extractor_name="missing")
+
+        self.assertIn("unknown article extractor", str(ctx.exception))
+
     def test_print_uses_built_in_defaults_when_config_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
