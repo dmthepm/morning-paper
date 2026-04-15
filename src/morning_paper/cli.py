@@ -223,6 +223,11 @@ def print_help() -> int:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in {"-V", "--version", "version"}:
+        from . import __version__
+
+        print(__version__)
+        return 0
     if not argv or argv[0] in {"-h", "--help", "help"}:
         return print_help()
 
