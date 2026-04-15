@@ -13,7 +13,7 @@ Reason:
 ## 2. Public vs Private Boundary
 
 - `Morning Paper` is the public engine.
-- `Morning Brief` is a private deployment of that engine.
+- Private deployments extend it for specific operators.
 - Public repo owns:
   - collectors
   - normalized models
@@ -21,12 +21,7 @@ Reason:
   - renderer implementations
   - tests
   - example configs
-- Private harness owns:
-  - cron
-  - credentials
-  - Telegram delivery
-  - printer/device integration
-  - operator-specific weighting and scheduling
+- Private deployments own their own scheduling, credentials, delivery, and operator-specific configuration.
 
 Reason:
 - The OSS package must stand on its own and remain portable.
@@ -124,7 +119,7 @@ Planned public commands:
 - queue/add commands for agents to stage tomorrow's paper
 - page-budget estimation
 
-Private harness commands remain compatibility-only and should not define the public API.
+Internal-only commands remain compatibility-only and should not define the public API.
 
 ## 9. Printed Output Standard
 
@@ -195,10 +190,6 @@ Before rendering any article (X or otherwise), validate:
 
 The February 2026 Pay-Per-Use pricing ($0.005/post, no free tier) makes it unsuitable for a free open source CLI. A user running 50-100 posts daily would pay $0.25-$2+/day with no cap. No major Python CLI tool (Ruff, Rich, HTTPie, Poetry) uses paid APIs as a core dependency. We follow the same pattern.
 
-### Community signal
-
-The OpenClaw/Hermes builder community (April 2026) confirms this approach: everyone doing daily digests or article ingestion is using either scrapers with user credentials or manual fallback. Nobody pretends there is a free reliable X solution. The "daily digest + memory vault" pattern is exactly what morning-paper serves.
-
 ## 12. Article Extraction Architecture
 
 Decision date: 2026-04-14
@@ -233,3 +224,34 @@ Honest limitations:
 - Jina is an external free service — rate limits and future changes are possible
 - Some X posts fail extraction (noscript shell returned) — validation gate catches these
 - No offline mode without the optional `morning-paper[local]` extra (trafilatura)
+
+## 13. X/Twitter Metadata via FxTwitter
+
+Decision date: 2026-04-14
+
+For X/Twitter post URLs, Morning Paper uses FxTwitter as the primary metadata source:
+
+- endpoint: `https://api.fxtwitter.com/{handle}/status/{id}`
+- used for:
+  - author name
+  - handle
+  - profile image URL
+  - followers
+  - likes
+  - retweets
+  - replies
+  - views
+  - short bio/role line
+
+Body text and inline article images still come from Jina Reader.
+
+Fallback chain for X metadata:
+1. FxTwitter API
+2. `unavatar.io` for avatar only
+3. X profile reader fallback for avatar only
+4. render without avatar/stats if all metadata calls fail
+
+Reason:
+- FxTwitter returns the durable social metadata we need in one JSON response.
+- Jina remains the better source for article body extraction and inline media.
+- The split keeps the renderer honest: social metadata from a social metadata endpoint, long-form body from the article reader.

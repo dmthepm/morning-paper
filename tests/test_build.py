@@ -16,17 +16,42 @@ from morning_paper.config import MorningPaperConfig
 
 
 class _FakeResponse:
-    def __init__(self, *, text: str, status_code: int = 200) -> None:
+    def __init__(self, *, text: str, status_code: int = 200, headers: dict[str, str] | None = None) -> None:
         self.text = text
         self.content = text.encode("utf-8")
         self.status_code = status_code
+        self.headers = headers or {}
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
             raise requests.HTTPError(f"http error: {self.status_code}")
 
+    def json(self) -> object:
+        return json.loads(self.text)
+
 
 def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
+    if "api.fxtwitter.com/hwchase17/status/2042978500567609738" in url:
+        return _FakeResponse(
+            text=json.dumps(
+                {
+                    "tweet": {
+                        "likes": 3718,
+                        "retweets": 486,
+                        "replies": 102,
+                        "views": 1844176,
+                        "article": {"title": "Your harness, your memory"},
+                        "author": {
+                            "name": "Harrison Chase",
+                            "screen_name": "hwchase17",
+                            "followers": 98752,
+                            "description": "@LangChain Always hiring: https://www.langchain.com/careers",
+                            "avatar_url": "https://pbs.twimg.com/profile_images/example_avatar_200x200.jpg",
+                        },
+                    }
+                }
+            )
+        )
     if "hn.algolia.com" in url:
         return _FakeResponse(
             text=json.dumps(
@@ -48,6 +73,7 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
     if "r.jina.ai" in url:
         return _FakeResponse(
             text=(
+                "Title: Harrison Chase on X: \"Your harness, your memory\" / X\n\n"
                 "Reader View\n\n"
                 "Example body paragraph one with enough content to exercise the article "
                 "printer correctly and ensure the validation gate sees a real extracted body.\n\n"
@@ -57,6 +83,22 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
                 "Example body paragraph three adds more material so the rendered bundle has "
                 "substantial printable content."
             )
+        )
+    if "unavatar.io/x/hwchase17" in url:
+        response = _FakeResponse(text="avatar-bytes", headers={"content-type": "image/jpeg"})
+        response.content = b"\xff\xd8" + b"x" * 2000
+        return response
+    if "x.com/hwchase17/status/2042978500567609738" in url:
+        return _FakeResponse(
+            text="""
+<html>
+  <head>
+    <title>X</title>
+    <meta property="og:site_name" content="X" />
+  </head>
+  <body><article><p>Body paragraph one.</p><p>Body paragraph two.</p></article></body>
+</html>
+"""
         )
     if "example.com/article" in url:
         return _FakeResponse(
@@ -172,6 +214,22 @@ class BuildFlowTest(unittest.TestCase):
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
             self.assertIsInstance(payload["warnings"], list)
+
+    def test_x_article_uses_fxtwitter_metadata_when_available(self) -> None:
+        from morning_paper.article_print import fetch_article
+
+        with patch("morning_paper.article_print.requests.get", side_effect=_fake_get):
+            article = fetch_article("https://x.com/hwchase17/status/2042978500567609738")
+
+        self.assertEqual(article.author, "Harrison Chase")
+        self.assertEqual(article.handle, "@hwchase17")
+        self.assertEqual(article.likes, 3718)
+        self.assertEqual(article.retweets, 486)
+        self.assertEqual(article.replies, 102)
+        self.assertEqual(article.views, 1844176)
+        self.assertEqual(article.followers, 98752)
+        self.assertIn("LangChain", article.bio or "")
+        self.assertEqual(article.profile_image_url, "https://pbs.twimg.com/profile_images/example_avatar_200x200.jpg")
 
     def test_print_uses_built_in_defaults_when_config_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

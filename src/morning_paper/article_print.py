@@ -49,8 +49,15 @@ class Article:
     author: str
     source_name: str
     body: str
+    handle: str = ""
     image_url: str = ""
     profile_image_url: str = ""
+    followers: int | None = None
+    likes: int | None = None
+    retweets: int | None = None
+    replies: int | None = None
+    views: int | None = None
+    bio: str | None = None
     blocks: list[tuple[str, str]] = field(default_factory=list)
 
 
@@ -322,6 +329,61 @@ def _fetch_unavatar_profile_image(handle: str) -> str:
     return url
 
 
+def _parse_x_post(url: str) -> tuple[str, str] | None:
+    parsed = urlparse(url)
+    if not parsed.netloc.endswith(("x.com", "twitter.com")):
+        return None
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) >= 3 and parts[1] == "status":
+        return parts[0], parts[2]
+    return None
+
+
+def _fetch_fxtwitter_metadata(handle: str, status_id: str) -> dict[str, object]:
+    url = f"https://api.fxtwitter.com/{handle}/status/{status_id}"
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+    except Exception:
+        return {}
+    tweet = data.get("tweet") or {}
+    author = tweet.get("author") or {}
+    article = tweet.get("article") or {}
+    return {
+        "author": author.get("name") or "",
+        "handle": author.get("screen_name") or handle,
+        "profile_image_url": author.get("avatar_url") or "",
+        "followers": author.get("followers"),
+        "likes": tweet.get("likes"),
+        "retweets": tweet.get("retweets"),
+        "replies": tweet.get("replies"),
+        "views": tweet.get("views"),
+        "bio": author.get("description") or "",
+        "title": article.get("title") or "",
+    }
+
+
+def _compact_count(value: int | None) -> str:
+    if value is None:
+        return ""
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.1f}M".replace(".0M", "M")
+    if value >= 1_000:
+        return f"{value / 1_000:.1f}K".replace(".0K", "K")
+    return str(value)
+
+
+def _short_bio(value: str | None, *, limit: int = 52) -> str:
+    if not value:
+        return ""
+    text = " ".join(value.split())
+    text = re.sub(r"https?://\S+", "", text).strip(" ·-")
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
+
+
 def _extract_body(url: str, raw_html: str) -> str:
     reader_paragraphs = _reader_metadata(url).get("paragraphs", [])
     if reader_paragraphs:
@@ -358,16 +420,29 @@ def fetch_article(url: str) -> Article:
     path_parts = [part for part in parsed.path.split("/") if part]
     if parsed.netloc.endswith("x.com") and path_parts:
         handle = f"@{path_parts[0]}"
+    x_post = _parse_x_post(url)
+    fx_meta: dict[str, object] = {}
+    if x_post:
+        fx_meta = _fetch_fxtwitter_metadata(*x_post)
     site_name = handle or _meta_content(raw_html, "og:site_name") or parsed.netloc
     image_url = _meta_content(raw_html, "og:image") or str(reader_meta.get("image_url") or "")
     body = _extract_body(url, raw_html)
     blocks = list(reader_meta.get("blocks") or [])
     profile_image_url = str(reader_meta.get("profile_image_url") or "")
-    if handle:
+    if fx_meta.get("profile_image_url"):
+        profile_image_url = str(fx_meta["profile_image_url"])
+    elif handle:
         profile_image_url = _fetch_unavatar_profile_image(handle) or profile_image_url
         if not profile_image_url:
             profile_meta = _fetch_x_profile_metadata(handle)
             profile_image_url = profile_meta.get("profile_image_url") or profile_image_url
+    if fx_meta.get("author"):
+        author = str(fx_meta["author"])
+    if fx_meta.get("handle"):
+        site_name = f"@{str(fx_meta['handle']).lstrip('@')}"
+        handle = site_name
+    if fx_meta.get("title") and (title == url or "on x:" in title.lower() or title.lower() == "x"):
+        title = str(fx_meta["title"])
     _validate_article_content(url, title=title, body=body, blocks=blocks)
     return Article(
         url=url,
@@ -375,8 +450,15 @@ def fetch_article(url: str) -> Article:
         author=author,
         source_name=site_name,
         body=body,
+        handle=handle,
         image_url=image_url,
         profile_image_url=profile_image_url,
+        followers=int(fx_meta["followers"]) if fx_meta.get("followers") is not None else None,
+        likes=int(fx_meta["likes"]) if fx_meta.get("likes") is not None else None,
+        retweets=int(fx_meta["retweets"]) if fx_meta.get("retweets") is not None else None,
+        replies=int(fx_meta["replies"]) if fx_meta.get("replies") is not None else None,
+        views=int(fx_meta["views"]) if fx_meta.get("views") is not None else None,
+        bio=str(fx_meta["bio"]).strip() if fx_meta.get("bio") else None,
         blocks=blocks,
     )
 
@@ -399,8 +481,9 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .byline-avatar { width: 0.42in; height: 0.42in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
 .byline-copy { min-width: 0; }
 .byline-name { font-size: 8.8pt; font-weight: 700; color: #000; line-height: 1.08; margin-bottom: 0.008in; }
-.byline-meta { font-size: 6.9pt; color: #000; line-height: 1.18; }
-.byline-kicker { font-size: 6.7pt; color: #444; letter-spacing: 0.02em; margin-top: 0.015in; }
+.byline-meta { font-size: 6.8pt; color: #000; line-height: 1.18; }
+.byline-stats { font-size: 6.55pt; color: #000; line-height: 1.16; margin-top: 0.012in; }
+.byline-kicker { font-size: 6.45pt; color: #444; letter-spacing: 0.01em; margin-top: 0.012in; }
 .article-intro p, .article-intro blockquote { font-size: 9.15pt; line-height: 1.22; color: #000; }
 .article-intro p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; }
 .article-intro .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
@@ -533,6 +616,23 @@ a { color: #000; text-decoration: underline; }
         body_html = "".join(render_blocks(remaining_blocks))
         intro_left_html = "".join(render_blocks(intro_left_blocks))
         intro_right_html = "".join(render_blocks(intro_right_blocks))
+        byline_meta = article.handle or article.source_name
+        bio = _short_bio(article.bio)
+        if bio:
+            byline_meta = f"{byline_meta} · {bio}"
+        stats_parts = []
+        if article.likes is not None:
+            stats_parts.append(f"♥ {_compact_count(article.likes)}")
+        if article.retweets is not None:
+            stats_parts.append(f"↻ {_compact_count(article.retweets)}")
+        if article.replies is not None:
+            stats_parts.append(f"✉ {_compact_count(article.replies)}")
+        if article.views is not None:
+            stats_parts.append(f"◉ {_compact_count(article.views)}")
+        kicker_parts = []
+        if article.followers is not None:
+            kicker_parts.append(f"{_compact_count(article.followers)} followers")
+        kicker_parts.append(date_label)
         byline = [
             '<div class="article-byline">',
             (
@@ -542,8 +642,9 @@ a { color: #000; text-decoration: underline; }
             ),
             '<div class="byline-copy">',
             f'<div class="byline-name">{html.escape(article.author or article.source_name)}</div>',
-            f'<div class="byline-meta">{html.escape(article.source_name)} · {html.escape(date_label)}</div>',
-            f'<div class="byline-kicker">{html.escape(urlparse(article.url).netloc)}</div>',
+            f'<div class="byline-meta">{html.escape(byline_meta)}</div>',
+            (f'<div class="byline-stats">{html.escape("  ".join(stats_parts))}</div>' if stats_parts else ""),
+            f'<div class="byline-kicker">{html.escape(" · ".join(kicker_parts))}</div>',
             "</div>",
             "</div>",
         ]
