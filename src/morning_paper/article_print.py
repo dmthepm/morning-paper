@@ -393,10 +393,10 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .paper-rule { border-bottom: 2.6px solid #111; margin-top: 0.055in; }
 .article { margin-top: 0.09in; }
 .article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.075in 0; color: #000; }
-.article-intro { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0.23in; align-items: start; margin: 0 0 0.045in 0; }
+.article-intro { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0.26in; align-items: start; margin: 0 0 0.045in 0; }
 .intro-col { min-width: 0; }
-.article-byline { width: calc(100% - 0.02in); max-width: 2.35in; border: 1.55px solid #111; padding: 0.05in 0.065in; display: flex; gap: 0.065in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid; page-break-inside: avoid; }
-.byline-avatar { width: 0.5in; height: 0.5in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
+.article-byline { width: 2.14in; min-height: 0.7in; border: 1.55px solid #111; padding: 0.055in 0.07in; display: flex; gap: 0.06in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid; page-break-inside: avoid; box-sizing: border-box; }
+.byline-avatar { width: 0.42in; height: 0.42in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
 .byline-copy { min-width: 0; }
 .byline-name { font-size: 8.8pt; font-weight: 700; color: #000; line-height: 1.08; margin-bottom: 0.008in; }
 .byline-meta { font-size: 6.9pt; color: #000; line-height: 1.18; }
@@ -404,12 +404,12 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .article-intro p, .article-intro blockquote { font-size: 9.15pt; line-height: 1.22; color: #000; }
 .article-intro p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; }
 .article-intro .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
-.article-intro blockquote { margin: 0.06in 0.03in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; break-inside: avoid; }
+.article-intro blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; break-inside: avoid; }
 .article-intro blockquote p { text-indent: 0; margin: 0; }
-.article-body { column-count: 2; column-gap: 0.23in; font-size: 9.15pt; line-height: 1.22; color: #000; }
+.article-body { column-count: 2; column-gap: 0.26in; font-size: 9.15pt; line-height: 1.22; color: #000; }
 .article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; color: #000; }
 .article-body .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
-.article-body blockquote { margin: 0.06in 0.03in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #000; break-inside: avoid; }
+.article-body blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #000; break-inside: avoid; }
 .article-body blockquote p { text-indent: 0; margin: 0; }
 .article-image { margin: 0.055in 0.01in 0.075in 0.01in; break-inside: avoid; }
 .article-image img { display: block; width: 100%; max-height: 1.95in; object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
@@ -468,6 +468,23 @@ a { color: #000; text-decoration: underline; }
             return rendered_images[url]
 
         block_items = article.blocks[:80] if article.blocks else [("paragraph", p.strip()) for p in article.body.split("\n\n") if p.strip()]
+
+        def delay_initial_image(blocks: list[tuple[str, str]], *, text_blocks_before_image: int) -> list[tuple[str, str]]:
+            if not blocks or blocks[0][0] != "image":
+                return blocks
+            deferred = blocks[0]
+            tail = blocks[1:]
+            delayed: list[tuple[str, str]] = []
+            text_count = 0
+            for idx, block in enumerate(tail):
+                delayed.append(block)
+                if block[0] != "image":
+                    text_count += 1
+                if text_count >= text_blocks_before_image:
+                    delayed.append(deferred)
+                    delayed.extend(tail[idx + 1 :])
+                    return delayed
+            return blocks
         def render_blocks(blocks: list[tuple[str, str]]) -> list[str]:
             parts: list[str] = []
             inserted = 0
@@ -512,6 +529,7 @@ a { color: #000; text-decoration: underline; }
             intro_right_blocks.extend(pre_image_blocks[1:4])
             remaining_blocks = pre_image_blocks[4:] + remaining_blocks
 
+        remaining_blocks = delay_initial_image(remaining_blocks, text_blocks_before_image=2)
         body_html = "".join(render_blocks(remaining_blocks))
         intro_left_html = "".join(render_blocks(intro_left_blocks))
         intro_right_html = "".join(render_blocks(intro_right_blocks))
