@@ -21,6 +21,10 @@ from .config import MorningPaperConfig
 from .models import SourceItem
 
 
+class TypewriterRendererUnavailable(RuntimeError):
+    pass
+
+
 def _safe_filename(label: str) -> str:
     return "".join(ch.lower() if ch.isalnum() else "-" for ch in label).strip("-") or "morning-paper"
 
@@ -460,12 +464,13 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
             try:
                 _render_typewriter_pdf(markdown, output_path=paths["pdf"])
             except Exception as exc:
-                warnings.append(
-                    "WeasyPrint not available for typewriter renderer; "
-                    "fell back to portable PDF. Install `morning-paper[pretty]` for the full layout. "
+                raise TypewriterRendererUnavailable(
+                    "typewriter renderer requires the pretty print stack. "
+                    "Install `morning-paper[pretty]` and any required system libraries "
+                    "(for macOS: `brew install pango gdk-pixbuf`), or set "
+                    "`outputs.renderer: portable` if you explicitly want the fallback PDF. "
                     f"Detail: {exc}"
                 )
-                render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
         else:
             render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
     return paths, warnings
@@ -500,12 +505,13 @@ def write_custom_markdown(
             try:
                 _render_typewriter_pdf(markdown, output_path=paths["pdf"])
             except Exception as exc:
-                warnings.append(
-                    "WeasyPrint not available for typewriter renderer; "
-                    "fell back to portable PDF. Install `morning-paper[pretty]` for the full layout. "
+                raise TypewriterRendererUnavailable(
+                    "typewriter renderer requires the pretty print stack. "
+                    "Install `morning-paper[pretty]` and any required system libraries "
+                    "(for macOS: `brew install pango gdk-pixbuf`), or set "
+                    "`outputs.renderer: portable` if you explicitly want the fallback PDF. "
                     f"Detail: {exc}"
                 )
-                _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
         else:
             _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
     return paths, warnings

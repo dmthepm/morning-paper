@@ -23,19 +23,19 @@ Today, install from GitHub:
 ```bash
 pip install git+https://github.com/dmthepm/morning-paper.git
 morning-paper init
-morning-paper build
 ```
 
-That writes your first paper under:
-
-```text
-~/.local/share/morning-paper/<date>/
-```
-
-For the richer print renderer:
+For the actual high-quality print path:
 
 ```bash
 pip install "morning-paper[pretty] @ git+https://github.com/dmthepm/morning-paper.git"
+morning-paper build
+```
+
+That writes your paper under:
+
+```text
+~/.local/share/morning-paper/<date>/
 ```
 
 On macOS, the richer renderer may also need:
@@ -80,10 +80,12 @@ Morning Paper currently supports two renderers:
 
 - `typewriter`
   - the primary product look
-  - uses `WeasyPrint` when available
+  - requires the pretty print stack
+  - uses `WeasyPrint`
 - `portable`
-  - pure Python fallback
-  - lower fidelity, but guaranteed to work
+  - explicit pure Python fallback
+  - lower fidelity
+  - only use this if you intentionally want the simpler output
 
 Default config:
 
@@ -92,8 +94,14 @@ outputs:
   renderer: typewriter
 ```
 
-If `WeasyPrint` or its native libraries are unavailable, Morning Paper falls
-back to `portable` and reports that in the build output.
+If `typewriter` cannot render, Morning Paper now fails clearly instead of
+silently generating a lower-quality PDF. If you explicitly want the simpler
+fallback, set:
+
+```yaml
+outputs:
+  renderer: portable
+```
 
 ## Product Shape
 

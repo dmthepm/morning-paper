@@ -89,6 +89,7 @@ class BuildFlowTest(unittest.TestCase):
 
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
             config["outputs"]["directory"] = str(output_dir)
+            config["outputs"]["renderer"] = "portable"
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
             stdout = io.StringIO()
@@ -104,7 +105,7 @@ class BuildFlowTest(unittest.TestCase):
                 path = Path(payload["outputs"][key])
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
-            self.assertEqual(payload["renderer"], "typewriter")
+            self.assertEqual(payload["renderer"], "portable")
             self.assertIsInstance(payload["warnings"], list)
 
     def test_print_writes_outputs_for_article_bundle(self) -> None:
@@ -118,6 +119,7 @@ class BuildFlowTest(unittest.TestCase):
 
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
             config["outputs"]["directory"] = str(output_dir)
+            config["outputs"]["renderer"] = "portable"
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
             stdout = io.StringIO()
@@ -143,6 +145,21 @@ class BuildFlowTest(unittest.TestCase):
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
             self.assertIsInstance(payload["warnings"], list)
+
+    def test_default_typewriter_fails_cleanly_without_pretty_stack(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            rc = cli.main(["init", "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+
+            stderr = io.StringIO()
+            with patch("morning_paper.renderers._render_typewriter_pdf", side_effect=RuntimeError("missing weasy")):
+                with patch("sys.stderr", stderr):
+                    rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
+
+            self.assertEqual(rc, 1)
+            self.assertIn("typewriter renderer requires the pretty print stack", stderr.getvalue())
 
 
 if __name__ == "__main__":
