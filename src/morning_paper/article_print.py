@@ -543,15 +543,22 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
   --mp-body-size: 9.15pt;
   --mp-body-line-height: 1.22;
   --mp-paragraph-indent: 0.16in;
-  --mp-byline-avatar: 0.42in;
-  --mp-byline-name-size: 9.15pt;
-  --mp-byline-meta-size: 7.15pt;
-  --mp-byline-stats-size: 6.85pt;
-  --mp-byline-kicker-size: 6.7pt;
-  --mp-article-top-gap: 0.24in;
-  --mp-image-gap-top: 0.09in;
-  --mp-image-gap-bottom: 0.11in;
+  --mp-byline-avatar: 0.56in;
+  --mp-byline-name-size: 10.9pt;
+  --mp-byline-meta-size: 7.85pt;
+  --mp-byline-stats-size: 7.35pt;
+  --mp-byline-kicker-size: 7.05pt;
+  --mp-article-top-gap: 0.32in;
+  --mp-title-gap-bottom: 0.115in;
+  --mp-byline-gap-bottom: 0.095in;
+  --mp-image-gap-top: 0.12in;
+  --mp-image-gap-bottom: 0.14in;
   --mp-image-max-height: 2.4in;
+  --mp-byline-border: 1.65px;
+  --mp-byline-padding-y: 0.082in;
+  --mp-byline-padding-x: 0.105in;
+  --mp-byline-gap-x: 0.115in;
+  --mp-byline-meta-gap: 0.018in;
 }
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: var(--mp-body-size); line-height: 1.34; color: var(--mp-color-text); background: #fff; }
 @page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
@@ -560,15 +567,16 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .paper-subtitle { font-size: 9pt; color: var(--mp-color-rule); margin-top: 0.04in; margin-bottom: 0.045in; letter-spacing: 0.07em; }
 .paper-rule { border-bottom: 2.6px solid var(--mp-color-rule); margin-top: 0.055in; }
 .article { margin-top: var(--mp-article-top-gap); }
-.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.095in 0; color: var(--mp-color-text); }
+.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 var(--mp-title-gap-bottom) 0; color: var(--mp-color-text); }
 .article-flow { column-count: 2; column-gap: var(--mp-column-gap); column-fill: auto; font-size: var(--mp-body-size); line-height: var(--mp-body-line-height); color: var(--mp-color-text); }
-.article-byline { width: auto; border: 1.55px solid var(--mp-color-rule); padding: 0.07in 0.09in; display: grid; grid-template-columns: var(--mp-byline-avatar) 1fr; column-gap: 0.1in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid-column; page-break-inside: avoid; box-sizing: border-box; }
+.article-byline { width: auto; border: var(--mp-byline-border) solid var(--mp-color-rule); padding: var(--mp-byline-padding-y) var(--mp-byline-padding-x); display: grid; grid-template-columns: var(--mp-byline-avatar) 1fr; column-gap: var(--mp-byline-gap-x); align-items: center; margin: 0 0 var(--mp-byline-gap-bottom) 0; break-inside: avoid-column; page-break-inside: avoid; box-sizing: border-box; }
 .byline-avatar { width: var(--mp-byline-avatar); height: var(--mp-byline-avatar); object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; }
 .byline-copy { min-width: 0; }
 .byline-name { font-size: var(--mp-byline-name-size); font-weight: 700; color: var(--mp-color-text); line-height: 1.02; margin-bottom: 0.008in; }
 .byline-meta { font-size: var(--mp-byline-meta-size); color: var(--mp-color-text); line-height: 1.12; }
-.byline-stats { font-size: var(--mp-byline-stats-size); color: var(--mp-color-text); line-height: 1.12; margin-top: 0.012in; }
-.byline-kicker { font-size: var(--mp-byline-kicker-size); color: var(--mp-color-text); letter-spacing: 0.003em; margin-top: 0.012in; }
+.byline-stats { font-size: var(--mp-byline-stats-size); color: var(--mp-color-text); line-height: 1.12; margin-top: var(--mp-byline-meta-gap); }
+.byline-kicker { font-size: var(--mp-byline-kicker-size); color: var(--mp-color-text); letter-spacing: 0.003em; margin-top: var(--mp-byline-meta-gap); }
+.byline-divider { margin: 0 0.08em; color: #666; }
 .article-flow p { margin: 0 0 0.04in 0; text-align: justify; text-indent: var(--mp-paragraph-indent); color: var(--mp-color-text); }
 .article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
 .article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
@@ -703,6 +711,8 @@ a { color: var(--mp-color-text); text-decoration: underline; }
         if article.followers is not None:
             kicker_parts.append(f"{_compact_count(article.followers)} followers")
         kicker_parts.append(date_label)
+        def inline_row(parts: list[str]) -> str:
+            return '<span class="byline-divider">·</span>'.join(html.escape(part) for part in parts if part)
         byline = [
             '<div class="article-byline">',
             (
@@ -713,8 +723,8 @@ a { color: var(--mp-color-text); text-decoration: underline; }
             '<div class="byline-copy">',
             f'<div class="byline-name">{html.escape(article.author or article.source_name)}</div>',
             f'<div class="byline-meta">{html.escape(byline_meta)}</div>',
-            (f'<div class="byline-stats">{html.escape("  ".join(stats_parts))}</div>' if stats_parts else ""),
-            f'<div class="byline-kicker">{html.escape(" · ".join(kicker_parts))}</div>',
+            (f'<div class="byline-stats">{inline_row(stats_parts)}</div>' if stats_parts else ""),
+            f'<div class="byline-kicker">{inline_row(kicker_parts)}</div>',
             "</div>",
             "</div>",
         ]
