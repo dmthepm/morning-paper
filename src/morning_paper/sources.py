@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import json
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import feedparser
 import requests
@@ -61,7 +61,7 @@ def _entry_published(entry: feedparser.FeedParserDict) -> str:
     if not parsed:
         return ""
     try:
-        return datetime(*parsed[:6], tzinfo=UTC).isoformat()
+        return datetime(*parsed[:6], tzinfo=timezone.utc).isoformat()
     except Exception:
         return ""
 

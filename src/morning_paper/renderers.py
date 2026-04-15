@@ -8,7 +8,7 @@ import sys
 import unicodedata
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -438,7 +438,7 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
         else render_markdown(config, collected, date_str=date_str)
     )
     payload = {
-        "generated_at": datetime.now(UTC).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "date": date_str,
         "name": config.name,
         "renderer": config.outputs.renderer,
@@ -484,7 +484,7 @@ def write_custom_markdown(
     warnings: list[str] = []
     if config.outputs.json:
         payload = {
-            "generated_at": datetime.now(UTC).isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "date": date_str,
             "name": config.name,
             "renderer": config.outputs.renderer,
