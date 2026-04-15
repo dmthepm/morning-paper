@@ -384,6 +384,24 @@ def _short_bio(value: str | None, *, limit: int = 52) -> str:
     return text[: limit - 1].rstrip() + "…"
 
 
+def _affiliation_line(article: Article) -> str:
+    bio = " ".join((article.bio or "").split())
+    if not bio:
+        return ""
+    if bio.startswith("@"):
+        token = bio.split()[0].lstrip("@").strip(".,;:)")
+        if token:
+            return token
+    clauses = re.split(r"[|•·]|\\n|\\.|!|\\?", bio)
+    for clause in clauses:
+        cleaned = clause.strip()
+        cleaned = re.sub(r"https?://\S+", "", cleaned).strip(" -")
+        cleaned = re.sub(r"@\w+", "", cleaned).strip(" -")
+        if cleaned:
+            return cleaned[:36].rstrip()
+    return ""
+
+
 def _extract_body(url: str, raw_html: str) -> str:
     reader_paragraphs = _reader_metadata(url).get("paragraphs", [])
     if reader_paragraphs:
@@ -467,38 +485,44 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
     date_label = datetime.fromisoformat(date_str).strftime("%A, %B %d, %Y")
     css = """
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9.15pt; line-height: 1.34; color: #000; background: #fff; }
+:root {
+  --mp-color-text: #000;
+  --mp-color-rule: #111;
+  --mp-column-gap: 0.31in;
+  --mp-body-size: 9.15pt;
+  --mp-body-line-height: 1.22;
+  --mp-paragraph-indent: 0.16in;
+  --mp-byline-avatar: 0.42in;
+  --mp-byline-name-size: 9.15pt;
+  --mp-byline-meta-size: 7.15pt;
+  --mp-byline-stats-size: 6.85pt;
+  --mp-byline-kicker-size: 6.7pt;
+}
+body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: var(--mp-body-size); line-height: 1.34; color: var(--mp-color-text); background: #fff; }
 @page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
-.paper-header { text-align: center; margin: 0 0 0.11in 0; }
+.paper-header { text-align: center; margin: 0 0 0.125in 0; }
 .paper-date { font-size: 18.8pt; font-weight: 700; letter-spacing: 0.03em; }
-.paper-subtitle { font-size: 8.7pt; color: #222; margin-top: 0.03in; margin-bottom: 0.03in; letter-spacing: 0.07em; }
-.paper-rule { border-bottom: 2.6px solid #111; margin-top: 0.055in; }
-.article { margin-top: 0.09in; }
-.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.075in 0; color: #000; }
-.article-intro { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0.26in; align-items: start; margin: 0 0 0.045in 0; }
-.intro-col { min-width: 0; }
-.article-byline { width: 2.14in; min-height: 0.7in; border: 1.55px solid #111; padding: 0.055in 0.07in; display: flex; gap: 0.06in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid; page-break-inside: avoid; box-sizing: border-box; }
-.byline-avatar { width: 0.42in; height: 0.42in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
+.paper-subtitle { font-size: 9pt; color: var(--mp-color-rule); margin-top: 0.04in; margin-bottom: 0.045in; letter-spacing: 0.07em; }
+.paper-rule { border-bottom: 2.6px solid var(--mp-color-rule); margin-top: 0.055in; }
+.article { margin-top: 0.12in; }
+.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.095in 0; color: var(--mp-color-text); }
+.article-flow { column-count: 2; column-gap: var(--mp-column-gap); column-fill: auto; font-size: var(--mp-body-size); line-height: var(--mp-body-line-height); color: var(--mp-color-text); }
+.article-byline { width: auto; border: 1.55px solid var(--mp-color-rule); padding: 0.07in 0.09in; display: grid; grid-template-columns: var(--mp-byline-avatar) 1fr; column-gap: 0.1in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid-column; page-break-inside: avoid; box-sizing: border-box; }
+.byline-avatar { width: var(--mp-byline-avatar); height: var(--mp-byline-avatar); object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; }
 .byline-copy { min-width: 0; }
-.byline-name { font-size: 8.8pt; font-weight: 700; color: #000; line-height: 1.08; margin-bottom: 0.008in; }
-.byline-meta { font-size: 6.8pt; color: #000; line-height: 1.18; }
-.byline-stats { font-size: 6.55pt; color: #000; line-height: 1.16; margin-top: 0.012in; }
-.byline-kicker { font-size: 6.45pt; color: #444; letter-spacing: 0.01em; margin-top: 0.012in; }
-.article-intro p, .article-intro blockquote { font-size: 9.15pt; line-height: 1.22; color: #000; }
-.article-intro p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; }
-.article-intro .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
-.article-intro blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; break-inside: avoid; }
-.article-intro blockquote p { text-indent: 0; margin: 0; }
-.article-body { column-count: 2; column-gap: 0.26in; font-size: 9.15pt; line-height: 1.22; color: #000; }
-.article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; color: #000; }
-.article-body .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
-.article-body blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #000; break-inside: avoid; }
-.article-body blockquote p { text-indent: 0; margin: 0; }
-.article-image { margin: 0.055in 0.01in 0.075in 0.01in; break-inside: avoid; }
-.article-image img { display: block; width: 100%; max-height: 1.95in; object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
-.article-source { font-size: 6.6pt; color: #000; margin-top: 0.015in; }
-.article-source a { color: #000; text-decoration: none; }
-a { color: #000; text-decoration: underline; }
+.byline-name { font-size: var(--mp-byline-name-size); font-weight: 700; color: var(--mp-color-text); line-height: 1.02; margin-bottom: 0.008in; }
+.byline-meta { font-size: var(--mp-byline-meta-size); color: var(--mp-color-text); line-height: 1.12; }
+.byline-stats { font-size: var(--mp-byline-stats-size); color: var(--mp-color-text); line-height: 1.12; margin-top: 0.012in; }
+.byline-kicker { font-size: var(--mp-byline-kicker-size); color: var(--mp-color-text); letter-spacing: 0.003em; margin-top: 0.012in; }
+.article-flow p { margin: 0 0 0.04in 0; text-align: justify; text-indent: var(--mp-paragraph-indent); color: var(--mp-color-text); }
+.article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
+.article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
+.article-flow blockquote p { text-indent: 0; margin: 0; }
+.article-image { margin: 0.055in 0.01in 0.075in 0.01in; break-inside: avoid-column; }
+.article-image img { display: block; width: 100%; max-height: 1.85in; object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
+.article-source { font-size: 6.6pt; color: var(--mp-color-text); margin-top: 0.015in; }
+.article-source a { color: var(--mp-color-text); text-decoration: none; }
+a { color: var(--mp-color-text); text-decoration: underline; }
 """
     sections: list[str] = [
         "---",
@@ -595,50 +619,12 @@ a { color: #000; text-decoration: underline; }
                 parts.append(f"<p>{html.escape(value)}</p>")
             return parts
 
-        intro_text_blocks: list[tuple[str, str]] = []
-        remaining_blocks = list(block_items)
-        text_seen = 0
-        split_index = 0
-        for idx, block in enumerate(block_items):
-            if block[0] == "image":
-                split_index = idx
-                break
-            intro_text_blocks.append(block)
-            if block[0] != "image":
-                text_seen += 1
-            if text_seen >= 4:
-                split_index = idx + 1
-                break
-        else:
-            split_index = len(block_items)
-        remaining_blocks = block_items[split_index:]
-
-        intro_left_blocks: list[tuple[str, str]] = []
-        intro_right_blocks: list[tuple[str, str]] = []
-        if intro_text_blocks:
-            intro_left_blocks.append(intro_text_blocks[0])
-            intro_right_blocks.extend(intro_text_blocks[1:4])
-        if len(intro_right_blocks) < 3 and remaining_blocks:
-            pulled: list[tuple[str, str]] = []
-            kept: list[tuple[str, str]] = []
-            text_budget = 3 - len(intro_right_blocks)
-            for block in remaining_blocks:
-                if text_budget > 0 and block[0] in {"paragraph", "blockquote", "callout"}:
-                    pulled.append(block)
-                    text_budget -= 1
-                else:
-                    kept.append(block)
-            intro_right_blocks.extend(pulled)
-            remaining_blocks = kept
-
-        remaining_blocks = delay_initial_image(remaining_blocks, text_blocks_before_image=2)
-        body_html = "".join(render_blocks(remaining_blocks))
-        intro_left_html = "".join(render_blocks(intro_left_blocks))
-        intro_right_html = "".join(render_blocks(intro_right_blocks))
+        block_items = delay_initial_image(list(block_items), text_blocks_before_image=4)
+        body_html = "".join(render_blocks(block_items))
         byline_meta = article.handle or article.source_name
-        bio = _short_bio(article.bio)
-        if bio:
-            byline_meta = f"{byline_meta} · {bio}"
+        affiliation = _affiliation_line(article)
+        if affiliation:
+            byline_meta = f"{byline_meta} · {affiliation}"
         stats_parts = []
         if article.likes is not None:
             stats_parts.append(f"♥ {_compact_count(article.likes)}")
@@ -672,16 +658,8 @@ a { color: #000; text-decoration: underline; }
             [
                 '<section class="article">',
                 f'<div class="article-title">{html.escape(article.title)}</div>',
-                '<div class="article-intro">',
-                '<div class="intro-col">',
+                '<div class="article-flow">',
                 "".join(byline),
-                intro_left_html,
-                "</div>",
-                '<div class="intro-col">',
-                intro_right_html,
-                "</div>",
-                "</div>",
-                '<div class="article-body">',
                 body_html,
                 "</div>",
                 f'<div class="article-source">Source: <a href="{html.escape(article.url)}">{html.escape(display_source)}</a></div>',
