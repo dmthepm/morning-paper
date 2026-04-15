@@ -47,8 +47,13 @@ def _make_fixture_image(target: Path, *, avatar: bool) -> Path:
     return target
 
 
-def _fake_process_for_print(source: str, output_path: Path, max_width: int = 1200) -> Path:
-    del max_width
+def _fake_process_for_print(
+    source: str,
+    output_path: Path,
+    max_width: int = 1200,
+    trim_border: bool = True,
+) -> Path:
+    del max_width, trim_border
     return _make_fixture_image(output_path, avatar="avatar" in source)
 
 
@@ -107,15 +112,16 @@ def _render_page_1_png(tmp_path: Path) -> Path:
         ],
     )
 
+    images_dir = tmp_path / "2026-04-14" / "snapshot" / "_article_images"
     with patch("morning_paper.article_print.process_for_print", side_effect=_fake_process_for_print):
         markdown = render_article_markdown(
             config,
             [article],
             date_str="2026-04-14",
-            images_dir=tmp_path / "2026-04-14" / "snapshot" / "_article_images",
+            images_dir=images_dir,
         )
         markdown = markdown.replace(FONT_IMPORT, "")
-        pdf_path = tmp_path / "snapshot.pdf"
+        pdf_path = images_dir.parent / "snapshot.pdf"
         _render_typewriter_pdf(markdown, output_path=pdf_path)
 
     png_prefix = tmp_path / "page"

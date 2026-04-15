@@ -19,6 +19,25 @@ class ArticleExtractionError(RuntimeError):
     pass
 
 
+JINA_TIMEOUT_SECONDS = 40
+PAGE_FETCH_TIMEOUT_SECONDS = 30
+UNAVATAR_TIMEOUT_SECONDS = 10
+FXTWITTER_TIMEOUT_SECONDS = 15
+MIN_ARTICLE_LENGTH = 200
+MAX_PARAGRAPHS = 18
+MAX_BODY_CHARS = 4500
+MAX_RENDER_BLOCKS = 80
+MAX_INLINE_IMAGES = 2
+AVATAR_MAX_WIDTH = 320
+SHORT_LINE_APPEND_THRESHOLD = 18
+SHORT_PARAGRAPH_DROP_THRESHOLD = 34
+SHORT_BIO_LIMIT = 52
+X_POST_HOSTS = ("x.com", "twitter.com")
+X_TITLE_PATTERN = re.compile(r'^(.*?) on X: "(.*)" / X$')
+X_MEDIA_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)")
+X_LINKED_IMAGE_PATTERN = re.compile(r"\[!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)\]\([^)]+\)")
+
+
 SKIP_DOMAINS = {
     "github.com",
     "www.github.com",
@@ -91,7 +110,7 @@ def _reader_url(url: str) -> str:
 def _reader_text(url: str) -> str:
     response = requests.get(
         _reader_url(url),
-        timeout=40,
+        timeout=JINA_TIMEOUT_SECONDS,
         headers={
             "Accept": "text/markdown",
             "X-With-Images": "true",
@@ -127,7 +146,7 @@ def _validate_article_content(url: str, *, title: str, body: str, blocks: list[t
         )
 
     real_text = re.sub(r"\s+", " ", combined)
-    if len(real_text) < 200:
+    if len(real_text) < MIN_ARTICLE_LENGTH:
         raise ArticleExtractionError(
             "Could not extract enough article content to render a print page. Try another URL or a source with full readable text."
         )
@@ -143,7 +162,25 @@ def _validate_article_content(url: str, *, title: str, body: str, blocks: list[t
         )
 
 
-def _reader_metadata(url: str) -> dict[str, object]:
+def _extract_x_title_fields(title: str) -> tuple[str, str]:
+    match = X_TITLE_PATTERN.match(title)
+    if not match:
+        return title, ""
+    return match.group(2).strip(), match.group(1).strip()
+
+
+def _extract_x_image_urls(reader: str) -> tuple[str, str]:
+    image_matches = X_MEDIA_IMAGE_PATTERN.findall(reader)
+    if not image_matches:
+        return "", ""
+    preferred = [match for match in image_matches if "/media/" in match]
+    profile = [match for match in image_matches if "/profile_images/" in match]
+    image_url = (preferred[0] if preferred else image_matches[0]).replace("&name=small", "&name=large")
+    profile_image_url = profile[0] if profile else ""
+    return image_url, profile_image_url
+
+
+def _extract_jina_article_metadata(url: str) -> dict[str, object]:
     try:
         reader = _reader_text(url)
     except Exception:
@@ -167,17 +204,8 @@ def _reader_metadata(url: str) -> dict[str, object]:
     title_match = re.search(r"^Title:\s*(.+)$", reader, flags=re.MULTILINE)
     if title_match:
         title = title_match.group(1).strip()
-        x_match = re.match(r'^(.*?) on X: "(.*)" / X$', title)
-        if x_match:
-            author = x_match.group(1).strip()
-            title = x_match.group(2).strip()
-    image_matches = re.findall(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)", reader)
-    if image_matches:
-        preferred = [match for match in image_matches if "/media/" in match]
-        profile = [match for match in image_matches if "/profile_images/" in match]
-        image_url = (preferred[0] if preferred else image_matches[0]).replace("&name=small", "&name=large")
-        if profile:
-            profile_image_url = profile[0]
+        title, author = _extract_x_title_fields(title)
+    image_url, profile_image_url = _extract_x_image_urls(reader)
 
     paragraphs: list[str] = []
     noise = (
@@ -226,8 +254,8 @@ def _reader_metadata(url: str) -> dict[str, object]:
             continue
         if lowered.startswith("title:") or lowered.startswith("url source:"):
             continue
-        linked_image_match = re.match(r"\[!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)\]\([^)]+\)", line)
-        image_match = linked_image_match or re.match(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)", line)
+        linked_image_match = X_LINKED_IMAGE_PATTERN.match(line)
+        image_match = linked_image_match or X_MEDIA_IMAGE_PATTERN.match(line)
         if image_match:
             flush_current()
             if skip_preview_images > 0:
@@ -237,7 +265,7 @@ def _reader_metadata(url: str) -> dict[str, object]:
             if "/profile_images/" not in candidate:
                 blocks.append(("image", candidate))
             continue
-        if len(line) < 18 and not line.startswith(">") and not line.startswith("💡"):
+        if len(line) < SHORT_LINE_APPEND_THRESHOLD and not line.startswith(">") and not line.startswith("💡"):
             if current_kind == "paragraph" and re.search(r"[A-Za-z0-9]", line):
                 current_lines.append(line)
             continue
@@ -287,7 +315,7 @@ def _reader_metadata(url: str) -> dict[str, object]:
         cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
         if lowered.startswith("on why “memory isn’t a plugin") or lowered.startswith('on why "memory isn'):
             continue
-        if kind == "paragraph" and len(cleaned) < 34:
+        if kind == "paragraph" and len(cleaned) < SHORT_PARAGRAPH_DROP_THRESHOLD:
             continue
         if (
             normalized_blocks
@@ -319,7 +347,7 @@ class JinaArticleExtractor:
     name = "jina"
 
     def extract(self, url: str) -> ExtractedArticleContent:
-        metadata = _reader_metadata(url)
+        metadata = _extract_jina_article_metadata(url)
         return ExtractedArticleContent(
             title=str(metadata.get("title") or ""),
             author=str(metadata.get("author") or ""),
@@ -352,7 +380,7 @@ def _fetch_unavatar_profile_image(handle: str) -> str:
         return ""
     url = f"https://unavatar.io/x/{handle}"
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=UNAVATAR_TIMEOUT_SECONDS)
         response.raise_for_status()
     except Exception:
         return ""
@@ -366,7 +394,7 @@ def _fetch_unavatar_profile_image(handle: str) -> str:
 
 def _parse_x_post(url: str) -> tuple[str, str] | None:
     parsed = urlparse(url)
-    if not parsed.netloc.endswith(("x.com", "twitter.com")):
+    if not parsed.netloc.endswith(X_POST_HOSTS):
         return None
     parts = [part for part in parsed.path.split("/") if part]
     if len(parts) >= 3 and parts[1] == "status":
@@ -377,7 +405,7 @@ def _parse_x_post(url: str) -> tuple[str, str] | None:
 def _fetch_fxtwitter_metadata(handle: str, status_id: str) -> dict[str, object]:
     url = f"https://api.fxtwitter.com/{handle}/status/{status_id}"
     try:
-        response = requests.get(url, timeout=15)
+        response = requests.get(url, timeout=FXTWITTER_TIMEOUT_SECONDS)
         response.raise_for_status()
         data = response.json()
     except Exception:
@@ -422,7 +450,7 @@ def _looks_dangling_fragment(text: str) -> bool:
     return tail[-1] in dangling_words or " ".join(tail) in dangling_phrases
 
 
-def _short_bio(value: str | None, *, limit: int = 52) -> str:
+def _short_bio(value: str | None, *, limit: int = SHORT_BIO_LIMIT) -> str:
     if not value:
         return ""
     text = " ".join(value.split())
@@ -452,10 +480,10 @@ def _affiliation_line(article: Article) -> str:
 
 def _extract_body(raw_html: str, extracted: ExtractedArticleContent) -> str:
     if extracted.paragraphs:
-        return "\n\n".join(extracted.paragraphs[:18])
+        return "\n\n".join(extracted.paragraphs[:MAX_PARAGRAPHS])
     cleaned = _clean_text(raw_html)
     sentences = re.split(r"(?<=[.!?])\s+", cleaned)
-    return "\n\n".join(sentence for sentence in sentences[:18] if sentence)[:4500]
+    return "\n\n".join(sentence for sentence in sentences[:MAX_PARAGRAPHS] if sentence)[:MAX_BODY_CHARS]
 
 
 def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
@@ -469,7 +497,7 @@ def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
     except UnknownArticleExtractorError as exc:
         raise ArticleExtractionError(str(exc)) from exc
     try:
-        response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        response = requests.get(url, timeout=PAGE_FETCH_TIMEOUT_SECONDS, headers={"User-Agent": "Mozilla/5.0"})
         response.raise_for_status()
     except requests.RequestException as exc:
         raise ArticleExtractionError(
@@ -543,23 +571,22 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
   --mp-body-size: 9.15pt;
   --mp-body-line-height: 1.22;
   --mp-paragraph-indent: 0.16in;
-  --mp-byline-avatar: 0.56in;
-  --mp-byline-name-size: 10.9pt;
-  --mp-byline-meta-size: 7.85pt;
-  --mp-byline-stats-size: 7.35pt;
-  --mp-byline-kicker-size: 7.05pt;
+  --mp-byline-avatar: 0.5in;
+  --mp-byline-name-size: 10.5pt;
+  --mp-byline-meta-size: 7.7pt;
+  --mp-byline-stats-size: 7.2pt;
+  --mp-byline-kicker-size: 6.95pt;
   --mp-article-top-gap: 0.32in;
-  --mp-title-gap-bottom: 0.115in;
-  --mp-byline-gap-bottom: 0.095in;
+  --mp-title-gap-bottom: 0.075in;
+  --mp-byline-gap-bottom: 0.07in;
   --mp-image-gap-top: 0.12in;
   --mp-image-gap-bottom: 0.14in;
   --mp-image-max-height: 2.4in;
   --mp-byline-border: 1.65px;
-  --mp-byline-padding-y: 0.082in;
+  --mp-byline-padding-y: 0.055in;
   --mp-byline-padding-x: 0.105in;
   --mp-byline-gap-x: 0.115in;
   --mp-byline-meta-gap: 0.018in;
-  --mp-lead-gap-bottom: 0.03in;
 }
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: var(--mp-body-size); line-height: 1.34; color: var(--mp-color-text); background: #fff; }
 @page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
@@ -569,8 +596,6 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .paper-rule { border-bottom: 2.6px solid var(--mp-color-rule); margin-top: 0.055in; }
 .article { margin-top: var(--mp-article-top-gap); }
 .article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 var(--mp-title-gap-bottom) 0; color: var(--mp-color-text); }
-.article-lead { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--mp-column-gap); align-items: start; margin-bottom: var(--mp-lead-gap-bottom); }
-.article-lead-col { min-width: 0; }
 .article-flow { column-count: 2; column-gap: var(--mp-column-gap); column-fill: auto; font-size: var(--mp-body-size); line-height: var(--mp-body-line-height); color: var(--mp-color-text); }
 .article-byline { width: auto; border: var(--mp-byline-border) solid var(--mp-color-rule); padding: var(--mp-byline-padding-y) var(--mp-byline-padding-x); display: grid; grid-template-columns: var(--mp-byline-avatar) 1fr; column-gap: var(--mp-byline-gap-x); align-items: center; margin: 0 0 var(--mp-byline-gap-bottom) 0; break-inside: avoid-column; page-break-inside: avoid; box-sizing: border-box; }
 .byline-avatar { width: var(--mp-byline-avatar); height: var(--mp-byline-avatar); object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; }
@@ -580,14 +605,12 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .byline-stats { font-size: var(--mp-byline-stats-size); color: var(--mp-color-text); line-height: 1.12; margin-top: var(--mp-byline-meta-gap); }
 .byline-kicker { font-size: var(--mp-byline-kicker-size); color: var(--mp-color-text); letter-spacing: 0.003em; margin-top: var(--mp-byline-meta-gap); }
 .byline-divider { margin: 0 0.08em; color: #666; }
-.article-lead p, .article-flow p { margin: 0 0 0.04in 0; text-align: justify; text-indent: var(--mp-paragraph-indent); color: var(--mp-color-text); }
-.article-lead .article-callout, .article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
-.article-lead blockquote, .article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
-.article-lead blockquote p, .article-flow blockquote p { text-indent: 0; margin: 0; }
+.article-flow p { margin: 0 0 0.04in 0; text-align: justify; text-indent: var(--mp-paragraph-indent); color: var(--mp-color-text); }
+.article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
+.article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
+.article-flow blockquote p { text-indent: 0; margin: 0; }
 .article-image { margin: var(--mp-image-gap-top) 0.01in var(--mp-image-gap-bottom) 0.01in; break-inside: avoid-column; }
 .article-image img { display: block; width: 100%; max-height: var(--mp-image-max-height); object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
-.article-lead-col > .article-image:first-child { margin-top: 0; }
-.article-lead-col > .article-image:first-child img { margin-top: 0; }
 .article-source { font-size: 6.6pt; color: var(--mp-color-text); margin-top: 0.015in; }
 .article-source a { color: var(--mp-color-text); text-decoration: none; }
 a { color: var(--mp-color-text); text-decoration: underline; }
@@ -624,7 +647,8 @@ a { color: var(--mp-color-text); text-decoration: underline; }
                 avatar_path = process_for_print(
                     article.profile_image_url,
                     output_path=images_dir / avatar_name,
-                    max_width=320,
+                    max_width=AVATAR_MAX_WIDTH,
+                    trim_border=False,
                 )
                 relative_avatar = avatar_path.relative_to(images_dir.parent).as_posix()
             except Exception:
@@ -642,7 +666,7 @@ a { color: var(--mp-color-text); text-decoration: underline; }
             rendered_images[url] = img_path.relative_to(images_dir.parent).as_posix()
             return rendered_images[url]
 
-        block_items = article.blocks[:80] if article.blocks else [("paragraph", p.strip()) for p in article.body.split("\n\n") if p.strip()]
+        block_items = article.blocks[:MAX_RENDER_BLOCKS] if article.blocks else [("paragraph", p.strip()) for p in article.body.split("\n\n") if p.strip()]
 
         def delay_initial_image(blocks: list[tuple[str, str]], *, text_blocks_before_image: int) -> list[tuple[str, str]]:
             if not blocks:
@@ -675,7 +699,7 @@ a { color: var(--mp-color-text); text-decoration: underline; }
             inserted = 0
             for kind, value in blocks:
                 if kind == "image":
-                    if inserted >= 2:
+                    if inserted >= MAX_INLINE_IMAGES:
                         continue
                     try:
                         relative_image = local_image(value)
@@ -697,34 +721,8 @@ a { color: var(--mp-color-text); text-decoration: underline; }
                 parts.append(f"<p>{html.escape(value)}</p>")
             return parts
 
-        block_items = delay_initial_image(list(block_items), text_blocks_before_image=5)
-        lead_left_blocks: list[tuple[str, str]] = []
-        lead_right_blocks: list[tuple[str, str]] = []
-        remaining_blocks = list(block_items)
-        first_image_index = next((idx for idx, block in enumerate(block_items) if block[0] == "image"), -1)
-        if first_image_index > 0:
-            lead_left_blocks = block_items[:first_image_index]
-            right_text_budget = 3
-            consumed_indexes: set[int] = {first_image_index}
-            lead_right_blocks.append(block_items[first_image_index])
-            for idx in range(first_image_index + 1, len(block_items)):
-                kind, _value = block_items[idx]
-                if kind == "image":
-                    break
-                if kind == "callout":
-                    continue
-                if kind in {"paragraph", "blockquote"} and right_text_budget > 0:
-                    lead_right_blocks.append(block_items[idx])
-                    consumed_indexes.add(idx)
-                    right_text_budget -= 1
-                    continue
-            remaining_blocks = [
-                block for idx, block in enumerate(block_items)
-                if idx not in consumed_indexes and not (idx < first_image_index)
-            ]
-        body_html = "".join(render_blocks(remaining_blocks))
-        lead_left_html = "".join(render_blocks(lead_left_blocks))
-        lead_right_html = "".join(render_blocks(lead_right_blocks))
+        block_items = delay_initial_image(list(block_items), text_blocks_before_image=8)
+        body_html = "".join(render_blocks(block_items))
         byline_meta = article.handle or article.source_name
         affiliation = _affiliation_line(article)
         if affiliation:
@@ -763,17 +761,9 @@ a { color: var(--mp-color-text); text-decoration: underline; }
         sections.extend(
             [
                 '<section class="article">',
-                f'<div class="article-title">{html.escape(article.title)}</div>',
-                '<div class="article-lead">',
-                '<div class="article-lead-col">',
-                "".join(byline),
-                lead_left_html,
-                '</div>',
-                '<div class="article-lead-col">',
-                lead_right_html,
-                '</div>',
-                '</div>',
                 '<div class="article-flow">',
+                f'<div class="article-title">{html.escape(article.title)}</div>',
+                "".join(byline),
                 body_html,
                 "</div>",
                 f'<div class="article-source">Source: <a href="{html.escape(article.url)}">{html.escape(display_source)}</a></div>',

@@ -7,6 +7,20 @@ import requests
 from PIL import Image, ImageEnhance, ImageOps
 
 
+def _trim_light_border(img: Image.Image, *, threshold: int = 244, padding: int = 8) -> Image.Image:
+    gray = img.convert("L")
+    inverted = gray.point(lambda value: 255 if value < threshold else 0)
+    bbox = inverted.getbbox()
+    if not bbox:
+        return img
+    left, top, right, bottom = bbox
+    left = max(0, left - padding)
+    top = max(0, top - padding)
+    right = min(img.width, right + padding)
+    bottom = min(img.height, bottom + padding)
+    return img.crop((left, top, right, bottom))
+
+
 def load_image(source: str) -> Image.Image:
     if source.startswith(("http://", "https://")):
         response = requests.get(source, timeout=30)
@@ -23,8 +37,11 @@ def process_for_print(
     contrast: float = 1.4,
     brightness: float = 1.1,
     max_width: int = 680,
+    trim_border: bool = True,
 ) -> Path:
     img = load_image(source)
+    if trim_border:
+        img = _trim_light_border(img)
     if img.width > max_width:
         ratio = max_width / img.width
         img = img.resize((max_width, int(img.height * ratio)), Image.LANCZOS)
@@ -37,4 +54,3 @@ def process_for_print(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     gray.save(output_path, format="PNG", dpi=(300, 300))
     return output_path
-
