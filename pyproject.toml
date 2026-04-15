@@ -5,12 +5,34 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "morning-paper"
 version = "0.1.0"
-description = "CLI for building a daily intelligence paper from configurable sources."
+description = "Build a personalized daily newspaper as a print-ready PDF."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
   { name = "Devon Meadows" }
+]
+keywords = [
+  "cli",
+  "newspaper",
+  "rss",
+  "hacker-news",
+  "pdf",
+  "print",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Utilities",
+  "Topic :: Text Processing",
 ]
 dependencies = [
   "feedparser>=6.0.11",
@@ -23,9 +45,17 @@ dependencies = [
 
 [project.optional-dependencies]
 pretty = ["weasyprint>=62.0"]
+dev = ["pytest>=8.0"]
 
 [project.scripts]
 morning-paper = "morning_paper.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/dmthepm/morning-paper"
+Repository = "https://github.com/dmthepm/morning-paper"
+Issues = "https://github.com/dmthepm/morning-paper/issues"
+Changelog = "https://github.com/dmthepm/morning-paper/blob/main/CHANGELOG.md"
+Funding = "https://skool.com/main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
