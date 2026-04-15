@@ -385,24 +385,29 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
     date_label = datetime.fromisoformat(date_str).strftime("%A, %B %d, %Y")
     css = """
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9.15pt; line-height: 1.34; color: #050505; background: #fff; }
+body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9.15pt; line-height: 1.34; color: #000; background: #fff; }
 @page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
-.paper-header { text-align: center; margin: 0 0 0.08in 0; }
+.paper-header { text-align: center; margin: 0 0 0.11in 0; }
 .paper-date { font-size: 18.8pt; font-weight: 700; letter-spacing: 0.03em; }
-.paper-subtitle { font-size: 8.7pt; color: #222; margin-top: 0.018in; letter-spacing: 0.07em; }
-.paper-rule { border-bottom: 2.6px solid #111; margin-top: 0.04in; }
-.article { margin-top: 0.055in; }
-.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.05in 0; color: #000; }
-.article-byline { width: calc(50% - 0.11in); border: 1.55px solid #111; padding: 0.055in 0.07in; display: flex; gap: 0.08in; align-items: center; margin: 0 0 0.085in 0; break-inside: avoid; page-break-inside: avoid; }
-.byline-avatar { width: 0.64in; height: 0.64in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
+.paper-subtitle { font-size: 8.7pt; color: #222; margin-top: 0.03in; margin-bottom: 0.03in; letter-spacing: 0.07em; }
+.paper-rule { border-bottom: 2.6px solid #111; margin-top: 0.055in; }
+.article { margin-top: 0.09in; }
+.article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.075in 0; color: #000; }
+.article-intro { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0.23in; align-items: start; margin: 0 0 0.045in 0; }
+.intro-col { min-width: 0; }
+.article-byline { width: calc(100% - 0.02in); max-width: 2.35in; border: 1.55px solid #111; padding: 0.05in 0.065in; display: flex; gap: 0.065in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid; page-break-inside: avoid; }
+.byline-avatar { width: 0.5in; height: 0.5in; object-fit: cover; border: 1px solid #8e8e8e; background: #f7f7f7; flex: 0 0 auto; }
 .byline-copy { min-width: 0; }
-.byline-name { font-size: 8.8pt; font-weight: 700; color: #000; line-height: 1.08; margin-bottom: 0.01in; }
+.byline-name { font-size: 8.8pt; font-weight: 700; color: #000; line-height: 1.08; margin-bottom: 0.008in; }
 .byline-meta { font-size: 6.9pt; color: #000; line-height: 1.18; }
 .byline-kicker { font-size: 6.7pt; color: #444; letter-spacing: 0.02em; margin-top: 0.015in; }
-.article-body { column-count: 2; column-gap: 0.19in; font-size: 9.15pt; line-height: 1.22; color: #000; }
-.article-body::after { content: ""; display: block; clear: both; }
-.article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.11in; color: #000; }
-.article-body p:first-child { text-indent: 0; }
+.article-intro p, .article-intro blockquote { font-size: 9.15pt; line-height: 1.22; color: #000; }
+.article-intro p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; }
+.article-intro .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
+.article-intro blockquote { margin: 0.06in 0.03in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; break-inside: avoid; }
+.article-intro blockquote p { text-indent: 0; margin: 0; }
+.article-body { column-count: 2; column-gap: 0.23in; font-size: 9.15pt; line-height: 1.22; color: #000; }
+.article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.16in; color: #000; }
 .article-body .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: #000; }
 .article-body blockquote { margin: 0.06in 0.03in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #000; break-inside: avoid; }
 .article-body blockquote p { text-indent: 0; margin: 0; }
@@ -463,33 +468,53 @@ a { color: #000; text-decoration: underline; }
             return rendered_images[url]
 
         block_items = article.blocks[:80] if article.blocks else [("paragraph", p.strip()) for p in article.body.split("\n\n") if p.strip()]
-        body_parts: list[str] = []
-        inserted_images = 0
-        paragraph_count = 0
-        for kind, value in block_items:
-            if kind == "image":
-                if inserted_images >= 2:
+        def render_blocks(blocks: list[tuple[str, str]]) -> list[str]:
+            parts: list[str] = []
+            inserted = 0
+            for kind, value in blocks:
+                if kind == "image":
+                    if inserted >= 2:
+                        continue
+                    try:
+                        relative_image = local_image(value)
+                    except Exception:
+                        continue
+                    parts.append(
+                        f'<figure class="article-image"><img src="{html.escape(relative_image)}" alt="{html.escape(article.title)}" /></figure>'
+                    )
+                    inserted += 1
                     continue
-                try:
-                    relative_image = local_image(value)
-                except Exception:
+                if kind == "blockquote":
+                    parts.append(f"<blockquote><p>{html.escape(value)}</p></blockquote>")
                     continue
-                body_parts.append(
-                    f'<figure class="article-image"><img src="{html.escape(relative_image)}" alt="{html.escape(article.title)}" /></figure>'
-                )
-                inserted_images += 1
-                continue
-            if kind == "blockquote":
-                body_parts.append(f"<blockquote><p>{html.escape(value)}</p></blockquote>")
-                continue
-            if kind == "callout":
-                body_parts.append(f'<p class="article-callout"><strong>{html.escape(value)}</strong></p>')
-                continue
-            if not value:
-                continue
-            paragraph_count += 1
-            body_parts.append(f"<p>{html.escape(value)}</p>")
-        body_html = "".join(body_parts)
+                if kind == "callout":
+                    parts.append(f'<p class="article-callout"><strong>{html.escape(value)}</strong></p>')
+                    continue
+                if not value:
+                    continue
+                parts.append(f"<p>{html.escape(value)}</p>")
+            return parts
+
+        pre_image_blocks: list[tuple[str, str]] = []
+        remaining_blocks = list(block_items)
+        for idx, block in enumerate(block_items):
+            if block[0] == "image":
+                remaining_blocks = block_items[idx:]
+                break
+            pre_image_blocks.append(block)
+        else:
+            remaining_blocks = []
+
+        intro_left_blocks: list[tuple[str, str]] = []
+        intro_right_blocks: list[tuple[str, str]] = []
+        if pre_image_blocks:
+            intro_left_blocks.append(pre_image_blocks[0])
+            intro_right_blocks.extend(pre_image_blocks[1:4])
+            remaining_blocks = pre_image_blocks[4:] + remaining_blocks
+
+        body_html = "".join(render_blocks(remaining_blocks))
+        intro_left_html = "".join(render_blocks(intro_left_blocks))
+        intro_right_html = "".join(render_blocks(intro_right_blocks))
         byline = [
             '<div class="article-byline">',
             (
@@ -509,7 +534,15 @@ a { color: #000; text-decoration: underline; }
             [
                 '<section class="article">',
                 f'<div class="article-title">{html.escape(article.title)}</div>',
+                '<div class="article-intro">',
+                '<div class="intro-col">',
                 "".join(byline),
+                intro_left_html,
+                "</div>",
+                '<div class="intro-col">',
+                intro_right_html,
+                "</div>",
+                "</div>",
                 '<div class="article-body">',
                 body_html,
                 "</div>",
