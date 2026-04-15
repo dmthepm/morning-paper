@@ -327,7 +327,7 @@ def display_date(date_str: str) -> str:
 def path_map(repo_root: Path, project_root: Path, hermes_home: Path, date_str: str) -> dict[str, Path]:
     briefs_dir = hermes_home / "briefs"
     return {
-        "template": repo_root / "templates" / "typewriter-v5.md",
+        "template": repo_root / "templates" / "typewriter.md",
         "candidates": project_root / "staging" / f"candidates-{date_str}.md",
         "signals": project_root / "staging" / f"signals-{date_str}.md",
         "hn": project_root / "staging" / f"hn-top-{date_str}.md",

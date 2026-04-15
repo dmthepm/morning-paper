@@ -36,7 +36,7 @@ for i in $(seq 1 "$REPEAT_COUNT"); do
   mkdir -p "$RUN_DIR"
 
   python3 "$ROOT_DIR/scripts/assemble_brief.py" \
-    --template "$ROOT_DIR/templates/typewriter-v5.md" \
+    --template "$ROOT_DIR/templates/typewriter.md" \
     --candidates "$FIXTURE_DIR/candidates.md" \
     --rabbit-holes "$FIXTURE_DIR/rabbit-holes.md" \
     --content-drafts "$FIXTURE_DIR/content-drafts.md" \
