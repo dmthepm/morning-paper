@@ -394,5 +394,52 @@ class BuildFlowTest(unittest.TestCase):
             self.assertIn("Could not fetch article", stderr.getvalue())
 
 
+class CliSurfaceTest(unittest.TestCase):
+    def test_help_lists_commands_and_docs(self) -> None:
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            rc = cli.main(["help"])
+        self.assertEqual(rc, 0)
+        output = stdout.getvalue()
+        self.assertIn("Morning Paper", output)
+        self.assertIn("Commands:", output)
+        self.assertIn("print <url>", output)
+        self.assertIn("Coming soon:", output)
+        self.assertIn("https://github.com/dmthepm/morning-paper", output)
+
+    def test_doctor_prints_update_notice_when_pypi_newer(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(None, "missing")):
+            with patch("morning_paper.cli.requests.get", return_value=_FakeResponse(text=json.dumps({"info": {"version": "0.1.4"}}))):
+                with redirect_stdout(stdout):
+                    rc = cli.doctor()
+        self.assertEqual(rc, 0)
+        output = stdout.getvalue()
+        self.assertIn("doctor: ok", output)
+        self.assertIn("renderer: portable only", output)
+        self.assertIn("update available: 0.1.4 (you have 0.1.3)", output)
+        self.assertIn("pip install --upgrade morning-paper", output)
+
+    def test_doctor_skips_update_notice_when_offline(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(None, "missing")):
+            with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                with redirect_stdout(stdout):
+                    rc = cli.doctor()
+        self.assertEqual(rc, 0)
+        output = stdout.getvalue()
+        self.assertIn("doctor: ok", output)
+        self.assertNotIn("update available", output)
+
+    def test_roadmap_command_prints_guidance(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            rc = cli.main(["add"])
+        self.assertEqual(rc, 2)
+        output = stderr.getvalue()
+        self.assertIn('"add" is planned for v0.2.', output)
+        self.assertIn("ROADMAP.md", output)
+
+
 if __name__ == "__main__":
     unittest.main()

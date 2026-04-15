@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-15
+
+### Added
+- Real top-level CLI help with command descriptions, examples, config path, and docs link
+- PyPI version check in `morning-paper doctor`
+- Friendly roadmap guidance for planned commands like `add` and `status`
+
+### Changed
+- `morning-paper doctor` now surfaces upgrade guidance when a newer PyPI release exists
+- Unknown roadmap commands now point to `ROADMAP.md` instead of failing with a bare usage line
+
 ## [0.1.2] - 2026-04-14
 
 ### Added

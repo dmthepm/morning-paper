@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime
 from importlib import import_module, resources
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+import requests
 
 from .article_print import ArticleExtractionError, fetch_article, render_article_markdown
 from .builder import build_paper
@@ -15,6 +18,26 @@ from .renderers import TypewriterRendererUnavailable, _load_weasyprint, write_cu
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DOCS_URL = "https://github.com/dmthepm/morning-paper"
+ROADMAP_URL = f"{DOCS_URL}/blob/main/ROADMAP.md"
+PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
+ROADMAP_COMMANDS = {"add", "status", "remove", "list"}
+HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own sources.
+
+Commands:
+  init              Create a starter config
+  build             Build today's paper from configured sources
+  print <url>       Print a single article right now
+  doctor            Check config, dependencies, and renderer status
+  --version         Show installed version
+
+Coming soon:
+  add <url|file>    Add content to tomorrow's paper
+  status            Show what's staged and estimated page count
+
+Config: {DEFAULT_CONFIG_PATH}
+Docs:   {DOCS_URL}
+"""
 SCRIPT_MAP = {
     "pass1": REPO_ROOT / "scripts" / "run_pass1.py",
     "pass2": REPO_ROOT / "scripts" / "run_pass2.py",
@@ -23,6 +46,33 @@ SCRIPT_MAP = {
     "render": REPO_ROOT / "scripts" / "build_live_brief.py",
     "digest": REPO_ROOT / "scripts" / "send_brief_digest.py",
 }
+
+
+def _version_key(value: str) -> tuple[int, ...]:
+    parts = re.findall(r"\d+", value or "")
+    return tuple(int(part) for part in parts) or (0,)
+
+
+def _fetch_latest_pypi_version() -> str | None:
+    try:
+        response = requests.get(PYPI_JSON_URL, timeout=2)
+        response.raise_for_status()
+        payload = response.json()
+    except Exception:
+        return None
+    info = payload.get("info") if isinstance(payload, dict) else None
+    version = info.get("version") if isinstance(info, dict) else None
+    return str(version).strip() if version else None
+
+
+def _print_update_notice() -> None:
+    from . import __version__
+
+    latest = _fetch_latest_pypi_version()
+    if not latest or _version_key(latest) <= _version_key(__version__):
+        return
+    print(f"update available: {latest} (you have {__version__})")
+    print("run: pip install --upgrade morning-paper")
 
 
 def run_script(script: Path, args: list[str]) -> int:
@@ -70,9 +120,11 @@ def doctor() -> int:
         print("doctor: ok")
         print("renderer: portable only")
         print("hint: install `morning-paper[pretty]` for the typewriter renderer")
+        _print_update_notice()
         return 0
     print("doctor: ok")
     print("renderer: typewriter ready")
+    _print_update_notice()
     return 0
 
 
@@ -241,8 +293,7 @@ def smoke() -> int:
 
 
 def print_help() -> int:
-    commands = ", ".join(["init", "build", "print", "doctor", "--version"])
-    print("usage: morning-paper {" + commands + "} [args...]")
+    print(HELP_TEXT.rstrip())
     return 0
 
 
@@ -270,6 +321,9 @@ def main(argv: list[str] | None = None) -> int:
         return doctor()
     if command == "smoke":
         return smoke()
+    if command in ROADMAP_COMMANDS:
+        print(f'"{command}" is planned for v0.2. See {ROADMAP_URL}', file=sys.stderr)
+        return 2
     print(f"unknown command: {command}", file=sys.stderr)
     print_help()
     return 2
