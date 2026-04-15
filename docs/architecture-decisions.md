@@ -324,3 +324,25 @@ Purpose:
 - make the CLI discoverable in Claude Code style runtimes
 - provide a stable command contract for Hermes/OpenClaw-style agent environments
 - keep runtime integration thin: skills call the CLI, they do not reimplement the pipeline
+
+## 17. Visual Snapshot Testing
+
+Decision date: 2026-04-14
+
+The typewriter renderer should have at least one rendered-page baseline test.
+
+Current shape:
+- fixture article rendered through the real article print path
+- local deterministic fixture images
+- font import removed in the test to reduce network/font drift
+- PDF converted to a page image
+- compared against a stored baseline image with a small diff threshold
+
+Reason:
+- layout regressions are often invisible to markdown- or JSON-level tests
+- the article page is now stable enough that we should protect it from accidental shifts
+
+Rule:
+- the visual snapshot should remain narrow and intentional
+- update the baseline only when a layout change is explicitly desired
+- do not broaden this into a giant screenshot matrix before the main print lane settles
