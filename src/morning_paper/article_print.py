@@ -147,6 +147,10 @@ def _reader_metadata(url: str) -> dict[str, object]:
             "image_url": "",
             "profile_image_url": "",
         }
+    reader = re.sub(r"\(\s*\n\s*\)\.", ".", reader)
+    reader = re.sub(r"\(\s*\n\s*\)", "", reader)
+    reader = re.sub(r"\n\s*\.\s*\n", "\n", reader)
+
     title = ""
     author = ""
     image_url = ""
@@ -226,10 +230,10 @@ def _reader_metadata(url: str) -> dict[str, object]:
                 blocks.append(("image", candidate))
             continue
         if len(line) < 18 and not line.startswith(">") and not line.startswith("💡"):
+            if current_kind == "paragraph" and re.search(r"[A-Za-z0-9]", line):
+                current_lines.append(line)
             continue
         if line in {")", "(", "].", ".)"}:
-            continue
-        if line.endswith("(") or line.endswith(")") or line.endswith(")."):
             continue
         if re.fullmatch(r"[\W_]+", line):
             continue
@@ -266,8 +270,13 @@ def _reader_metadata(url: str) -> dict[str, object]:
             break
         if lowered.startswith("this is why we are building"):
             break
-        if lowered in {"examples of agent harnesses include", "sarah wooders wrote a"}:
+        if lowered in {"sarah wooders wrote a"}:
             continue
+        cleaned = re.sub(r"\s+\(\s*$", "", cleaned)
+        cleaned = re.sub(r"\s*-\s*$", "", cleaned)
+        cleaned = re.sub(r"\s+,", ",", cleaned)
+        cleaned = re.sub(r"\(\s*\)", "", cleaned)
+        cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
         if lowered.startswith("on why “memory isn’t a plugin") or lowered.startswith('on why "memory isn'):
             continue
         if kind == "paragraph" and len(cleaned) < 34:
@@ -497,6 +506,10 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
   --mp-byline-meta-size: 7.15pt;
   --mp-byline-stats-size: 6.85pt;
   --mp-byline-kicker-size: 6.7pt;
+  --mp-article-top-gap: 0.24in;
+  --mp-image-gap-top: 0.09in;
+  --mp-image-gap-bottom: 0.11in;
+  --mp-image-max-height: 2.4in;
 }
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: var(--mp-body-size); line-height: 1.34; color: var(--mp-color-text); background: #fff; }
 @page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
@@ -504,7 +517,7 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .paper-date { font-size: 18.8pt; font-weight: 700; letter-spacing: 0.03em; }
 .paper-subtitle { font-size: 9pt; color: var(--mp-color-rule); margin-top: 0.04in; margin-bottom: 0.045in; letter-spacing: 0.07em; }
 .paper-rule { border-bottom: 2.6px solid var(--mp-color-rule); margin-top: 0.055in; }
-.article { margin-top: 0.12in; }
+.article { margin-top: var(--mp-article-top-gap); }
 .article-title { font-size: 13.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.095in 0; color: var(--mp-color-text); }
 .article-flow { column-count: 2; column-gap: var(--mp-column-gap); column-fill: auto; font-size: var(--mp-body-size); line-height: var(--mp-body-line-height); color: var(--mp-color-text); }
 .article-byline { width: auto; border: 1.55px solid var(--mp-color-rule); padding: 0.07in 0.09in; display: grid; grid-template-columns: var(--mp-byline-avatar) 1fr; column-gap: 0.1in; align-items: center; margin: 0 0 0.08in 0; break-inside: avoid-column; page-break-inside: avoid; box-sizing: border-box; }
@@ -518,8 +531,8 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .article-flow .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; color: var(--mp-color-text); }
 .article-flow blockquote { margin: 0.015in 0 0.05in 0; padding-left: 0.09in; border-left: 1.8px solid var(--mp-color-rule); font-style: italic; font-size: 8.35pt; color: var(--mp-color-text); break-inside: avoid-column; }
 .article-flow blockquote p { text-indent: 0; margin: 0; }
-.article-image { margin: 0.055in 0.01in 0.075in 0.01in; break-inside: avoid-column; }
-.article-image img { display: block; width: 100%; max-height: 1.85in; object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
+.article-image { margin: var(--mp-image-gap-top) 0.01in var(--mp-image-gap-bottom) 0.01in; break-inside: avoid-column; }
+.article-image img { display: block; width: 100%; max-height: var(--mp-image-max-height); object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
 .article-source { font-size: 6.6pt; color: var(--mp-color-text); margin-top: 0.015in; }
 .article-source a { color: var(--mp-color-text); text-decoration: none; }
 a { color: var(--mp-color-text); text-decoration: underline; }
@@ -577,21 +590,31 @@ a { color: var(--mp-color-text); text-decoration: underline; }
         block_items = article.blocks[:80] if article.blocks else [("paragraph", p.strip()) for p in article.body.split("\n\n") if p.strip()]
 
         def delay_initial_image(blocks: list[tuple[str, str]], *, text_blocks_before_image: int) -> list[tuple[str, str]]:
-            if not blocks or blocks[0][0] != "image":
+            if not blocks:
                 return blocks
-            deferred = blocks[0]
-            tail = blocks[1:]
+            first_image_index = next((idx for idx, block in enumerate(blocks) if block[0] == "image"), -1)
+            if first_image_index == -1:
+                return blocks
+
+            text_before_image = sum(1 for kind, _ in blocks[:first_image_index] if kind != "image")
+            if text_before_image >= text_blocks_before_image:
+                return blocks
+
+            deferred = blocks[first_image_index]
+            without_image = blocks[:first_image_index] + blocks[first_image_index + 1 :]
             delayed: list[tuple[str, str]] = []
             text_count = 0
-            for idx, block in enumerate(tail):
+            inserted = False
+            for block in without_image:
                 delayed.append(block)
                 if block[0] != "image":
                     text_count += 1
-                if text_count >= text_blocks_before_image:
+                if not inserted and text_count >= text_blocks_before_image:
                     delayed.append(deferred)
-                    delayed.extend(tail[idx + 1 :])
-                    return delayed
-            return blocks
+                    inserted = True
+            if not inserted:
+                delayed.append(deferred)
+            return delayed
         def render_blocks(blocks: list[tuple[str, str]]) -> list[str]:
             parts: list[str] = []
             inserted = 0
@@ -619,7 +642,7 @@ a { color: var(--mp-color-text); text-decoration: underline; }
                 parts.append(f"<p>{html.escape(value)}</p>")
             return parts
 
-        block_items = delay_initial_image(list(block_items), text_blocks_before_image=4)
+        block_items = delay_initial_image(list(block_items), text_blocks_before_image=5)
         body_html = "".join(render_blocks(block_items))
         byline_meta = article.handle or article.source_name
         affiliation = _affiliation_line(article)
