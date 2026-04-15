@@ -287,6 +287,7 @@ def _reader_metadata(url: str) -> dict[str, object]:
             and normalized_blocks[-1][0] == "paragraph"
             and (
                 len(normalized_blocks[-1][1]) < 75
+                or _looks_dangling_fragment(normalized_blocks[-1][1])
                 or cleaned[:1].islower()
             )
         ):
@@ -380,6 +381,19 @@ def _compact_count(value: int | None) -> str:
     if value >= 1_000:
         return f"{value / 1_000:.1f}K".replace(".0K", "K")
     return str(value)
+
+
+def _looks_dangling_fragment(text: str) -> bool:
+    cleaned = text.strip()
+    if not cleaned or re.search(r"[.!?\"”:]$", cleaned):
+        return False
+    words = cleaned.lower().split()
+    if not words:
+        return False
+    tail = words[-2:] if len(words) >= 2 else words
+    dangling_words = {"a", "an", "and", "or", "the", "of", "for", "to", "via", "in", "on", "include", "includes"}
+    dangling_phrases = {"there was", "wrote a", "pointed to", "linked to"}
+    return tail[-1] in dangling_words or " ".join(tail) in dangling_phrases
 
 
 def _short_bio(value: str | None, *, limit: int = 52) -> str:
