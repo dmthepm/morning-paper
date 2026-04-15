@@ -190,6 +190,7 @@ def _reader_metadata(url: str) -> dict[str, object]:
         current_kind = None
         current_lines = []
 
+    skip_preview_images = 0
     for raw in reader.splitlines():
         line = raw.strip()
         if not line:
@@ -198,19 +199,21 @@ def _reader_metadata(url: str) -> dict[str, object]:
         lowered = line.lower()
         if any(token in lowered for token in noise):
             continue
-        if lowered in preview_noise:
+        if lowered in preview_noise or lowered.startswith("why memory isn't a plugin"):
             flush_current()
+            skip_preview_images = max(skip_preview_images, 2)
             continue
         if lowered.startswith("#"):
             continue
         if lowered.startswith("title:") or lowered.startswith("url source:"):
             continue
-        if line.startswith("[!["):
-            flush_current()
-            continue
-        image_match = re.match(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)", line)
+        linked_image_match = re.match(r"\[!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)\]\([^)]+\)", line)
+        image_match = linked_image_match or re.match(r"!\[[^\]]*\]\((https://pbs\.twimg\.com[^)]+)\)", line)
         if image_match:
             flush_current()
+            if skip_preview_images > 0:
+                skip_preview_images -= 1
+                continue
             candidate = image_match.group(1).replace("&name=small", "&name=large")
             if "/profile_images/" not in candidate:
                 blocks.append(("image", candidate))
@@ -345,30 +348,30 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
     date_label = datetime.fromisoformat(date_str).strftime("%A, %B %d, %Y")
     css = """
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9pt; line-height: 1.36; color: #090909; background: #fff; }
-@page { size: Letter; margin: 0.44in 0.42in 0.58in 0.42in; }
-.paper-header { text-align: center; margin: 0 0 0.08in 0; }
-.paper-date { font-size: 18.2pt; font-weight: 700; letter-spacing: 0.03em; }
-.paper-subtitle { font-size: 8.1pt; color: #4f4f4f; margin-top: 0.02in; letter-spacing: 0.065em; }
-.paper-rule { border-bottom: 2.2px solid #111; margin-top: 0.05in; }
-.article { margin-top: 0.05in; }
-.article-title { font-size: 13.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.05in 0; }
-.article-body { column-count: 2; column-gap: 0.17in; font-size: 9.05pt; line-height: 1.24; color: #050505; }
+body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 9.15pt; line-height: 1.34; color: #050505; background: #fff; }
+@page { size: Letter; margin: 0.36in 0.38in 0.52in 0.38in; }
+.paper-header { text-align: center; margin: 0 0 0.05in 0; }
+.paper-date { font-size: 18.8pt; font-weight: 700; letter-spacing: 0.03em; }
+.paper-subtitle { font-size: 8.5pt; color: #3f3f3f; margin-top: 0.015in; letter-spacing: 0.07em; }
+.paper-rule { border-bottom: 2.6px solid #111; margin-top: 0.04in; }
+.article { margin-top: 0.035in; }
+.article-title { font-size: 13.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.04in 0; }
+.article-body { column-count: 2; column-gap: 0.15in; font-size: 9.15pt; line-height: 1.22; color: #050505; }
 .article-body::after { content: ""; display: block; clear: both; }
-.meta-card { float: left; width: 1.6in; border: 1.4px solid #111; padding: 0.055in; font-size: 7pt; background: #fff; margin: 0.01in 0.11in 0.07in 0; break-inside: avoid; }
-.meta-avatar { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid #b5b5b5; margin-bottom: 0.055in; }
-.meta-author { font-size: 8.1pt; font-weight: 700; margin-bottom: 0.02in; }
-.meta-handle { font-size: 6.9pt; color: #222; margin-bottom: 0.03in; }
-.meta-date { font-size: 6.4pt; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
-.article-body p { margin: 0 0 0.045in 0; text-align: justify; text-indent: 0.12in; }
+.meta-card { float: left; width: 1.48in; border: 1.45px solid #111; padding: 0.05in; font-size: 7pt; background: #fff; margin: 0.005in 0.1in 0.06in 0; break-inside: avoid; }
+.meta-avatar { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid #9f9f9f; margin-bottom: 0.045in; background: #f7f7f7; }
+.meta-author { font-size: 8.35pt; font-weight: 700; margin-bottom: 0.02in; line-height: 1.15; }
+.meta-handle { font-size: 6.9pt; color: #191919; margin-bottom: 0.02in; }
+.meta-kicker { font-size: 6.3pt; color: #4f4f4f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.02in; }
+.meta-date { font-size: 6.2pt; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+.article-body p { margin: 0 0 0.04in 0; text-align: justify; text-indent: 0.11in; }
 .article-body p:first-child { text-indent: 0; }
-.article-body .article-callout { font-weight: 700; margin: 0.055in 0; text-indent: 0; }
-.article-body blockquote { margin: 0.07in 0.04in 0.08in 0.14in; padding-left: 0.11in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.2pt; color: #111; break-inside: avoid; }
+.article-body .article-callout { font-weight: 700; margin: 0.045in 0; text-indent: 0; }
+.article-body blockquote { margin: 0.06in 0.02in 0.07in 0.12in; padding-left: 0.1in; border-left: 1.8px solid #111; font-style: italic; font-size: 8.35pt; color: #111; break-inside: avoid; }
 .article-body blockquote p { text-indent: 0; margin: 0; }
-.article-image { margin: 0.06in 0 0.08in 0; break-inside: avoid; }
-.article-image img { display: block; width: 100%; border: 1px solid #c9c9c9; }
-.article-image--wide { column-span: all; }
-.article-source { font-size: 6.6pt; color: #333; margin-top: 0.02in; }
+.article-image { margin: 0.04in 0 0.06in 0; break-inside: avoid; }
+.article-image img { display: block; width: 100%; max-height: 1.9in; object-fit: contain; border: 1px solid #c9c9c9; background: #fff; }
+.article-source { font-size: 6.6pt; color: #333; margin-top: 0.015in; }
 .article-source a { color: #333; text-decoration: none; }
 a { color: #111; text-decoration: underline; }
 """
@@ -404,7 +407,7 @@ a { color: #111; text-decoration: underline; }
                 avatar_path = process_for_print(
                     article.profile_image_url,
                     output_path=images_dir / avatar_name,
-                    max_width=220,
+                    max_width=320,
                 )
                 relative_avatar = avatar_path.relative_to(images_dir.parent).as_posix()
             except Exception:
@@ -428,15 +431,14 @@ a { color: #111; text-decoration: underline; }
         paragraph_count = 0
         for kind, value in block_items:
             if kind == "image":
-                if inserted_images >= 3:
+                if inserted_images >= 2:
                     continue
                 try:
                     relative_image = local_image(value)
                 except Exception:
                     continue
-                image_class = "article-image article-image--wide" if inserted_images == 0 else "article-image"
                 body_parts.append(
-                    f'<figure class="{image_class}"><img src="{html.escape(relative_image)}" alt="{html.escape(article.title)}" /></figure>'
+                    f'<figure class="article-image"><img src="{html.escape(relative_image)}" alt="{html.escape(article.title)}" /></figure>'
                 )
                 inserted_images += 1
                 continue
@@ -459,7 +461,8 @@ a { color: #111; text-decoration: underline; }
                 else ""
             ),
             f'<div class="meta-author">{html.escape(article.author or article.source_name)}</div>',
-            f'<div class="meta-handle">{html.escape(article.source_name)} · {html.escape(urlparse(article.url).netloc)}</div>',
+            f'<div class="meta-handle">{html.escape(article.source_name)}</div>',
+            f'<div class="meta-kicker">{html.escape(urlparse(article.url).netloc)}</div>',
             f'<div class="meta-date">{html.escape(date_label)}</div>',
         ]
         meta_card.append("</div>")
