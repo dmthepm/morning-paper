@@ -15,10 +15,14 @@ paper.
 
 ## The pass
 
-1. **Collect.** Run the user's collectors (newsroom `collectors/`, or the
-   engine's `morning-paper build` for HN/RSS). Check the staged queue:
-   `morning-paper queue` — anything staged via `stage` belongs in today's
-   paper (a human or another agent put it there on purpose).
+1. **Collect.** If the contributor inbox is configured, poll it first:
+   `morning-paper inbox` — mail from the masthead becomes staged items and
+   the senders get their confirmations. Then run the user's collectors
+   (newsroom `collectors/`, or the engine's `morning-paper build` for
+   HN/RSS). Check the staged queue: `morning-paper queue` — anything staged
+   via `stage` or the inbox belongs in today's paper (a human or another
+   agent put it there on purpose). Staged items with a `contributor` name
+   render with a FROM <NAME> kicker — the paper says who sent it in.
 2. **Read the newsroom.** `specs/*` (section contracts) and `preferences/*`
    (reading weights, style notes). These outrank your taste.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's

@@ -84,6 +84,10 @@ newsroom repo, first edition, daily loop). Otherwise:
 3. The CLI speaks JSON. The verbs you need:
    - `morning-paper stage <url>` -> stages it for tomorrow and answers with a
      page estimate ("that adds ~5 pages")
+   - `morning-paper inbox` -> poll the contributor inbox: mail from the
+     configured masthead (an allowlist of trusted senders) becomes staged
+     pages and the sender gets a confirmation; `--dry-run` previews
+     ([docs/inbox.md](docs/inbox.md))
    - `morning-paper queue` -> what's staged vs the page budget
    - `morning-paper estimate <file.md>` -> page count, nothing written
    - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
@@ -216,6 +220,8 @@ shipping something worse. The paper never lies to you about what it knows.
 
 - [docs/composing.md](docs/composing.md) — the composition contract for agents:
   document structure, class vocabulary, chart directives
+- [docs/inbox.md](docs/inbox.md) — the contributor inbox: let people you
+  trust email articles into tomorrow's paper (Gmail/iCloud app-password setup)
 - [ROADMAP.md](ROADMAP.md) — what shipped, what's next
 - [CHANGELOG.md](CHANGELOG.md) — release history
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to help

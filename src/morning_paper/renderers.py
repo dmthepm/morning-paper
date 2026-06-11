@@ -511,16 +511,21 @@ def _staged_section(config: MorningPaperConfig, date_str: str, *, template_style
         _meta, body = _split_frontmatter(staged_markdown)
         title = html.escape(str(item.get("title") or slug))
         source = html.escape(str(item.get("source") or ""))
+        # contributor-inbox items carry the masthead name — the kicker says who
+        # put this in the reader's paper
+        contributor = html.escape(str(item.get("contributor") or ""))
         notice = ""
         if item.get("truncated"):
             detail = html.escape(str(item.get("warning") or "the staged copy is incomplete"))
             notice = f'<div class="trunc-notice">Incomplete: {detail}</div>\n\n'
         if template_style == "typewriter":
-            head = f"### {title}\n\n" + (f'<p class="subhead">From {source}</p>\n\n' if source else "")
+            byline = f"From {contributor} — {source}" if contributor else (f"From {source}" if source else "")
+            head = f"### {title}\n\n" + (f'<p class="subhead">{byline}</p>\n\n' if byline else "")
         else:
+            kicker = f"From {contributor}" if contributor else f"Staged · {html.escape(str(item.get('kind') or 'item'))}"
             head = (
                 '<div class="article-head">'
-                f'<div class="dept-kicker">Staged · {html.escape(str(item.get("kind") or "item"))}</div>'
+                f'<div class="dept-kicker">{kicker}</div>'
                 f'<div class="dept-title">{title}</div>'
                 + (f'<div class="mg-byline">From <strong>{source}</strong></div>' if source else "")
                 + "</div>\n\n"

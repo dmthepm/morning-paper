@@ -108,7 +108,7 @@ class StageTruncationTest(unittest.TestCase):
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
             stdout = io.StringIO()
-            with patch("morning_paper.cli.fetch_article", return_value=article):
+            with patch("morning_paper.staging.fetch_article", return_value=article):
                 with redirect_stdout(stdout):
                     rc = cli.main(
                         [

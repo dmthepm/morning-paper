@@ -38,6 +38,12 @@
   auto-fallback with a privacy note in the result
 - "Set up with AI" onboarding prompt at the top of the README
 
+## Shipped (`v0.4.4`)
+
+- the contributor inbox ("the masthead") — `morning-paper inbox` polls a
+  mailbox over IMAP; trusted senders' mail becomes staged pages with a
+  FROM <NAME> kicker and a warm confirmation reply (docs/inbox.md)
+
 ## Next (`v0.4`)
 
 - queue management verbs: `morning-paper remove`, `morning-paper list`
@@ -50,6 +56,8 @@
 
 ## Future
 
+- a hosted contributor door (Cloudflare Worker email address) for instant
+  confirmations — today's path is the IMAP poll
 - preference learning
 - shared community curation and page exchange
 - agent slot competition against a page budget

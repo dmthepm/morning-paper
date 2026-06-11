@@ -37,6 +37,36 @@ class SourcesConfig:
 
 
 @dataclass(slots=True)
+class ContributorConfig:
+    email: str
+    name: str = ""
+
+
+@dataclass(slots=True)
+class InboxConfig:
+    """The contributor inbox — "the masthead".
+
+    People the reader trusts email articles; they land in tomorrow's staging
+    queue. The contributors list is an allowlist and the only gate: mail from
+    anyone else is never staged. The IMAP password is NEVER stored in config —
+    it is read from the MORNING_PAPER_IMAP_PASSWORD environment variable
+    (MORNING_PAPER_SMTP_PASSWORD when the reply credential is distinct).
+    """
+
+    enabled: bool = False
+    imap_host: str = ""
+    imap_user: str = ""
+    mailbox: str = "INBOX"
+    # only mail whose subject contains this tag is staged; "" disables the filter
+    subject_tag: str = "paper"
+    contributors: list[ContributorConfig] = field(default_factory=list)
+    reply: bool = True
+    # for confirmations; default derived from the imap values when omitted
+    smtp_host: str = ""
+    smtp_user: str = ""
+
+
+@dataclass(slots=True)
 class OutputsConfig:
     directory: Path = DEFAULT_OUTPUT_DIR
     renderer: str = "typewriter"
@@ -60,6 +90,7 @@ class MorningPaperConfig:
     page_budget: int = 20
     sources: SourcesConfig = field(default_factory=SourcesConfig)
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
+    inbox: InboxConfig = field(default_factory=InboxConfig)
 
 
 def _expand_path(raw: str | Path | None, *, default: Path) -> Path:
@@ -132,6 +163,47 @@ def _validate_article_extractor(value: str) -> str:
     return value
 
 
+def _parse_inbox(data: dict) -> InboxConfig:
+    # Security rule: credentials never live in config. Catch any attempt early
+    # with the fix in the error, instead of silently ignoring a secret on disk.
+    for key in data:
+        if "password" in str(key).lower():
+            raise ConfigError(
+                f"inbox.{key}: passwords never go in config — "
+                "set the MORNING_PAPER_IMAP_PASSWORD environment variable instead (see docs/inbox.md)"
+            )
+    contributors = []
+    for raw in data.get("contributors") or []:
+        if not isinstance(raw, dict) or not raw.get("email"):
+            raise ConfigError("inbox.contributors entries must be {email, name} mappings")
+        contributors.append(
+            ContributorConfig(email=str(raw["email"]).strip(), name=str(raw.get("name", "")).strip())
+        )
+    raw_tag = data.get("subject_tag", "paper")
+    inbox = InboxConfig(
+        enabled=bool(data.get("enabled", False)),
+        imap_host=str(data.get("imap_host", "")).strip(),
+        imap_user=str(data.get("imap_user", "")).strip(),
+        mailbox=str(data.get("mailbox", "INBOX")).strip() or "INBOX",
+        subject_tag=str(raw_tag).strip() if raw_tag is not None else "",
+        contributors=contributors,
+        reply=bool(data.get("reply", True)),
+        smtp_host=str(data.get("smtp_host", "")).strip(),
+        smtp_user=str(data.get("smtp_user", "")).strip(),
+    )
+    if inbox.enabled:
+        if not inbox.imap_host:
+            raise ConfigError("inbox.imap_host is required when inbox.enabled is true")
+        if not inbox.imap_user:
+            raise ConfigError("inbox.imap_user is required when inbox.enabled is true")
+        if not inbox.contributors:
+            raise ConfigError(
+                "inbox.contributors must list at least one {email, name} when inbox.enabled is true — "
+                "the masthead is the allowlist; without it nothing may stage"
+            )
+    return inbox
+
+
 def load_config(path: Path) -> MorningPaperConfig:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     sources = data.get("sources") or {}
@@ -175,6 +247,7 @@ def load_config(path: Path) -> MorningPaperConfig:
             markdown=bool(outputs.get("markdown", True)),
             json=bool(outputs.get("json", True)),
         ),
+        inbox=_parse_inbox(data.get("inbox") or {}),
     )
 
 
@@ -242,4 +315,24 @@ outputs:
   html: true
   markdown: true
   json: true
+
+# the contributor inbox ("the masthead"): people you trust email you articles
+# and they land in tomorrow's staging queue. `contributors` is an allowlist —
+# mail from anyone else is never staged. Your mail password NEVER goes in this
+# file: set the MORNING_PAPER_IMAP_PASSWORD environment variable to an app
+# password (Gmail/iCloud walkthrough: docs/inbox.md).
+inbox:
+  enabled: false
+  imap_host: imap.example.com
+  imap_user: you@example.com
+  mailbox: INBOX
+  # only mail whose subject contains this word is staged; set "" to take all
+  subject_tag: paper
+  # the masthead — who is allowed to feed your paper
+  contributors:
+    - email: someone-you-trust@example.com
+      name: Sam
+  # send a warm confirmation back from your own address when something stages
+  reply: true
+  # smtp_host/smtp_user default to the imap values (imap.* host becomes smtp.*)
 """

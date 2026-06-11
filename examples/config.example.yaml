@@ -32,3 +32,23 @@ outputs:
   html: true
   markdown: true
   json: true
+
+# the contributor inbox ("the masthead"): people you trust email you articles
+# and they land in tomorrow's staging queue. `contributors` is an allowlist —
+# mail from anyone else is never staged. Your mail password NEVER goes in this
+# file: set the MORNING_PAPER_IMAP_PASSWORD environment variable to an app
+# password (Gmail/iCloud walkthrough: docs/inbox.md).
+inbox:
+  enabled: false
+  imap_host: imap.example.com
+  imap_user: you@example.com
+  mailbox: INBOX
+  # only mail whose subject contains this word is staged; set "" to take all
+  subject_tag: paper
+  # the masthead — who is allowed to feed your paper
+  contributors:
+    - email: someone-you-trust@example.com
+      name: Sam
+  # send a warm confirmation back from your own address when something stages
+  reply: true
+  # smtp_host/smtp_user default to the imap values (imap.* host becomes smtp.*)

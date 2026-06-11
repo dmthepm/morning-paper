@@ -12,7 +12,6 @@ import requests
 
 from .article_print import (
     ArticleExtractionError,
-    article_truncation_report,
     article_truncation_warning,
     fetch_article,
     render_article_markdown,
@@ -42,6 +41,8 @@ Commands:
   print <url>       Print a single article right now
   render <file.md>  Typeset any markdown file through a style pack
   stage <url|file>  Queue material for tomorrow's paper (returns a page estimate)
+  inbox             Poll the contributor inbox: mail from your masthead becomes
+                    staged pages, the sender gets a confirmation (--dry-run)
   queue             Show what's staged vs the page budget (JSON)
   estimate <file>   Page count for a markdown file, nothing written
   styles            List available styles and palettes
@@ -131,6 +132,7 @@ def doctor(args: list[str] | None = None) -> int:
         "morning_paper.config",
         "morning_paper.extractors",
         "morning_paper.image_tools",
+        "morning_paper.inbox",
         "morning_paper.renderers",
         "morning_paper.sources",
     ]
@@ -611,7 +613,7 @@ def _parse_common(args: list[str], usage: str) -> tuple[Path, str | None, list[s
 
 
 def stage_command(args: list[str]) -> int:
-    from .staging import default_edition_date, stage_markdown
+    from .staging import default_edition_date, stage_markdown, stage_url
 
     usage = "usage: morning-paper stage <url|file.md> [--title T] [--date YYYY-MM-DD] [--config PATH]"
     title_override = None
@@ -635,28 +637,13 @@ def stage_command(args: list[str]) -> int:
         return 1
     date_str = date or default_edition_date(config)
     if target.startswith("http://") or target.startswith("https://"):
+        # the one URL-staging path, shared with the contributor inbox — the
+        # honesty flags (truncation, extractor fallback) ride along in the JSON
         try:
-            article = fetch_article(target, extractor_name=config.article_extractor)
+            item = stage_url(config, target, date_str=date_str, title=title_override)
         except ArticleExtractionError as exc:
             print(json.dumps({"staged": False, "error": str(exc)}, indent=2))
             return 1
-        markdown = render_article_markdown(
-            config,
-            [article],
-            date_str=date_str,
-            images_dir=config.outputs.directory / "staging" / date_str / "_images",
-        )
-        # Honesty rule: if extraction or the render cap clipped the article,
-        # say so plainly in the JSON instead of staging silently.
-        report = article_truncation_report(article)
-        item = stage_markdown(
-            config, markdown, date_str=date_str, kind="url", source=target,
-            title=title_override or article.title,
-            truncated=bool(report["truncated"]),
-            words_extracted=int(report["words_extracted"]),
-            warning=article_truncation_warning(article),
-            extractor_note=article.extraction_note,
-        )
     else:
         source = Path(target).expanduser()
         if not source.is_file():
@@ -670,6 +657,39 @@ def stage_command(args: list[str]) -> int:
 
     payload = {"staged": True, "edition_date": date_str, **asdict(item)}
     print(json.dumps(payload, indent=2))
+    return 0
+
+
+def inbox_command(args: list[str]) -> int:
+    from .inbox import InboxError, poll_inbox
+
+    usage = "usage: morning-paper inbox [poll] [--dry-run] [--date YYYY-MM-DD] [--config PATH]"
+    dry_run = False
+    if "--dry-run" in args:
+        dry_run = True
+        args = [arg for arg in args if arg != "--dry-run"]
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if rest == ["poll"]:
+        rest = []
+    if rest:
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    try:
+        result = poll_inbox(config, dry_run=dry_run, date_str=date)
+    except InboxError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in result.get("warnings", []):
+        print(f"warning: {warning}", file=sys.stderr)
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -771,6 +791,8 @@ def main(argv: list[str] | None = None) -> int:
         return render_command(extra)
     if command in {"stage", "add"}:
         return stage_command(extra)
+    if command == "inbox":
+        return inbox_command(extra)
     if command in {"queue", "status"}:
         return queue_command(extra)
     if command == "estimate":
