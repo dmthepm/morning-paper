@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-11
+
+### Added
+- Agent-facing staging verbs: `stage <url|file>` (queues material for tomorrow's paper, answers with a page estimate), `queue` (staged items vs `page_budget`), `estimate <file.md>` (page count, nothing written) — all JSON; `add`/`status` are aliases
+- `editorial` style pack — the unified paper system (one document, continuous folios on the outside duplex corner, running section heads, separators instead of forced page breaks, CSS-drawn marks instead of fallback glyphs, one-red-moment color discipline)
+- Claude Code plugin: `setup` (cold-start interview -> config + private newsroom repo + morning routine) and `edition` (the daily editor pass) skills
+- `page_budget` config key; README "For Agents" quickstart
+
+
 ## [0.2.1] - 2026-06-11
 
 ### Added

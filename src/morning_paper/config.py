@@ -54,6 +54,7 @@ class MorningPaperConfig:
     timezone: str = "America/Los_Angeles"
     profile: str = ""
     article_extractor: str = "jina"
+    page_budget: int = 20
     sources: SourcesConfig = field(default_factory=SourcesConfig)
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
 
@@ -132,11 +133,15 @@ def load_config(path: Path) -> MorningPaperConfig:
         for feed in (sources.get("rss") or [])
         if feed.get("name") and feed.get("url")
     ]
+    page_budget = int(data.get("page_budget", 20))
+    if not 1 <= page_budget <= 200:
+        raise ConfigError("page_budget must be between 1 and 200")
     return MorningPaperConfig(
         name=str(data.get("name", "Morning Paper")),
         timezone=_validate_timezone(str(data.get("timezone", "America/Los_Angeles"))),
         profile=str(data.get("profile", "")).strip(),
         article_extractor=_validate_article_extractor(str(data.get("article_extractor", "jina"))),
+        page_budget=page_budget,
         sources=SourcesConfig(
             hacker_news=HackerNewsConfig(
                 enabled=bool(hn.get("enabled", True)),
@@ -166,6 +171,8 @@ profile: |
   Add a short note about who this paper is for and what should matter most.
   Example: early-stage AI tools, operator software, media, and founder signal.
 article_extractor: jina
+# target length for a full edition; `morning-paper queue` reports against this
+page_budget: 20
 
 sources:
   hacker_news:
