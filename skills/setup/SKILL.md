@@ -46,7 +46,35 @@ Write their answers into `~/.config/morning-paper/config.yaml`.
 - **gh CLI**: a "shipped while you slept" section from their repos.
 Each missing unlock = a section that prints "not configured", never fake data.
 
-## 4. The newsroom repo (the owned algorithm)
+## 4. The masthead (the contributor inbox)
+
+Ask: **who should be able to feed this paper?** A spouse, a co-founder, the
+one friend who always finds the good stuff — people whose mail should become
+pages. If the answer is "nobody yet", skip; the block ships disabled.
+
+If yes:
+- Add the `inbox:` block to config.yaml (see docs/inbox.md): `enabled: true`,
+  their mail provider's `imap_host`/`imap_user`, and `contributors:` — the
+  masthead, a strict allowlist of `{email, name}`. Mail from anyone else is
+  never staged.
+- The password is an **app password**, never the account password and never
+  in config: Gmail at myaccount.google.com/apppasswords (needs 2-Step
+  Verification; host `imap.gmail.com`), iCloud at account.apple.com →
+  Sign-In and Security → App-Specific Passwords (host `imap.mail.me.com`).
+  Store it as `MORNING_PAPER_IMAP_PASSWORD` in
+  `~/.config/morning-paper/env.sh` like the other credentials.
+- Verify with `morning-paper inbox --dry-run`, then have the user send
+  themselves a test mail with "paper" in the subject and poll for real.
+- Give the user the sentence to send each contributor: *"See something I
+  should read? Email it to me with \"paper\" in the subject — it'll be on my
+  desk tomorrow morning."* Tip: a plus address (`you+paper@gmail.com`) plus
+  a label/filter keeps the poll out of their main inbox (docs/inbox.md).
+- Upsell, honestly labeled: a hosted door (Cloudflare Worker email address)
+  for **instant** confirmations instead of poll-time ones is on the roadmap —
+  **not yet shipped**. Today's path is the IMAP poll, which the edition skill
+  runs every morning anyway.
+
+## 5. The newsroom repo (the owned algorithm)
 
 Create a PRIVATE repo (suggest `<user>/newsroom`) with:
 ```
@@ -58,13 +86,13 @@ collectors/   # any custom source scripts
 Explain the point in one line: *your feed has an algorithm you can't see;
 your paper's algorithm is files you can read and edit.*
 
-## 5. The morning routine
+## 6. The morning routine
 
 Offer to schedule it (Claude scheduled tasks / cron): every morning run the
 `edition` skill of this plugin. If they prefer manual, the command is just
 invoking `/morning-paper:edition`.
 
-## 6. First edition, now
+## 7. First edition, now
 
 Run the edition skill once end-to-end while they watch. Print it if the
 printer is ready. Hand them the paper. Done is a physical object.

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-06-11
+
+### Added
+- **The contributor inbox ("the masthead")**: people the reader trusts email articles in and they land in tomorrow's staging queue — `morning-paper inbox` (alias `inbox poll`) polls a mailbox over IMAP, stdlib only. New top-level `inbox:` config block: `enabled` (default false), `imap_host`/`imap_user`, `mailbox`, optional `subject_tag` filter (default `paper`), `reply`, optional `smtp_host`/`smtp_user` (derived from the IMAP values when omitted), and `contributors:` — the masthead, a strict `{email, name}` allowlist that is required non-empty when enabled and is THE gate: mail from anyone else is skipped and reported, never staged
+- Passwords never go in config: the credential comes from `MORNING_PAPER_IMAP_PASSWORD` (and `MORNING_PAPER_SMTP_PASSWORD` when distinct), and the config loader rejects any `password` key in the inbox block with the fix in the error. Gmail/iCloud app-password walkthrough in the new [docs/inbox.md](docs/inbox.md), including the plus-addressing tip and the one-sentence contributor onboarding
+- A link in the mail body stages through the same path as `stage <url>` (new shared `staging.stage_url` helper — same extractor, same honest truncation flags); a mail with no link stages as kind `note`. The staged item records `contributor: <name>`, and build editions render contributor items with a FROM <NAME> kicker
+- Warm confirmation reply from the reader's own address when something stages ("Got it — this is in Morning Paper tomorrow morning (about N pages). ☕" — with the real page estimate); `reply: false` turns it off
+- `inbox --dry-run` reports what WOULD stage without staging, replying, or marking mail read. Safety rules either way: messages are fetched with BODY.PEEK and marked Seen only after a successful stage; one bad message never crashes the poll (it lands in `skipped` with a reason); HTML-only payloads are stripped of script/style and tags — all mail content is treated as untrusted text
+- `setup` skill now interviews for the masthead (who can feed the paper, app-password setup, the sentence to send contributors); `edition` skill polls the inbox before composing
+
 ## [0.4.3] - 2026-06-11
 
 ### Fixed
