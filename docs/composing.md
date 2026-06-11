@@ -19,6 +19,7 @@ morning-paper styles   # list available styles + palettes
 | `ops-card` | The boxed reference one-pager: scripts, checklists, do/don't splits, dense tables. |
 | `magazine` | The long-read essay page: serif body, kicker/dek/byline, pull quotes, wide margins. |
 | `zine` | The pocket how-to guide: half-letter, marker display type, checkbox steps, command blocks. |
+| `editorial` | The unified paper: one serif system for operator front + reading edition; duplex-mirrored folios, running section heads, ref-codes, desk-sheet writing furniture. |
 
 ## Palettes
 
@@ -99,6 +100,47 @@ file (`src/morning_paper/resources/styles/`). The most portable ones:
   `.mg-pull`/`.mg-pull-attr`, `.mg-note`, `.mg-end`
 - `zine`: `.zn-cover`/`.zn-cover-title`/`.zn-cover-sub`/`.zn-cover-meta`,
   `.zn-step` (checkbox lines), `.zn-cmd`, `.zn-url`, `.zn-img`, `.zn-warn`
+- `editorial`: `.masthead`, `.strip`/`.strip-item`, `.mg-kicker`/`.dept-kicker`
+  (article heads; either may end with a `.ref-code`), `.mg-title`/`.dept-title`,
+  `.mg-dek`, `.mg-byline`, `.q-row` (queue items), `.flag`, `.mp-stats`,
+  `.mg-pull`, `.move`/`.dictation`, `.action-required`, `.not-configured`,
+  plus the `.ds-*` desk-sheet family below
 
-Honesty rule (engine doctrine): a section with no data says so
-(`.not-configured`) — composition degrades, it never fabricates.
+### Ref-codes (`editorial`)
+
+A kicker may carry a trailing short code:
+
+```html
+<span class="dept-kicker">The Queue <span class="ref-code">R2</span></span>
+```
+
+The code rides into the running page header alongside the section name and
+prefixes the footer folio (`R2 · 7`), so a pen note keyed `R2` binds to a
+place in the paper. Both are suppressed on the first page, like the running
+header. Editions that skip codes keep plain folios — the separator only
+prints when a code exists.
+
+### Desk-sheet furniture (`editorial`)
+
+The `.ds-*` classes set ruled *writing* furniture: dotted rules mean "write
+here", solid rules are the paper talking. They are components, not a page
+mandate — compose whichever zones a document needs. Everything is built on a
+0.34in writing unit (pen-real line pitch).
+
+- `.ds-zone` with a `.ds-zone-head` (`.ds-kicker` left, `.ds-zone-code`
+  machine token right)
+- `.ds-line` — one dotted writing rule per unit; `.ds-ghost` for a whisper
+  italic prompt; `.ds-line-inset` for a rule inset clear of corner marks
+- `.ds-react` rows — a dotted `.ds-code-box` for a written code plus a
+  `.ds-write` note rule
+- checkbox rows — `.ds-q` (`.ds-q-code`, `.ds-q-text`, `.ds-q-opts` with
+  `.ds-opt`/`.ds-opt-label`), pen-scale `.cbx` boxes, `.ds-q-writein` for a
+  written answer line; `.ds-menu`/`.ds-menu-opt` and `.ds-tom-write` for
+  pick-one strips
+- `.ds-sheet` — a 10in frame anchoring corner registration marks
+  (`.ds-reg ds-reg-tl|tr|bl|br`) for scan orientation
+- `.ds-masthead`/`.ds-title`/`.ds-dateline`/`.ds-howto` — a quieter masthead
+
+A full single-sheet layout (no folio, no running heads) must null the
+editorial `@page` furniture in its own `<style>` block, across all three
+page contexts (base, `:left`, `:right`).

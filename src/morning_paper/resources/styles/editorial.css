@@ -7,6 +7,8 @@
  * Latin-1 + typographic basics (§ · – — quotes …).
  * Footer strings: <span class="mp-footer-date">No. 3 · Friday 12 June 2026</span>
  *                 <span class="mp-footer-name">MORNING PAPER</span>
+ * Running codes: a kicker may end with <span class="ref-code">R2</span>;
+ * the code rides the running header and prefixes the folio ("R2 · 7").
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
@@ -27,19 +29,20 @@
 }
 @page :right {
   margin-left: 1.0in; margin-right: 0.8in;
-  @bottom-right { content: counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
+  @bottom-right { content: string(mp-refcode, last) counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
   @bottom-left  { content: string(mp-date); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7pt; color: #888888; }
   @top-right { content: string(mp-section, first); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 6.5pt; letter-spacing: 0.14em; color: #999999; }
 }
 @page :left {
   margin-left: 0.8in; margin-right: 1.0in;
-  @bottom-left  { content: counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
+  @bottom-left  { content: string(mp-refcode, last) counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
   @bottom-right { content: string(mp-date); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7pt; color: #888888; }
   @top-left { content: string(mp-section, first); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 6.5pt; letter-spacing: 0.14em; color: #999999; }
 }
 @page :first {
   @top-right { content: none; }
   @top-left { content: none; }
+  @bottom-right { content: counter(page); }
 }
 
 .mp-footer-date, .mp-footer-name {
@@ -85,6 +88,15 @@ li { line-height: 1.5; margin-bottom: 0.03in; }
   text-transform: uppercase; letter-spacing: 0.16em; color: var(--mp-ink);
   margin-bottom: 0.1in; string-set: mp-section content();
 }
+/* Running article codes: a kicker may end with a short code —
+ *   <span class="dept-kicker">The Queue <span class="ref-code">R2</span></span>
+ * The kicker's own string-set picks the code up into the running header;
+ * the rule below feeds the footer folio ("R2 · 7"). The separator lives
+ * inside the string so editions without codes keep their bare folios.
+ * Suppressed on :first like the running header. Muted weight, no hue —
+ * mono palette renders it as plain gray. */
+.ref-code { string-set: mp-refcode content() ' · '; }
+.mg-kicker .ref-code, .dept-kicker .ref-code { font-weight: 400; color: var(--mp-muted); margin-left: 0.07in; }
 .mg-title { font-family: var(--ed-serif); font-size: 23pt; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; margin-bottom: 0.12in; }
 .dept-title { font-family: var(--ed-serif); font-size: 15pt; font-weight: 700; line-height: 1.2; margin-bottom: 0.08in; }
 .mg-dek { font-family: var(--ed-serif); font-style: italic; font-size: 12pt; line-height: 1.4; color: var(--mp-muted); margin-bottom: 0.14in; }
@@ -195,3 +207,57 @@ blockquote { font-style: italic; border-left: 2px solid var(--mp-track); padding
 
 /* ---- end mark: drawn, not a glyph ---- */
 .endmark { display: inline-block; width: 5.5pt; height: 5.5pt; background: var(--mp-ink); margin-left: 0.05in; vertical-align: -0.2pt; }
+
+/* ---- desk sheet ----
+ * Ruled writing furniture: solid rules are the paper talking, dotted rules
+ * are room to talk back. These are components, not a page mandate — compose
+ * whichever zones a document needs. Geometry is built on one unit,
+ * u = 0.34in (pen-real line pitch): every writing row is one unit tall and
+ * carries its dotted rule 0.04in above the unit's bottom edge. All boxes and
+ * marks are CSS-drawn, never glyphs. A full single-sheet layout must null
+ * this stylesheet's @page furniture (all three contexts: base, :left,
+ * :right) in its own document <style> block. */
+.ds-sheet { position: relative; height: 10in; }
+/* registration: three corner brackets + one filled square (orientation +
+ * flip detection for a scanner), anchored to the frame's corners */
+.ds-reg { position: absolute; width: 0.18in; height: 0.18in; }
+.ds-reg-tl { top: 0; left: 0; border-top: 1.5pt solid var(--mp-ink); border-left: 1.5pt solid var(--mp-ink); }
+.ds-reg-tr { top: 0; right: 0; border-top: 1.5pt solid var(--mp-ink); border-right: 1.5pt solid var(--mp-ink); }
+.ds-reg-bl { bottom: 0; left: 0; border-bottom: 1.5pt solid var(--mp-ink); border-left: 1.5pt solid var(--mp-ink); }
+.ds-reg-br { bottom: 0; right: 0; width: 0.10in; height: 0.10in; background: var(--mp-ink); }
+/* masthead: the paper's voice at writing-desk volume */
+.ds-masthead { height: 0.62in; text-align: center; }
+.ds-title { font-family: var(--ed-serif); font-weight: 400; font-size: 16pt; line-height: 0.24in; letter-spacing: 0.05em; }
+.ds-dateline { font-family: var(--ed-sans); font-size: 7.5pt; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mp-ink); margin-top: 0.045in; }
+.ds-howto { font-family: var(--ed-sans); font-size: 6.5pt; letter-spacing: 0.10em; text-transform: uppercase; color: var(--mp-muted); margin-top: 0.025in; }
+/* zones: structural wrapper; geometry comes from the children */
+.ds-zone { break-inside: avoid; }
+.ds-zone-head { height: 0.30in; display: flex; justify-content: space-between; align-items: flex-end; border-top: 0.5pt solid var(--mp-rule); padding-bottom: 0.045in; }
+.ds-kicker { font-family: var(--ed-sans); font-size: 8pt; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mp-ink); }
+.ds-zone-code { font-family: var(--ed-sans); font-size: 6.5pt; font-weight: 700; letter-spacing: 0.08em; color: var(--mp-muted); }
+/* writing rows: every row is one 0.34in unit; dotted = "write here" */
+.ds-line { height: 0.30in; margin-bottom: 0.04in; border-bottom: 1pt dotted var(--mp-track); }
+.ds-ghost { font-family: var(--ed-serif); font-style: italic; font-size: 8pt; color: var(--mp-track); line-height: 0.29in; padding-left: 0.02in; }
+.ds-react { height: 0.34in; display: flex; align-items: flex-end; gap: 0.08in; padding-bottom: 0.04in; }
+.ds-code-box { width: 0.55in; flex: none; height: 0.26in; border: 1pt dotted var(--mp-muted); }
+.ds-write { flex: 1 1 auto; height: 0.26in; border-bottom: 1pt dotted var(--mp-track); }
+/* checkbox rows: code · question · up to two options. .cbx is pen-scale
+ * (12pt) vs. the reading-scale .cb; it must stay an inline-block in normal
+ * inline flow — an empty fixed-size span used directly as a flex item
+ * paints a corrupted border in WeasyPrint. */
+.ds-q { height: 0.34in; display: flex; align-items: center; }
+.ds-q-code { width: 0.40in; flex: none; font-family: var(--ed-serif); font-weight: 700; font-size: 10.5pt; }
+.ds-q-text { flex: 1 1 auto; font-family: var(--ed-serif); font-size: 9.5pt; line-height: 1.25; padding: 0 0.10in; }
+.ds-q-opts { flex: none; width: 1.90in; display: flex; }
+.ds-opt { width: 0.95in; }
+.cbx { display: inline-block; width: 0.167in; height: 0.167in; border: 1pt solid var(--mp-ink); vertical-align: -0.045in; }
+.ds-opt-label { font-family: var(--ed-sans); font-size: 6.5pt; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mp-muted); padding-left: 0.04in; }
+.ds-q-writein { height: 0.30in; margin: 0 0 0.04in 0.50in; border-bottom: 1pt dotted var(--mp-track); }
+/* tomorrow strip: menu row, write-in row, inset steer line */
+.ds-menu { height: 0.34in; display: flex; align-items: center; }
+.ds-menu-lead { width: 1.80in; flex: none; font-family: var(--ed-sans); font-size: 7.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.ds-menu-opt { width: 0.50in; flex: none; }
+.ds-menu-hint { flex: 1 1 auto; font-family: var(--ed-serif); font-style: italic; font-size: 8pt; color: var(--mp-muted); text-align: right; }
+.ds-tom-write { height: 0.34in; display: flex; align-items: flex-end; padding-bottom: 0.04in; }
+.ds-tom-lead { width: 1.10in; flex: none; font-family: var(--ed-sans); font-size: 6.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mp-muted); line-height: 0.26in; }
+.ds-line-inset { height: 0.30in; margin: 0 0.40in 0.04in 0.40in; border-bottom: 1pt dotted var(--mp-track); }
