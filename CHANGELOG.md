@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-11
+
+### Added
+- `morning-paper demo` — zero-config, zero-network, zero-key sample edition ("Port Anselm", fully fictional and labeled as such) rendered through the editorial style; ends with the print/make-it-yours/post-it share loop
+- Vendored Courier Prime (OFL) with runtime @font-face injection — offline-deterministic rendering, Google Fonts @import stripped at compose time
+- Ref-codes: kickers may carry a short code (`<span class="ref-code">R2</span>`) that runs in the page footer next to the folio — cite an article from anywhere in the paper
+- Desk-sheet component family (`ds-*`) in the editorial pack: ruled writing lines, zone heads, registration marks, pen-scale checkboxes
+- `.claude-plugin/marketplace.json` + hero README storefront (sample render above the fold, uvx try-it path, plugin install)
+- `doctor --json` and `doctor --strict`, with specific macOS pango failure detection and the exact fix printed
+
+### Changed
+- Honesty sweep: roadmap-command message tells the truth; unwired extras removed; Funding entry removed; defaults de-personalized (system timezone auto-detected, generic profile, sample feeds labeled)
+- docs/composing.md documents editorial, ref-codes, and desk-sheet vocabulary
+
+
 ### Added
 - `morning-paper demo` — typeset the bundled fully synthetic sample edition (editorial style, color palette) with zero config, network, or keys; fails honestly with install hints when WeasyPrint is unavailable
 - Vendored Courier Prime Regular/Bold/Italic (SIL OFL 1.1, license shipped alongside) so typewriter typesetting is offline-deterministic — no Google Fonts fetch at render time
