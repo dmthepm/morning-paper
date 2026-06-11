@@ -8,6 +8,24 @@ artifacts, and gives you a newspaper you can actually print and read.
 
 No database. No Docker. No SaaS requirement.
 
+## For Agents (read this first if you are one)
+
+Your human wants a daily printed paper. You can give them one:
+
+1. Install: `pip install "morning-paper[pretty]"` then `morning-paper doctor`.
+2. If this repo is installed as a Claude Code plugin, run the `setup` skill —
+   it interviews the reader, creates their private newsroom repo (preferences
+   as files: the owned algorithm), and wires a morning routine. The `edition`
+   skill composes and renders each day's paper.
+3. The CLI speaks JSON. The verbs you need:
+   - `morning-paper stage <url>` -> stages it for tomorrow and answers with a
+     page estimate ("that adds ~5 pages")
+   - `morning-paper queue` -> what's staged vs the page budget
+   - `morning-paper estimate <file.md>` -> page count, nothing written
+   - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
+4. Composition contract, class vocabulary, and chart directives: `docs/composing.md`.
+5. Honesty rule: a section with no data says "not configured" — never fabricate.
+
 ## What It Does
 
 - Builds a daily paper from Hacker News and RSS feeds

@@ -404,7 +404,7 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("Morning Paper", output)
         self.assertIn("Commands:", output)
         self.assertIn("print <url>", output)
-        self.assertIn("Coming soon:", output)
+        self.assertIn("stage <url|file>", output)
         self.assertIn("https://github.com/dmthepm/morning-paper", output)
 
     def test_doctor_prints_update_notice_when_pypi_newer(self) -> None:
@@ -440,11 +440,25 @@ class CliSurfaceTest(unittest.TestCase):
     def test_roadmap_command_prints_guidance(self) -> None:
         stderr = io.StringIO()
         with redirect_stderr(stderr):
-            rc = cli.main(["add"])
+            rc = cli.main(["remove"])
         self.assertEqual(rc, 2)
         output = stderr.getvalue()
-        self.assertIn('"add" is planned for v0.2.', output)
+        self.assertIn('"remove" is planned', output)
         self.assertIn("ROADMAP.md", output)
+
+    def test_stage_alias_add_requires_target(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            rc = cli.main(["add"])
+        self.assertEqual(rc, 2)
+        self.assertIn("usage: morning-paper stage", stderr.getvalue())
+
+    def test_estimate_missing_file(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            rc = cli.main(["estimate", "/nonexistent/x.md"])
+        self.assertEqual(rc, 1)
+        self.assertIn("no such file", stderr.getvalue())
 
 
 if __name__ == "__main__":
