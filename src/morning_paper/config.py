@@ -40,8 +40,9 @@ class SourcesConfig:
 class OutputsConfig:
     directory: Path = DEFAULT_OUTPUT_DIR
     renderer: str = "typewriter"
-    style: str = "typewriter"
-    palette: str = "mono"
+    # editorial/color is the product's visual identity — the same look the demo sells
+    style: str = "editorial"
+    palette: str = "color"
     pdf: bool = True
     html: bool = True
     markdown: bool = True
@@ -154,8 +155,8 @@ def load_config(path: Path) -> MorningPaperConfig:
                 _expand_path(outputs.get("directory"), default=DEFAULT_OUTPUT_DIR)
             ),
             renderer=_validate_renderer(str(outputs.get("renderer", "typewriter"))),
-            style=_validate_style(str(outputs.get("style", "typewriter"))),
-            palette=_validate_palette(str(outputs.get("palette", "mono"))),
+            style=_validate_style(str(outputs.get("style", "editorial"))),
+            palette=_validate_palette(str(outputs.get("palette", "color"))),
             pdf=bool(outputs.get("pdf", True)),
             html=bool(outputs.get("html", True)),
             markdown=bool(outputs.get("markdown", True)),
@@ -214,9 +215,10 @@ sources:
 outputs:
   directory: ~/.local/share/morning-paper
   renderer: typewriter
-  # style: typewriter | flow | ops-card    palette: mono | color
-  style: typewriter
-  palette: mono
+  # style: editorial | typewriter | flow | magazine | ops-card | zine    palette: mono | color
+  # editorial/color is what the demo prints — the default recommendation
+  style: editorial
+  palette: color
   pdf: true
   html: true
   markdown: true

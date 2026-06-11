@@ -343,7 +343,7 @@ def render_typewriter_html(config: MorningPaperConfig, collected: dict[str, list
     return _render_html_from_markdown(markdown, style=config.outputs.style, palette=config.outputs.palette)
 
 
-def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str, output_path: Path) -> None:
+def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str, output_path: Path) -> int:
     pdf = FPDF(format="Letter")
     pdf.set_auto_page_break(auto=True, margin=12)
     pdf.add_page()
@@ -383,7 +383,9 @@ def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]
             pdf.multi_cell(width, 5, _pdf_text(item.url))
             pdf.ln(1)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    pages = pdf.page
     pdf.output(str(output_path))
+    return pages
 
 
 def _render_html_from_markdown(markdown: str, *, style: str = "typewriter", palette: str = "mono") -> str:
@@ -407,13 +409,15 @@ def _render_html_from_markdown(markdown: str, *, style: str = "typewriter", pale
     )
 
 
-def _render_typewriter_pdf(markdown: str, *, output_path: Path, style: str = "typewriter", palette: str = "mono") -> None:
+def _render_typewriter_pdf(markdown: str, *, output_path: Path, style: str = "typewriter", palette: str = "mono") -> int:
     html_cls, error = _load_weasyprint()
     if html_cls is None:
         raise RuntimeError(error or "WeasyPrint unavailable")
     html_doc = _render_html_from_markdown(markdown, style=style, palette=palette)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    html_cls(string=html_doc, base_url=str(output_path.parent)).write_pdf(str(output_path))
+    document = html_cls(string=html_doc, base_url=str(output_path.parent)).render()
+    document.write_pdf(str(output_path))
+    return len(document.pages)
 
 
 def count_pages(markdown: str, *, style: str = "typewriter", palette: str = "mono") -> int:
@@ -429,7 +433,7 @@ def count_pages(markdown: str, *, style: str = "typewriter", palette: str = "mon
     return len(html_cls(string=html_doc).render().pages)
 
 
-def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> None:
+def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> int:
     _meta, body = _split_frontmatter(markdown)
     rendered_body = _MARKDOWN.render(body)
     plain = html.unescape(rendered_body)
@@ -455,13 +459,22 @@ def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date
         line = _pdf_text(line.replace("# ", "").replace("## ", "").replace("### ", ""))
         pdf.multi_cell(width, 5, line)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    pages = pdf.page
     pdf.output(str(output_path))
+    return pages
 
 
-def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> tuple[dict[str, Path], list[str]]:
+def write_outputs(
+    config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str
+) -> tuple[dict[str, Path], list[str], int | None]:
+    """Write the configured artifacts; returns (paths, warnings, pdf page count).
+
+    The page count is None when no PDF was produced.
+    """
     paths = output_paths(config, date_str)
     paths["dir"].mkdir(parents=True, exist_ok=True)
     warnings: list[str] = []
+    pages: int | None = None
     markdown = (
         render_typewriter_markdown(config, collected, date_str=date_str)
         if config.outputs.renderer == "typewriter"
@@ -488,7 +501,7 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
     if config.outputs.pdf:
         if config.outputs.renderer == "typewriter":
             try:
-                _render_typewriter_pdf(
+                pages = _render_typewriter_pdf(
                     markdown,
                     output_path=paths["pdf"],
                     style=config.outputs.style,
@@ -503,8 +516,8 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
                     f"Detail: {exc}"
                 )
         else:
-            render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
-    return paths, warnings
+            pages = render_pdf(config, collected, date_str=date_str, output_path=paths["pdf"])
+    return paths, warnings, pages
 
 
 def write_custom_markdown(
@@ -514,10 +527,15 @@ def write_custom_markdown(
     date_str: str,
     slug: str,
     metadata: dict[str, object] | None = None,
-) -> tuple[dict[str, Path], list[str]]:
+) -> tuple[dict[str, Path], list[str], int | None]:
+    """Write artifacts for caller-supplied markdown; returns (paths, warnings, pdf page count).
+
+    The page count is None when no PDF was produced.
+    """
     paths = custom_output_paths(config, date_str, slug=slug)
     paths["dir"].mkdir(parents=True, exist_ok=True)
     warnings: list[str] = []
+    pages: int | None = None
     if config.outputs.json:
         payload = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -537,7 +555,7 @@ def write_custom_markdown(
     if config.outputs.pdf:
         if config.outputs.renderer == "typewriter":
             try:
-                _render_typewriter_pdf(
+                pages = _render_typewriter_pdf(
                     markdown,
                     output_path=paths["pdf"],
                     style=config.outputs.style,
@@ -552,5 +570,5 @@ def write_custom_markdown(
                     f"Detail: {exc}"
                 )
         else:
-            _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
-    return paths, warnings
+            pages = _render_markdown_text_pdf(config, markdown, date_str=date_str, output_path=paths["pdf"])
+    return paths, warnings, pages

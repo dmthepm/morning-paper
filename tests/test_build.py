@@ -157,6 +157,10 @@ class BuildFlowTest(unittest.TestCase):
             self.assertTrue(config_path.exists())
 
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            # the starter config matches the visual identity the demo sells
+            self.assertEqual(config["outputs"]["style"], "editorial")
+            self.assertEqual(config["outputs"]["palette"], "color")
+            self.assertEqual(config["outputs"]["renderer"], "typewriter")
             config["outputs"]["directory"] = str(output_dir)
             config["outputs"]["renderer"] = "portable"
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
@@ -175,6 +179,8 @@ class BuildFlowTest(unittest.TestCase):
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
             self.assertEqual(payload["renderer"], "portable")
+            self.assertIsInstance(payload["pages"], int)
+            self.assertGreaterEqual(payload["pages"], 1)
             self.assertIsInstance(payload["warnings"], list)
 
     def test_print_writes_outputs_for_article_bundle(self) -> None:

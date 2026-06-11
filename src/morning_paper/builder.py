@@ -11,7 +11,7 @@ from .sources import collect_sources
 def build_paper(config: MorningPaperConfig, *, date_str: str | None = None) -> dict[str, object]:
     target_date = date_str or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     collected, errors = collect_sources(config)
-    outputs, warnings = write_outputs(config, collected, date_str=target_date)
+    outputs, warnings, pages = write_outputs(config, collected, date_str=target_date)
     return {
         "date": target_date,
         "name": config.name,
@@ -19,6 +19,7 @@ def build_paper(config: MorningPaperConfig, *, date_str: str | None = None) -> d
         "source_errors": errors,
         "warnings": warnings,
         "renderer": config.outputs.renderer,
+        "pages": pages,
         "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
         "output_dir": str(outputs["dir"]),
     }
