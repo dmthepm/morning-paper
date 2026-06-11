@@ -54,7 +54,7 @@ class MorningPaperConfig:
     name: str = "Morning Paper"
     timezone: str = "America/Los_Angeles"
     profile: str = ""
-    article_extractor: str = "jina"
+    article_extractor: str = "local"
     page_budget: int = 20
     sources: SourcesConfig = field(default_factory=SourcesConfig)
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
@@ -115,8 +115,8 @@ def _validate_palette(value: str) -> str:
 
 
 def _validate_article_extractor(value: str) -> str:
-    if value not in {"jina"}:
-        raise ConfigError("article_extractor must be one of: jina")
+    if value not in {"local", "jina"}:
+        raise ConfigError("article_extractor must be one of: local, jina")
     return value
 
 
@@ -141,7 +141,7 @@ def load_config(path: Path) -> MorningPaperConfig:
         name=str(data.get("name", "Morning Paper")),
         timezone=_validate_timezone(str(data.get("timezone", "America/Los_Angeles"))),
         profile=str(data.get("profile", "")).strip(),
-        article_extractor=_validate_article_extractor(str(data.get("article_extractor", "jina"))),
+        article_extractor=_validate_article_extractor(str(data.get("article_extractor", "local"))),
         page_budget=page_budget,
         sources=SourcesConfig(
             hacker_news=HackerNewsConfig(
@@ -195,7 +195,11 @@ timezone: {detect_system_timezone()}
 profile: |
   Add a short note about who this paper is for and what should matter most.
   Replace this with your own beat: the topics, projects, and people you follow.
-article_extractor: jina
+# article extraction for `print`/`stage`: `local` fetches and parses on this
+# machine (trafilatura) — URLs never leave your computer. `jina` sends each URL
+# to the third-party r.jina.ai reader service; it remains available and is used
+# automatically (with an honest note) when local extraction comes up short.
+article_extractor: local
 # target length for a full edition; `morning-paper queue` reports against this
 page_budget: 20
 
