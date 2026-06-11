@@ -5,13 +5,20 @@
  * stapled, folded, and handed to someone.
  * Consumes palette tokens; compose with a palette sheet.
  * Print note: half-letter pages 2-up on Letter = pdfbook2 / `lp -o number-up=2`.
+ *
+ * Fonts (honesty decision, 0.4.3): Permanent Marker — the zine's identity
+ * face — is vendored (Apache 2.0, resources/fonts/) and injected by
+ * compose_css, so it loads on every platform with no network. The body stack
+ * is honest system sans: Open Sans was previously declared via a Google
+ * Fonts @import that compose_css strips, so it could never load; vendoring
+ * it would cost >1MB of variable-font files with unreliable bold-instance
+ * selection in WeasyPrint. Helvetica/Arial is what actually printed — now
+ * it is what the sheet says.
  */
-
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Open+Sans:ital,wght@0,400;0,700;1,400&display=swap');
 
 :root {
   --zn-display: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
-  --zn-body-font: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --zn-body-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --zn-body: 9.5pt;
 }
 
@@ -21,7 +28,7 @@
   /* half-letter: 5.5in x 8.5in */
   size: 396pt 612pt;
   margin: 0.45in 0.45in 0.55in 0.45in;
-  @bottom-center { content: counter(page); font-family: 'Open Sans', Helvetica, sans-serif; font-size: 8pt; color: #555555; }
+  @bottom-center { content: counter(page); font-family: 'Helvetica Neue', Helvetica, sans-serif; font-size: 8pt; color: #555555; }
 }
 
 .mp-footer-date, .mp-footer-name {
@@ -33,7 +40,7 @@
 
 body {
   font-family: var(--zn-body-font);
-  font-size: var(--zn-body);
+  font-size: calc(var(--mp-font-scale, 1) * var(--zn-body));
   line-height: 1.48;
   color: var(--mp-ink);
   background: var(--mp-paper);

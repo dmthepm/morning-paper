@@ -34,6 +34,50 @@ class VendoredFontsTest(unittest.TestCase):
         for filename in ("CourierPrime-Regular.ttf", "CourierPrime-Bold.ttf", "CourierPrime-Italic.ttf"):
             self.assertIn(filename, css)
 
+    def test_zine_advertised_fonts_are_vendored_or_system(self) -> None:
+        # 0.4.3 honesty fix: Permanent Marker is vendored; Open Sans (which the
+        # stripped Google import could never load) is gone from the stacks.
+        css = compose_css("zine", "color")
+        self.assertIn("'Permanent Marker'", css)
+        self.assertIn("PermanentMarker-Regular.ttf", css)
+        self.assertNotIn("--zn-body-font: 'Open Sans'", css)
+        self.assertNotIn("fonts.googleapis.com", css)
+
+
+class FontScaleTest(unittest.TestCase):
+    def test_compose_css_appends_root_override(self) -> None:
+        css = compose_css("editorial", "color", font_scale=1.2)
+        self.assertIn(":root { --mp-font-scale: 1.2; }", css)
+        self.assertIn("calc(var(--mp-font-scale, 1)", css)
+
+    def test_default_scale_appends_nothing(self) -> None:
+        css = compose_css("editorial", "color")
+        self.assertNotIn("--mp-font-scale:", css)
+
+    def test_every_style_sheet_consumes_the_scale(self) -> None:
+        for style in STYLES:
+            css = compose_css(style, "mono", font_scale=1.1)
+            self.assertIn("calc(var(--mp-font-scale, 1)", css, style)
+
+    def test_out_of_range_scale_is_rejected(self) -> None:
+        from morning_paper.styles import StyleError
+
+        for value in (0.5, 1.6):
+            with self.assertRaises(StyleError):
+                compose_css("editorial", "color", font_scale=value)
+
+    def test_config_rejects_out_of_range_font_scale(self) -> None:
+        from morning_paper.config import ConfigError, load_config
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path = Path(tmp) / "config.yaml"
+            config_path.write_text(
+                "name: Test\noutputs:\n  font_scale: 2.0\n", encoding="utf-8"
+            )
+            with self.assertRaises(ConfigError) as ctx:
+                load_config(config_path)
+            self.assertIn("font_scale", str(ctx.exception))
+
 
 class DemoCommandTest(unittest.TestCase):
     @unittest.skipUnless(_pretty_stack_ready(), "demo render requires the pretty print stack (weasyprint)")

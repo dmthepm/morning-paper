@@ -35,7 +35,7 @@
 
 body {
   font-family: var(--fl-font);
-  font-size: var(--fl-body);
+  font-size: calc(var(--mp-font-scale, 1) * var(--fl-body));
   line-height: var(--fl-lh);
   color: var(--mp-ink);
   background: var(--mp-paper);
@@ -169,5 +169,5 @@ table.data tr:last-child td { border-bottom: none; }
 
 ul { margin: 0.015in 0 0.035in 0.16in; }
 li { font-size: 7.4pt; line-height: 1.42; margin-bottom: 0.012in; }
-p { font-size: var(--fl-body); line-height: var(--fl-lh); }
+p { font-size: calc(var(--mp-font-scale, 1) * var(--fl-body)); line-height: var(--fl-lh); }
 a { color: var(--mp-ink); text-decoration: none; }

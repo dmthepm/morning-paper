@@ -43,6 +43,8 @@ class OutputsConfig:
     # editorial/color is the product's visual identity — the same look the demo sells
     style: str = "editorial"
     palette: str = "color"
+    # multiplies each style's base body size; 1.0 is the designed scale
+    font_scale: float = 1.0
     pdf: bool = True
     html: bool = True
     markdown: bool = True
@@ -114,6 +116,16 @@ def _validate_palette(value: str) -> str:
     return value
 
 
+def _validate_font_scale(value: float) -> float:
+    from .styles import FONT_SCALE_MAX, FONT_SCALE_MIN
+
+    if not FONT_SCALE_MIN <= value <= FONT_SCALE_MAX:
+        raise ConfigError(
+            f"outputs.font_scale must be between {FONT_SCALE_MIN} and {FONT_SCALE_MAX} (got {value})"
+        )
+    return value
+
+
 def _validate_article_extractor(value: str) -> str:
     if value not in {"local", "jina"}:
         raise ConfigError("article_extractor must be one of: local, jina")
@@ -157,6 +169,7 @@ def load_config(path: Path) -> MorningPaperConfig:
             renderer=_validate_renderer(str(outputs.get("renderer", "typewriter"))),
             style=_validate_style(str(outputs.get("style", "editorial"))),
             palette=_validate_palette(str(outputs.get("palette", "color"))),
+            font_scale=_validate_font_scale(float(outputs.get("font_scale", 1.0))),
             pdf=bool(outputs.get("pdf", True)),
             html=bool(outputs.get("html", True)),
             markdown=bool(outputs.get("markdown", True)),
@@ -223,6 +236,8 @@ outputs:
   # editorial/color is what the demo prints — the default recommendation
   style: editorial
   palette: color
+  # body type scale for the whole paper: 0.8 (compact) to 1.5 (large print)
+  font_scale: 1.0
   pdf: true
   html: true
   markdown: true
