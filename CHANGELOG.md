@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-11
+
+### Fixed
+- **The first-edition cliff**: `init` defaults to `style: editorial` but `build` always rendered the typewriter template, whose classes do not exist in editorial.css — a new user's first paper printed unstyled while every signal said success. `build` now dispatches on `outputs.style`: a new editorial-native template (`resources/editorial-build.md` — masthead/dateline/oxford, front strip with run counts, dept-kicker sections with Signals and Hacker News as `table.data` rows, references) serves `editorial` and every non-typewriter style; `typewriter` keeps its original template. The front-page visual snapshot test now covers both
+- **Staged items vanished from the edition**: `build` never read `staging/{date}/queue.json`, so everything queued with `stage` silently missed the paper it was queued for. Build now appends a "Staged for today" section (both templates) with each staged item's markdown, puts an on-page `.trunc-notice` on items staged incomplete, reports the included slugs as `staged_included` in the build JSON, and warns loudly when a queue exists but cannot be included (unreadable queue, missing staged file, or the portable fallback renderer — which cannot typeset staged markdown)
+- Zine style advertised fonts it could never load: the Google Fonts `@import` for Permanent Marker and Open Sans is stripped at compose time (by design — no network at render). Permanent Marker, the zine's identity face, is now vendored (Apache 2.0, `resources/fonts/`) and injected as `@font-face` like Courier Prime; the body stack is now honestly `Helvetica/Arial` — Open Sans was never actually printing, and vendoring its variable-font files was not worth >1MB. Decision documented in zine.css
+- `magazine` style now has a real treatment for fenced code blocks (bordered, smaller mono, `pre-wrap`) instead of browser-default mono bleeding into the page
+
+### Added
+- A truncated article now says so **on the page itself** — "Truncated at extraction; N of M words shown." in a dashed `.trunc-notice` box at the end of the clipped body — not only in the JSON and stderr
+- `render` is honest about bring-your-own CSS: a frontmatter `css:` block replaces the style pack entirely, so it now warns on stderr and reports `"style": "custom-css"` in the JSON instead of naming a pack the page is not wearing
+- `--output PATH` on `render` and `demo` — copy the produced PDF where you actually want it (a directory keeps the PDF's name); the JSON reflects the delivered path
+- `outputs.font_scale` (0.8-1.5, default 1.0) — scales every style's base body size via a `:root` override appended in `compose_css`; applies to build, render, demo, and the `stage`/`estimate` page counts
+- `.page-break` in the editorial pack — the documented escape hatch for single-sheet furniture that must land on its own page (docs/composing.md has the guidance)
+- docs/composing.md: editorial masthead vocabulary (`.masthead-title`, `.dateline`, `.oxford`), page-break guidance, and the staged-copy flow into composed editions (queue seam, frontmatter stripping, carrying truncation honesty onto the page)
+
 ## [0.4.2] - 2026-06-11
 
 ### Added

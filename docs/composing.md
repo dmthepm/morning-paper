@@ -7,8 +7,17 @@ PDF through a style pack and a palette. The composer never writes CSS.
 ```bash
 morning-paper render brief.md --style flow --palette mono
 morning-paper render call-card.md --style ops-card --palette color
+morning-paper render brief.md --output ~/Desktop/brief.pdf   # copy the PDF where you want it
 morning-paper styles   # list available styles + palettes
 ```
+
+`--output PATH` (also on `demo`) copies the produced PDF to PATH after the
+normal dated output directory is written; a trailing slash or an existing
+directory keeps the PDF's own filename.
+
+Body type for the whole paper scales with `outputs.font_scale` in config
+(0.8 compact to 1.5 large print, default 1.0); every style pack's base body
+size multiplies by it.
 
 ## Styles
 
@@ -42,6 +51,10 @@ css: |             # bring-your-own stylesheet; replaces the style pack entirely
   body { … }
 ---
 ```
+
+A `css:` block replaces the style pack *entirely* — `render` says so on
+stderr and reports `"style": "custom-css"` in its JSON, never the name of a
+pack the page is not actually wearing.
 
 ## Page footers
 
@@ -100,10 +113,13 @@ file (`src/morning_paper/resources/styles/`). The most portable ones:
   `.mg-pull`/`.mg-pull-attr`, `.mg-note`, `.mg-end`
 - `zine`: `.zn-cover`/`.zn-cover-title`/`.zn-cover-sub`/`.zn-cover-meta`,
   `.zn-step` (checkbox lines), `.zn-cmd`, `.zn-url`, `.zn-img`, `.zn-warn`
-- `editorial`: `.masthead`, `.strip`/`.strip-item`, `.mg-kicker`/`.dept-kicker`
+- `editorial`: `.masthead` (with `.masthead-title` for the nameplate,
+  `.dateline` for the issue line, and an `.oxford` double rule),
+  `.strip`/`.strip-item`, `.mg-kicker`/`.dept-kicker`
   (article heads; either may end with a `.ref-code`), `.mg-title`/`.dept-title`,
   `.mg-dek`, `.mg-byline`, `.q-row` (queue items), `.flag`, `.mp-stats`,
   `.mg-pull`, `.move`/`.dictation`, `.action-required`, `.not-configured`,
+  `.trunc-notice` (the honesty box for clipped copy), `.page-break`,
   plus the `.ds-*` desk-sheet family below
 
 ### Ref-codes (`editorial`)
@@ -144,6 +160,47 @@ mandate — compose whichever zones a document needs. Everything is built on a
 A full single-sheet layout (no folio, no running heads) must null the
 editorial `@page` furniture in its own `<style>` block, across all three
 page contexts (base, `:left`, `:right`).
+
+### Forced page breaks and single sheets (`editorial`)
+
+The editorial philosophy stands: separators flow, nothing forces a page.
+The one documented escape hatch is sheet furniture that must land on its own
+page — a desk sheet printed duplex as a tear-off back page, a form that a
+scanner expects alone. Opt in with:
+
+```html
+<div class="page-break"></div>
+```
+
+Place it immediately before the sheet's wrapper. Use it for whole-sheet
+furniture only; if prose needs a forced break, the composition is fighting
+the style — recompose instead.
+
+## Staged copy into composed editions
+
+`morning-paper stage <url|file>` queues material under
+`{outputs.directory}/staging/{date}/` — `queue.json` holds the metadata
+(title, source, `est_pages`, and the honesty flags `truncated`,
+`words_extracted`, `warning`), and each item's markdown sits next to it as
+`{slug}.md`.
+
+The daily `build` consumes that queue itself: staged items are appended as a
+**Staged for today** section (in both the editorial and typewriter build
+templates), clipped items carry an on-page `.trunc-notice`, and the build
+JSON reports the included slugs under `staged_included`. If a queue exists
+but cannot be included — unreadable file, or the portable fallback renderer —
+the build warns loudly instead of letting the material vanish.
+
+When composing a custom edition by hand (an agent writing tomorrow's brief
+through `render`), read the same seam:
+
+1. `morning-paper queue --date YYYY-MM-DD` for the metadata and page budget.
+2. Pull each `{slug}.md`, strip its frontmatter (article prints carry their
+   own `css:` block that would override your style pack), and weave the body
+   into your document.
+3. Carry the honesty through: if the queue says `truncated: true`, put the
+   item's `warning` in a `.trunc-notice` on the page — the reader holding
+   the paper deserves the same truth the JSON had.
 
 ## Article extraction (`print` / `stage`) and privacy
 
