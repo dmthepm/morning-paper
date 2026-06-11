@@ -1,18 +1,56 @@
-# Morning Paper
+<div align="center">
+  <img src="docs/assets/hero.jpg" alt="A printed Morning Paper edition" width="720">
 
-**Your morning newspaper, built from your own sources.**
+  <h1>Morning Paper</h1>
 
-Morning Paper is a Python CLI that builds a personalized daily paper as a
-print-ready PDF. It starts with deterministic collectors, writes durable file
-artifacts, and gives you a newspaper you can actually print and read.
+  <p><strong>Own your algorithm. Your personal newsroom.</strong></p>
 
-No database. No Docker. No SaaS requirement.
+  <p>An agent composes your newspaper. Code prints it.<br>
+  Your preferences live in files you own.</p>
+</div>
+
+---
+
+## Try it
+
+Typeset the bundled sample edition — no config, no network, no keys:
+
+```bash
+uvx --from "morning-paper[pretty]" morning-paper demo
+```
+
+> macOS first: `brew install pango gdk-pixbuf` (WeasyPrint needs Pango).
+
+Or with pip:
+
+```bash
+pip install "morning-paper[pretty]"
+morning-paper demo
+```
+
+The demo renders a fully synthetic edition through the `editorial` style pack
+and tells you exactly where the PDF landed. Print it. That is the product.
+
+## The Claude Code plugin
+
+The plugin turns Claude Code into your newsroom staff:
+
+```text
+/plugin marketplace add dmthepm/morning-paper
+/plugin install morning-paper@morning-paper
+```
+
+Then say "set up my morning paper". The `setup` skill installs the engine,
+interviews you about sources and shape, and creates your private newsroom
+repo — your preferences as files you own, not a feed you rent. The `edition`
+skill composes and prints each day's paper.
 
 ## For Agents (read this first if you are one)
 
 Your human wants a daily printed paper. You can give them one:
 
 1. Install: `pip install "morning-paper[pretty]"` then `morning-paper doctor`.
+   `morning-paper demo` proves the print path end to end.
 2. If this repo is installed as a Claude Code plugin, run the `setup` skill —
    it interviews the reader, creates their private newsroom repo (preferences
    as files: the owned algorithm), and wires a morning routine. The `edition`
@@ -23,172 +61,132 @@ Your human wants a daily printed paper. You can give them one:
    - `morning-paper queue` -> what's staged vs the page budget
    - `morning-paper estimate <file.md>` -> page count, nothing written
    - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
-4. Composition contract, class vocabulary, and chart directives: `docs/composing.md`.
-5. Honesty rule: a section with no data says "not configured" — never fabricate.
+   - `morning-paper doctor --json` -> machine-readable install status
+     (add `--strict` to get a nonzero exit when the typewriter renderer
+     is unavailable)
+4. Page estimates need the pretty print stack (`[pretty]` + WeasyPrint):
+   `estimate` fails without it, and `stage` falls back to a rough
+   words-per-page heuristic instead of a real layout pass. Run
+   `morning-paper doctor` first if the numbers matter.
+5. URL fetching goes through the anonymous Jina Reader tier: no key needed,
+   but rate limits and a 40-second timeout apply. Failures raise clean
+   errors instead of staging garbage.
+6. Composition contract, class vocabulary, and chart directives: [docs/composing.md](docs/composing.md).
+7. Honesty rule: a section with no data says "not configured" — never fabricate.
 
-## What It Does
+## What it does
 
-- Builds a daily paper from Hacker News and RSS feeds
-- Prints one or more articles on demand with `morning-paper print <url>`
-- Produces JSON, Markdown, HTML, and PDF artifacts
-- Typesets any markdown file through print style packs with `morning-paper render`
-- Renders charts from plain-text directives (bars, sparklines, stat blocks) — no plotting library
-- Ships mono and color palettes, each designed for its printer
+- Builds a daily paper from Hacker News and RSS feeds — JSON, Markdown, HTML,
+  and print-ready PDF artifacts on disk
+- Prints any article on demand with `morning-paper print <url>`
+- Stages material for tomorrow's edition against a page budget
+  (`stage`, `queue`, `estimate`)
+- Typesets any markdown file through six print style packs with
+  `morning-paper render`
+- Renders charts from plain-text directives (`mp-bars`, `mp-spark`,
+  `mp-stats`) as inline SVG — stdlib only, no plotting library
 - Works without an LLM key
-- Uses the `typewriter` print stack when installed; `doctor` says plainly when you are on the portable fallback, and the typewriter path fails clearly rather than degrading silently
 
-## Quick Start
+No database. No Docker. No SaaS requirement. It is not a second-brain
+platform, a wiki, or a closed recommendation engine — it is a CLI that
+prints a newspaper.
 
-For the real product-quality print path, install the pretty renderer:
+## Your daily paper
 
 ```bash
 pip install "morning-paper[pretty]"
-morning-paper init
-morning-paper doctor
-morning-paper build
+morning-paper init      # starter config
+morning-paper doctor    # must say: typewriter ready
+morning-paper build     # today's edition
 ```
 
-That writes your paper under:
+Artifacts land under:
 
 ```text
 ~/.local/share/morning-paper/<date>/
 ```
 
-If you only want the basic fallback install:
+The plain `pip install morning-paper` fallback works, but it is not the
+renderer you should judge the product by.
 
-```bash
-pip install morning-paper
-```
-
-That path is functional, but it is not the renderer you should judge the product by.
-
-## Platform Support
-
-- macOS
-  - recommended
-  - install `morning-paper[pretty]`
-  - may also need:
-
-```bash
-brew install pango gdk-pixbuf
-```
-
-- Linux
-  - recommended
-  - install `morning-paper[pretty]`
-  - may also need system libraries for WeasyPrint such as pango/cairo packages from your distro
-
-- Windows
-  - CLI works
-  - `portable` fallback works more reliably today
-  - `typewriter` via `WeasyPrint` is best-effort, not the strongest supported path yet
-
-## Install Notes
-
-Use `morning-paper doctor` after install.
-
-- `renderer: typewriter ready`
-  - you are on the real print path
-- `renderer: typewriter unavailable`
-  - you are on a fallback-only install
-  - high-quality print output is not available until the pretty stack is working
-
-On macOS, the richer renderer may also need:
-
-```bash
-brew install pango gdk-pixbuf
-```
-
-## Example Commands
-
-```bash
-# Create a starter config
-morning-paper init
-
-# Build today's paper from your configured sources
-morning-paper build
-
-# Build a paper for a specific date
-morning-paper build --date 2026-04-15
-
-# Print an article right now
-morning-paper print https://example.com/article
-
-# Typeset your own markdown through a style pack (see docs/composing.md)
-morning-paper render brief.md --style flow --palette mono
-
-# List styles and palettes
-morning-paper styles
-
-# Verify the install
-morning-paper doctor
-
-# Show the installed version
-morning-paper --version
-```
-
-## Current Sources
+## Sources
 
 | Source | Auth needed? | Status |
 | --- | --- | --- |
 | Hacker News | No | Included |
 | RSS feeds | No | Included |
-| Article URLs | No | Included via `print` |
+| Article URLs | No | Included via `print` / `stage` |
+
+## Six styles, two palettes
+
+`morning-paper styles` lists them all. Every style pairs with either palette:
+`mono` (laser printers; weight carries emphasis) or `color` (inkjet: warm
+ink, working red, data blue).
+
+| Style | What it is |
+| --- | --- |
+| `editorial` | The unified paper: serif editorial system, restrained color — the default recommendation |
+| `typewriter` | The newspaper look: Courier Prime, masthead, card sections |
+| `flow` | Continuous operator brief: dense, no forced page breaks |
+| `magazine` | Long-read essay page: serif body, pull quotes, wide margins |
+| `ops-card` | Boxed reference one-pager: scripts, checklists, cheat sheets |
+| `zine` | Pocket how-to guide: half-letter, marker display type, checkbox steps |
+
+```bash
+morning-paper render brief.md --style editorial --palette color
+```
 
 ## Rendering
 
-Morning Paper currently supports two renderers:
+Two renderers, one honest contract:
 
-- `typewriter`
-  - the primary product look
-  - the recommended install path
-  - requires the pretty print stack
-  - uses `WeasyPrint`
-- `portable`
-  - explicit pure Python fallback
-  - lower fidelity
-  - do not use this as your default judgment of Morning Paper's design quality
-  - only use this if you intentionally want the simpler output
+- `typewriter` — the product look. Requires the pretty stack
+  (`[pretty]` + WeasyPrint). Courier Prime ships vendored (SIL OFL), so
+  typesetting is offline-deterministic.
+- `portable` — explicit pure-Python fallback. Lower fidelity; use it only
+  when you intentionally want the simpler output.
 
-Default config:
+If `typewriter` cannot render, Morning Paper fails clearly instead of
+silently generating a lower-quality PDF. `morning-paper doctor` says plainly
+which path you are on, and on macOS prints the exact Pango fix when that is
+the problem.
 
-```yaml
-article_extractor: jina
+Article extraction defaults to the anonymous Jina Reader tier (`r.jina.ai`):
+no API key, shared rate limits, 40-second timeout. Some domains (YouTube,
+GitHub, Instagram, LinkedIn, HN comment pages) do not extract meaningfully
+and are rejected with a clear error. A validation gate rejects shell pages
+and too-short extractions instead of printing garbage. Extraction is a
+replaceable backend; the renderer, validation, and image pipeline are
+designed to survive extractor upgrades.
 
-outputs:
-  renderer: typewriter
-```
+## The honesty doctrine
 
-`jina` is the current default article extractor, but extraction is now a replaceable backend. The print renderer, validation, image pipeline, and metadata enrichment are designed to survive extractor upgrades.
+A section with no data prints "not configured" — never invented headlines,
+never filler. Page estimates come from a real layout pass when the print
+stack is installed. Malformed chart data degrades to an honest placeholder.
+If the good renderer can't run, the build fails loudly rather than quietly
+shipping something worse. The paper never lies to you about what it knows.
 
-If `typewriter` cannot render, Morning Paper now fails clearly instead of
-silently generating a lower-quality PDF. If you explicitly want the simpler
-fallback, set:
+## Docs
 
-```yaml
-outputs:
-  renderer: portable
-```
+- [docs/composing.md](docs/composing.md) — the composition contract for agents:
+  document structure, class vocabulary, chart directives
+- [ROADMAP.md](ROADMAP.md) — what shipped, what's next
+- [CHANGELOG.md](CHANGELOG.md) — release history
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to help
 
-## Product Shape
+## Platform notes
 
-Morning Paper is intentionally narrow.
+- **macOS / Linux** — recommended. Install `morning-paper[pretty]`; you may
+  need system libraries for WeasyPrint (`brew install pango gdk-pixbuf` on
+  macOS, pango/cairo packages on Linux).
+- **Windows** — the CLI works; the `portable` fallback is the more reliable
+  path today, and `typewriter` via WeasyPrint is best-effort.
 
-It is:
+Run `morning-paper doctor` after install: `renderer: typewriter ready` means
+you are on the real print path.
 
-- a CLI
-- file-first
-- print-oriented
-- local-friendly
-
-It is not:
-
-- a second-brain platform
-- a wiki
-- a database-heavy personal knowledge system
-- a closed feed or recommendation engine
-
-## Install for Development
+## Development
 
 ```bash
 git clone https://github.com/dmthepm/morning-paper.git
@@ -198,20 +196,11 @@ python -m pytest tests/
 morning-paper doctor
 ```
 
-## Roadmap
-
-1. Keep improving article print fidelity in the `typewriter` renderer
-2. Add queueing and staging commands for agent-driven daily workflows
-3. Add optional LLM scoring without making it a requirement
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## Community
 
 - Main Branch: [skool.com/main](https://skool.com/main)
 - Issues: [github.com/dmthepm/morning-paper/issues](https://github.com/dmthepm/morning-paper/issues)
+- Post your paper: [Discussions](https://github.com/dmthepm/morning-paper/discussions)
 
 ## License
 

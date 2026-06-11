@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-11
+
+### Added
+- `morning-paper demo` — zero-config, zero-network, zero-key sample edition ("Port Anselm", fully fictional and labeled as such) rendered through the editorial style; ends with the print/make-it-yours/post-it share loop
+- Vendored Courier Prime (OFL) with runtime @font-face injection — offline-deterministic rendering, Google Fonts @import stripped at compose time
+- Ref-codes: kickers may carry a short code (`<span class="ref-code">R2</span>`) that runs in the page footer next to the folio — cite an article from anywhere in the paper
+- Desk-sheet component family (`ds-*`) in the editorial pack: ruled writing lines, zone heads, registration marks, pen-scale checkboxes
+- `.claude-plugin/marketplace.json` + hero README storefront (sample render above the fold, uvx try-it path, plugin install)
+- `doctor --json` and `doctor --strict`, with specific macOS pango failure detection and the exact fix printed
+
+### Changed
+- Honesty sweep: roadmap-command message tells the truth; unwired extras removed; Funding entry removed; defaults de-personalized (system timezone auto-detected, generic profile, sample feeds labeled)
+- docs/composing.md documents editorial, ref-codes, and desk-sheet vocabulary
+
+
+### Added
+- `morning-paper demo` — typeset the bundled fully synthetic sample edition (editorial style, color palette) with zero config, network, or keys; fails honestly with install hints when WeasyPrint is unavailable
+- Vendored Courier Prime Regular/Bold/Italic (SIL OFL 1.1, license shipped alongside) so typewriter typesetting is offline-deterministic — no Google Fonts fetch at render time
+- `.claude-plugin/marketplace.json` — the repo is now a one-plugin Claude Code marketplace: `/plugin marketplace add dmthepm/morning-paper`, then `/plugin install morning-paper@morning-paper`
+- `doctor --json` — machine-readable `{checks, renderer, status}` output for agents
+- `doctor --strict` — nonzero exit when the typewriter renderer is unavailable
+- `doctor` and `demo` now detect the macOS Pango load failure specifically and print the exact fix (`brew install pango gdk-pixbuf` plus the `DYLD_FALLBACK_LIBRARY_PATH` hint)
+- `init` now detects the machine's timezone from `/etc/localtime` instead of assuming the author's
+
+### Changed
+- README rebuilt as the storefront: hero edition image, try-it demo block (`uvx`), plugin install instructions, and a styles table
+- Reserved-command message (`remove`, `list`) now says plainly the verb is not implemented yet and links the roadmap, instead of citing a stale version
+- README documents the `jina` extractor's limits (anonymous tier, 40-second timeout, unsupported domains) and the pretty-stack requirement behind `stage`/`estimate` page numbers
+- ROADMAP marks `stage`/`add`, `queue`/`status`, `estimate`, vendored Courier Prime, and `doctor --json` as shipped
+
+### Removed
+- Unwired `[twitter]` and `[local]` extras from packaging (nothing imported them)
+- Funding URL from package metadata
+
 ## [0.3.0] - 2026-06-11
 
 ### Added

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from importlib import resources
+from pathlib import Path
 
 
 class StyleError(ValueError):
@@ -79,6 +81,41 @@ def _resource_text(relative: str) -> str:
     return resources.files("morning_paper").joinpath("resources", relative).read_text(encoding="utf-8")
 
 
+# Courier Prime is vendored (SIL OFL 1.1; resources/fonts/OFL.txt) so rendering
+# is offline-deterministic: same glyphs whether or not the network is up.
+_VENDORED_FONT_FACES: tuple[tuple[str, int, str], ...] = (
+    ("CourierPrime-Regular.ttf", 400, "normal"),
+    ("CourierPrime-Bold.ttf", 700, "normal"),
+    ("CourierPrime-Italic.ttf", 400, "italic"),
+)
+
+_GOOGLE_FONTS_IMPORT = re.compile(
+    r"^@import\s+url\(\s*['\"]?https://fonts\.googleapis\.com/[^)]*\)\s*;\s*$",
+    re.MULTILINE,
+)
+
+
+def _font_face_css() -> str:
+    """@font-face rules pointing at the vendored Courier Prime files.
+
+    Absolute file:// URLs so WeasyPrint resolves them without a base_url.
+    If the font files are missing (stripped or non-filesystem install) we
+    return nothing and let the font-family fallback chains carry the page.
+    """
+    rules: list[str] = []
+    fonts = resources.files("morning_paper").joinpath("resources", "fonts")
+    for filename, weight, font_style in _VENDORED_FONT_FACES:
+        font_path = Path(str(fonts.joinpath(filename)))
+        if not font_path.is_file():
+            return ""
+        rules.append(
+            "@font-face { font-family: 'Courier Prime'; "
+            f"font-style: {font_style}; font-weight: {weight}; "
+            f"src: url('{font_path.resolve().as_uri()}') format('truetype'); }}"
+        )
+    return "\n".join(rules) + "\n"
+
+
 def get_style(name: str) -> StylePack:
     try:
         return STYLES[name]
@@ -94,7 +131,13 @@ def get_palette(name: str) -> Palette:
 
 
 def compose_css(style: str = "typewriter", palette: str = "mono") -> str:
-    """Palette tokens first, then the style sheet that consumes them."""
+    """Palette tokens first, then the style sheet that consumes them.
+
+    Google Fonts @import lines in the shipped sheets are stripped and replaced
+    with @font-face rules over the vendored files: no network at render time.
+    """
     style_pack = get_style(style)
     palette_pack = get_palette(palette)
-    return _resource_text(palette_pack.css_resource) + "\n" + _resource_text(style_pack.css_resource)
+    css = _resource_text(palette_pack.css_resource) + "\n" + _resource_text(style_pack.css_resource)
+    css = _GOOGLE_FONTS_IMPORT.sub("", css)
+    return _font_face_css() + css

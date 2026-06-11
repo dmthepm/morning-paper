@@ -403,6 +403,7 @@ class CliSurfaceTest(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("Morning Paper", output)
         self.assertIn("Commands:", output)
+        self.assertIn("demo", output)
         self.assertIn("print <url>", output)
         self.assertIn("stage <url|file>", output)
         self.assertIn("https://github.com/dmthepm/morning-paper", output)
@@ -443,8 +444,65 @@ class CliSurfaceTest(unittest.TestCase):
             rc = cli.main(["remove"])
         self.assertEqual(rc, 2)
         output = stderr.getvalue()
-        self.assertIn('"remove" is planned', output)
+        self.assertIn('"remove" is not implemented yet', output)
         self.assertIn("ROADMAP.md", output)
+
+    def test_doctor_json_reports_renderer_and_checks(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
+            with redirect_stdout(stdout):
+                rc = cli.main(["doctor", "--json"])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "ok")
+        self.assertTrue(payload["renderer"]["typewriter"])
+        self.assertIsNone(payload["renderer"]["error"])
+        check_names = {check["name"] for check in payload["checks"]}
+        self.assertIn("morning_paper.renderers", check_names)
+        self.assertIn("morning_paper/resources/typewriter.md", check_names)
+        self.assertTrue(all(check["ok"] for check in payload["checks"]))
+
+    def test_doctor_json_fallback_only_exits_zero_without_strict(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(None, "missing")):
+            with redirect_stdout(stdout):
+                rc = cli.main(["doctor", "--json"])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "fallback-only")
+        self.assertFalse(payload["renderer"]["typewriter"])
+        self.assertEqual(payload["renderer"]["error"], "missing")
+        self.assertTrue(payload["renderer"]["hints"])
+
+    def test_doctor_strict_exits_nonzero_when_typewriter_unavailable(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(None, "missing")):
+            with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                with redirect_stdout(stdout):
+                    rc = cli.main(["doctor", "--strict"])
+        self.assertEqual(rc, 1)
+        output = stdout.getvalue()
+        self.assertIn("renderer: typewriter unavailable", output)
+
+    def test_doctor_pango_error_prints_macos_fix(self) -> None:
+        pango_error = "cannot load library 'libpango-1.0-0': dlopen(libpango-1.0-0, 0x0002)"
+        stdout = io.StringIO()
+        with patch("morning_paper.cli.sys.platform", "darwin"):
+            with patch("morning_paper.cli._load_weasyprint", return_value=(None, pango_error)):
+                with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                    with redirect_stdout(stdout):
+                        rc = cli.main(["doctor"])
+        self.assertEqual(rc, 0)
+        output = stdout.getvalue()
+        self.assertIn("brew install pango gdk-pixbuf", output)
+        self.assertIn("DYLD_FALLBACK_LIBRARY_PATH", output)
+
+    def test_doctor_rejects_unknown_argument(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            rc = cli.main(["doctor", "--bogus"])
+        self.assertEqual(rc, 2)
+        self.assertIn("unknown doctor argument", stderr.getvalue())
 
     def test_stage_alias_add_requires_target(self) -> None:
         stderr = io.StringIO()

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morning-paper"
-version = "0.3.0"
+version = "0.4.0"
 description = "Build a personalized daily newspaper as a print-ready PDF."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,8 +45,6 @@ dependencies = [
 
 [project.optional-dependencies]
 pretty = ["weasyprint>=62.0"]
-twitter = ["twscrape"]
-local = ["trafilatura"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]
@@ -57,7 +55,6 @@ Homepage = "https://github.com/dmthepm/morning-paper"
 Repository = "https://github.com/dmthepm/morning-paper"
 Issues = "https://github.com/dmthepm/morning-paper/issues"
 Changelog = "https://github.com/dmthepm/morning-paper/blob/main/CHANGELOG.md"
-Funding = "https://skool.com/main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -66,4 +63,4 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-morning_paper = ["resources/*.md", "resources/styles/*.css", "resources/palettes/*.css"]
+morning_paper = ["resources/*.md", "resources/styles/*.css", "resources/palettes/*.css", "resources/fonts/*"]
