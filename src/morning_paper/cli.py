@@ -24,6 +24,7 @@ ROADMAP_COMMANDS = {"remove", "list"}
 HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own sources.
 
 Commands:
+  demo              Print a sample edition right now — no config, no network
   init              Create a starter config
   build             Build today's paper from configured sources
   print <url>       Print a single article right now
@@ -122,6 +123,61 @@ def doctor() -> int:
     print("renderer: typewriter ready")
     print("status: high-quality print path available")
     _print_update_notice()
+    return 0
+
+
+def demo_command(args: list[str]) -> int:
+    usage = "usage: morning-paper demo"
+    for arg in args:
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        print(f"unknown demo argument: {arg}", file=sys.stderr)
+        return 2
+    _, renderer_error = _load_weasyprint()
+    if renderer_error:
+        print("demo needs the pretty print stack (WeasyPrint) to typeset the sample edition", file=sys.stderr)
+        for line in _pretty_install_hint_lines():
+            print(line, file=sys.stderr)
+        print("then run `morning-paper doctor` to confirm the renderer is ready", file=sys.stderr)
+        return 1
+    markdown_text = resources.files("morning_paper").joinpath("resources", "demo.md").read_text(encoding="utf-8")
+    config = MorningPaperConfig()
+    config.outputs.style = "editorial"
+    config.outputs.palette = "color"
+    config.outputs.html = True
+    config.outputs.pdf = True
+    target_date = datetime.now(ZoneInfo(config.timezone)).date().isoformat()
+    try:
+        outputs, warnings = write_custom_markdown(
+            config,
+            markdown_text,
+            date_str=target_date,
+            slug="demo",
+            metadata={"mode": "demo", "style": "editorial", "palette": "color"},
+        )
+    except TypewriterRendererUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    print(
+        json.dumps(
+            {
+                "date": target_date,
+                "mode": "demo",
+                "style": "editorial",
+                "palette": "color",
+                "warnings": warnings,
+                "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
+                "output_dir": str(outputs["dir"]),
+            },
+            indent=2,
+        )
+    )
+    print(f"Print it: lp {outputs['pdf']}")
+    print("Make it yours: morning-paper init (or run the setup skill in Claude Code)")
+    print("Post your paper: https://github.com/dmthepm/morning-paper/discussions")
     return 0
 
 
@@ -554,6 +610,8 @@ def main(argv: list[str] | None = None) -> int:
 
     command, extra = argv[0], argv[1:]
 
+    if command == "demo":
+        return demo_command(extra)
     if command == "init":
         return init_command(extra)
     if command == "build":

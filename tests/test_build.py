@@ -403,6 +403,7 @@ class CliSurfaceTest(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("Morning Paper", output)
         self.assertIn("Commands:", output)
+        self.assertIn("demo", output)
         self.assertIn("print <url>", output)
         self.assertIn("stage <url|file>", output)
         self.assertIn("https://github.com/dmthepm/morning-paper", output)
