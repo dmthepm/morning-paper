@@ -1,0 +1,170 @@
+/* Style pack: magazine — the long-read essay page.
+ * Modeled on every.to's print-friendly article typography (studied
+ * 2026-06-10): Signifier serif body with Palatino/Georgia fallbacks (we use
+ * the license-free fallback chain directly), sans kickers, generous measure
+ * and leading, pull quotes, restrained accent color. One column, wide
+ * margins; built for reading, not scanning.
+ * Consumes palette tokens; compose with a palette sheet.
+ */
+
+:root {
+  --mg-serif: 'Palatino', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Times New Roman', serif;
+  --mg-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --mg-body: 10.5pt;
+  --mg-lh: 1.58;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@page {
+  size: Letter;
+  margin: 0.85in 1in 0.95in 1in;
+  @bottom-left  { content: string(mp-date); font-family: Helvetica, Arial, sans-serif; font-size: 7pt; letter-spacing: 0.04em; color: #888888; }
+  @bottom-center{ content: string(mp-name); font-family: Helvetica, Arial, sans-serif; font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; color: #888888; }
+  @bottom-right { content: counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
+}
+
+.mp-footer-date, .mp-footer-name {
+  display: block; height: 0; overflow: hidden;
+  font-size: 0; line-height: 0; visibility: hidden;
+}
+.mp-footer-date { string-set: mp-date content(); }
+.mp-footer-name { string-set: mp-name content(); }
+
+body {
+  font-family: var(--mg-serif);
+  font-size: var(--mg-body);
+  line-height: var(--mg-lh);
+  color: var(--mp-ink);
+  background: var(--mp-paper);
+}
+
+/* article header */
+.mg-kicker {
+  font-family: var(--mg-sans);
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--mp-chart-ink);
+  margin-bottom: 0.12in;
+}
+.mg-title {
+  font-family: var(--mg-serif);
+  font-size: 26pt;
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.12in;
+}
+.mg-dek {
+  font-family: var(--mg-serif);
+  font-style: italic;
+  font-size: 12.5pt;
+  line-height: 1.45;
+  color: var(--mp-muted);
+  margin-bottom: 0.14in;
+}
+.mg-byline {
+  font-family: var(--mg-sans);
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mp-muted);
+  padding: 0.06in 0;
+  border-top: 1px solid var(--mp-rule);
+  border-bottom: 1px solid var(--mp-rule);
+  margin-bottom: 0.22in;
+}
+.mg-byline strong { color: var(--mp-ink); font-weight: 700; }
+
+/* body */
+p { margin-bottom: 0.11in; }
+p + p { text-indent: 0; }
+/* Raised cap, not a dropped cap: WeasyPrint asserts on floated
+   ::first-letter (layout/float.py), so the initial stays in-line. */
+.mg-lede::first-letter {
+  font-size: 15pt;
+  font-weight: 700;
+}
+
+h1, h2 {
+  font-family: var(--mg-sans);
+  font-size: 11pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0.22in 0 0.08in 0;
+}
+h1 .sec-id { float: right; font-size: 7.5pt; color: var(--mp-muted); font-weight: 700; }
+
+/* pull quote */
+.mg-pull {
+  font-family: var(--mg-serif);
+  font-style: italic;
+  font-size: 15pt;
+  line-height: 1.4;
+  color: var(--mp-ink);
+  border-left: 3px solid var(--mp-chart-ink);
+  padding: 0.04in 0 0.04in 0.18in;
+  margin: 0.18in 0.1in 0.18in 0;
+  break-inside: avoid;
+}
+.mg-pull-attr {
+  display: block;
+  font-family: var(--mg-sans);
+  font-style: normal;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mp-muted);
+  margin-top: 0.05in;
+}
+
+blockquote {
+  font-style: italic;
+  color: var(--mp-ink);
+  border-left: 2px solid var(--mp-track);
+  padding-left: 0.15in;
+  margin: 0.1in 0 0.12in 0.05in;
+}
+
+/* notes, asides, honest degradation */
+.mg-note {
+  font-family: var(--mg-sans);
+  font-size: 8.5pt;
+  line-height: 1.5;
+  color: var(--mp-muted);
+  background: var(--mp-card-bg);
+  padding: 0.08in 0.12in;
+  margin: 0.12in 0;
+  break-inside: avoid;
+}
+.not-configured {
+  font-family: var(--mg-sans);
+  margin: 0.1in 0; padding: 0.07in 0.1in;
+  border: 1px dashed var(--mp-muted);
+  font-size: 8.5pt; color: var(--mp-muted); line-height: 1.45;
+}
+
+/* charts inherit wrapper styling */
+.mp-chart { margin: 0.14in 0; break-inside: avoid; }
+.mp-chart-title { font-family: var(--mg-sans); font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mp-muted); margin-bottom: 0.04in; }
+.mp-chart svg { display: block; width: 100%; height: auto; }
+.mp-stats { display: flex; gap: 0.12in; margin: 0.1in 0; flex-wrap: wrap; }
+.mp-stat { flex: 1 1 0; min-width: 1.1in; border-top: 2px solid var(--mp-rule); padding: 0.06in 0.02in 0 0.02in; }
+.mp-stat-value { font-family: var(--mg-serif); font-size: 17pt; font-weight: 700; line-height: 1.05; color: var(--mp-chart-ink); }
+.mp-stat-delta { font-family: var(--mg-sans); font-size: 7pt; color: var(--mp-muted); margin-top: 0.012in; }
+.mp-stat-label { font-family: var(--mg-sans); font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mp-muted); margin-top: 0.02in; }
+
+table.data { width: 100%; border-collapse: collapse; margin: 0.08in 0; font-family: var(--mg-sans); font-size: 8.5pt; }
+table.data th { text-align: left; font-size: 7pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); border-bottom: 1px solid var(--mp-rule); padding: 0.02in 0.06in 0.02in 0; }
+table.data td { padding: 0.025in 0.06in 0.025in 0; border-bottom: 1px solid var(--mp-track); vertical-align: top; line-height: 1.4; }
+
+ul, ol { margin: 0.03in 0 0.1in 0.25in; }
+li { line-height: 1.5; margin-bottom: 0.03in; }
+a { color: var(--mp-chart-ink); text-decoration: none; }
+em { font-style: italic; }
+.page-break { page-break-before: always; }
+
+/* end mark */
+.mg-end::after { content: " ◼"; color: var(--mp-chart-ink); font-size: 9pt; }

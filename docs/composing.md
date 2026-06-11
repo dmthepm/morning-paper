@@ -17,6 +17,8 @@ morning-paper styles   # list available styles + palettes
 | `typewriter` | The newspaper: Courier Prime masthead, card sections, two-column HN-style cards. |
 | `flow` | The continuous operator brief: dense, sections run together, no forced page breaks. |
 | `ops-card` | The boxed reference one-pager: scripts, checklists, do/don't splits, dense tables. |
+| `magazine` | The long-read essay page: serif body, kicker/dek/byline, pull quotes, wide margins. |
+| `zine` | The pocket how-to guide: half-letter, marker display type, checkbox steps, command blocks. |
 
 ## Palettes
 
@@ -93,6 +95,10 @@ file (`src/morning_paper/resources/styles/`). The most portable ones:
   `.oc-split`/`.oc-col` (do/don't), `.oc-foot`
 - `typewriter`: `.page-1-header`, `.info-row`, `.tweet`/`.tweet-pair`,
   `.hn-cards`/`.hn-card`, `.featured-reads`/`.full-read`, `.action-required`
+- `magazine`: `.mg-kicker`, `.mg-title`, `.mg-dek`, `.mg-byline`, `.mg-lede`,
+  `.mg-pull`/`.mg-pull-attr`, `.mg-note`, `.mg-end`
+- `zine`: `.zn-cover`/`.zn-cover-title`/`.zn-cover-sub`/`.zn-cover-meta`,
+  `.zn-step` (checkbox lines), `.zn-cmd`, `.zn-url`, `.zn-img`, `.zn-warn`
 
 Honesty rule (engine doctrine): a section with no data says so
 (`.not-configured`) — composition degrades, it never fabricates.

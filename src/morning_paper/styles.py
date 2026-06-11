@@ -40,6 +40,16 @@ STYLES: dict[str, StylePack] = {
         css_resource="styles/ops-card.css",
         description="Boxed reference one-pager: scripts, checklists, cheat sheets.",
     ),
+    "magazine": StylePack(
+        name="magazine",
+        css_resource="styles/magazine.css",
+        description="Long-read essay page: serif body, pull quotes, wide margins.",
+    ),
+    "zine": StylePack(
+        name="zine",
+        css_resource="styles/zine.css",
+        description="Pocket how-to guide: half-letter, marker display type, checkbox steps.",
+    ),
 }
 
 PALETTES: dict[str, Palette] = {
