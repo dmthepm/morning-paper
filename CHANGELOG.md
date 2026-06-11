@@ -7,12 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `morning-paper demo` — typeset the bundled fully synthetic sample edition (editorial style, color palette) with zero config, network, or keys; fails honestly with install hints when WeasyPrint is unavailable
+- Vendored Courier Prime Regular/Bold/Italic (SIL OFL 1.1, license shipped alongside) so typewriter typesetting is offline-deterministic — no Google Fonts fetch at render time
+- `.claude-plugin/marketplace.json` — the repo is now a one-plugin Claude Code marketplace: `/plugin marketplace add dmthepm/morning-paper`, then `/plugin install morning-paper@morning-paper`
 - `doctor --json` — machine-readable `{checks, renderer, status}` output for agents
 - `doctor --strict` — nonzero exit when the typewriter renderer is unavailable
 - `doctor` and `demo` now detect the macOS Pango load failure specifically and print the exact fix (`brew install pango gdk-pixbuf` plus the `DYLD_FALLBACK_LIBRARY_PATH` hint)
 - `init` now detects the machine's timezone from `/etc/localtime` instead of assuming the author's
 
 ### Changed
+- README rebuilt as the storefront: hero edition image, try-it demo block (`uvx`), plugin install instructions, and a styles table
 - Reserved-command message (`remove`, `list`) now says plainly the verb is not implemented yet and links the roadmap, instead of citing a stale version
 - README documents the `jina` extractor's limits (anonymous tier, 40-second timeout, unsupported domains) and the pretty-stack requirement behind `stage`/`estimate` page numbers
 - ROADMAP marks `stage`/`add`, `queue`/`status`, `estimate`, vendored Courier Prime, and `doctor --json` as shipped
