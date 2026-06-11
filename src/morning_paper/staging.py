@@ -80,7 +80,12 @@ def stage_markdown(
     while slug in existing:
         slug, n = f"{base}-{n}", n + 1
     try:
-        pages = count_pages(markdown, style=config.outputs.style, palette=config.outputs.palette)
+        pages = count_pages(
+            markdown,
+            style=config.outputs.style,
+            palette=config.outputs.palette,
+            font_scale=config.outputs.font_scale,
+        )
     except Exception:
         # estimation must never block staging; fall back to a words heuristic
         pages = max(1, round(len(markdown.split()) / 550))

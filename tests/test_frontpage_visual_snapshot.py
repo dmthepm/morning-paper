@@ -10,11 +10,15 @@ from PIL import Image, ImageChops
 
 from morning_paper.config import MorningPaperConfig
 from morning_paper.models import SourceItem
-from morning_paper.renderers import _load_weasyprint, _render_typewriter_pdf, render_typewriter_markdown
+from morning_paper.renderers import _load_weasyprint, _render_typewriter_pdf, render_build_markdown
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
-BASELINE_PAGE_1 = SNAPSHOT_DIR / "frontpage_typewriter_page1.png"
+BASELINES = {
+    "typewriter": SNAPSHOT_DIR / "frontpage_typewriter_page1.png",
+    "editorial": SNAPSHOT_DIR / "frontpage_editorial_page1.png",
+}
+PALETTES = {"typewriter": "mono", "editorial": "color"}
 FONT_IMPORT = "  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');"
 
 
@@ -39,9 +43,11 @@ def _fixture_item(source_type: str, source_name: str, title: str, summary: str, 
     )
 
 
-def _render_frontpage_png(tmp_path: Path) -> Path:
+def _render_frontpage_png(tmp_path: Path, *, style: str = "typewriter") -> Path:
     config = MorningPaperConfig()
     config.outputs.renderer = "typewriter"
+    config.outputs.style = style
+    config.outputs.palette = PALETTES[style]
     collected = {
         "rss": [
             _fixture_item(
@@ -112,10 +118,10 @@ def _render_frontpage_png(tmp_path: Path) -> Path:
         ],
     }
 
-    markdown = render_typewriter_markdown(config, collected, date_str="2026-04-14")
+    markdown = render_build_markdown(config, collected, date_str="2026-04-14")
     markdown = markdown.replace(FONT_IMPORT, "")
     pdf_path = tmp_path / "frontpage.pdf"
-    _render_typewriter_pdf(markdown, output_path=pdf_path)
+    _render_typewriter_pdf(markdown, output_path=pdf_path, style=style, palette=PALETTES[style])
 
     png_prefix = tmp_path / "frontpage"
     subprocess.run(
@@ -128,17 +134,19 @@ def _render_frontpage_png(tmp_path: Path) -> Path:
 
 
 @pytest.mark.skipif(not _pretty_stack_ready(), reason="visual snapshot requires weasyprint and pdftoppm")
-def test_frontpage_typewriter_visual_snapshot(tmp_path: Path) -> None:
-    page_png = _render_frontpage_png(tmp_path)
+@pytest.mark.parametrize("style", ["typewriter", "editorial"])
+def test_frontpage_visual_snapshot(tmp_path: Path, style: str) -> None:
+    baseline_path = BASELINES[style]
+    page_png = _render_frontpage_png(tmp_path, style=style)
     assert page_png.exists()
 
     SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    if os.environ.get("MORNING_PAPER_UPDATE_SNAPSHOTS") == "1" or not BASELINE_PAGE_1.exists():
-        shutil.copyfile(page_png, BASELINE_PAGE_1)
+    if os.environ.get("MORNING_PAPER_UPDATE_SNAPSHOTS") == "1" or not baseline_path.exists():
+        shutil.copyfile(page_png, baseline_path)
         pytest.skip("visual snapshot baseline created or updated")
 
     current = Image.open(page_png).convert("L")
-    baseline = Image.open(BASELINE_PAGE_1).convert("L")
+    baseline = Image.open(baseline_path).convert("L")
     assert current.size == baseline.size
 
     diff = ImageChops.difference(current, baseline)

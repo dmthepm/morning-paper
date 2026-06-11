@@ -19,7 +19,13 @@ from .article_print import (
 )
 from .builder import build_paper
 from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_config, render_default_config
-from .renderers import TypewriterRendererUnavailable, _load_weasyprint, write_custom_markdown, _safe_filename
+from .renderers import (
+    TypewriterRendererUnavailable,
+    _load_weasyprint,
+    _safe_filename,
+    document_uses_custom_css,
+    write_custom_markdown,
+)
 from .styles import PALETTES, STYLES, StyleError
 
 
@@ -134,12 +140,13 @@ def doctor(args: list[str] | None = None) -> int:
             checks.append({"name": module_name, "ok": True})
         except Exception:
             checks.append({"name": module_name, "ok": False})
-    resource_check = "morning_paper/resources/typewriter.md"
-    try:
-        resource = resources.files("morning_paper").joinpath("resources", "typewriter.md")
-        checks.append({"name": resource_check, "ok": bool(resource.is_file())})
-    except Exception:
-        checks.append({"name": resource_check, "ok": False})
+    for template_name in ("typewriter.md", "editorial-build.md"):
+        resource_check = f"morning_paper/resources/{template_name}"
+        try:
+            resource = resources.files("morning_paper").joinpath("resources", template_name)
+            checks.append({"name": resource_check, "ok": bool(resource.is_file())})
+        except Exception:
+            checks.append({"name": resource_check, "ok": False})
     missing = [str(check["name"]) for check in checks if not check["ok"]]
     _, renderer_error = _load_weasyprint()
     typewriter_ready = renderer_error is None
@@ -185,12 +192,45 @@ def doctor(args: list[str] | None = None) -> int:
     return exit_code
 
 
+def _deliver_pdf(outputs: dict[str, object], output_arg: str | None) -> tuple[str | None, int]:
+    """Copy the rendered PDF to the user's --output path; returns (final path, exit code).
+
+    A trailing slash or an existing directory means "put it in there under its
+    own name"; anything else is the destination file.
+    """
+    if not output_arg:
+        return None, 0
+    import shutil
+
+    pdf_path = Path(str(outputs.get("pdf", "")))
+    if not pdf_path.is_file():
+        print("--output requires a produced PDF, but no PDF was written", file=sys.stderr)
+        return None, 1
+    target = Path(output_arg).expanduser()
+    if output_arg.endswith(("/", "\\")) or target.is_dir():
+        target = target / pdf_path.name
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(pdf_path, target)
+    except OSError as exc:
+        print(f"could not write --output path {target}: {exc}", file=sys.stderr)
+        return None, 1
+    return str(target), 0
+
+
 def demo_command(args: list[str]) -> int:
-    usage = "usage: morning-paper demo"
-    for arg in args:
+    usage = "usage: morning-paper demo [--output PATH]"
+    output_arg: str | None = None
+    index = 0
+    while index < len(args):
+        arg = args[index]
         if arg in {"-h", "--help"}:
             print(usage)
             return 0
+        if arg == "--output" and index + 1 < len(args):
+            output_arg = args[index + 1]
+            index += 2
+            continue
         print(f"unknown demo argument: {arg}", file=sys.stderr)
         return 2
     _, renderer_error = _load_weasyprint()
@@ -220,6 +260,12 @@ def demo_command(args: list[str]) -> int:
         return 1
     for warning in warnings:
         print(f"warning: {warning}", file=sys.stderr)
+    delivered, rc = _deliver_pdf(outputs, output_arg)
+    if rc:
+        return rc
+    output_paths = {key: str(value) for key, value in outputs.items() if key != "dir"}
+    if delivered:
+        output_paths["pdf"] = delivered
     print(
         json.dumps(
             {
@@ -229,13 +275,13 @@ def demo_command(args: list[str]) -> int:
                 "palette": "color",
                 "pages": pages,
                 "warnings": warnings,
-                "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
+                "outputs": output_paths,
                 "output_dir": str(outputs["dir"]),
             },
             indent=2,
         )
     )
-    print(f"Print it: lp {outputs['pdf']}")
+    print(f"Print it: lp {delivered or outputs['pdf']}")
     print('Make it yours: uv tool install "morning-paper[pretty]" && morning-paper init (or run the setup skill in Claude Code)')
     print("Post your paper: https://github.com/dmthepm/morning-paper/discussions")
     return 0
@@ -421,9 +467,10 @@ def render_command(args: list[str]) -> int:
     slug = None
     style = None
     palette = None
+    output_arg: str | None = None
     source: Path | None = None
     index = 0
-    usage = "usage: morning-paper render <file.md> [--style NAME] [--palette NAME] [--date YYYY-MM-DD] [--slug NAME] [--config PATH]"
+    usage = "usage: morning-paper render <file.md> [--style NAME] [--palette NAME] [--output PATH] [--date YYYY-MM-DD] [--slug NAME] [--config PATH]"
     while index < len(args):
         arg = args[index]
         if arg in {"-h", "--help"}:
@@ -447,6 +494,10 @@ def render_command(args: list[str]) -> int:
             continue
         if arg == "--palette" and index + 1 < len(args):
             palette = args[index + 1]
+            index += 2
+            continue
+        if arg == "--output" and index + 1 < len(args):
+            output_arg = args[index + 1]
             index += 2
             continue
         if arg.startswith("-"):
@@ -481,6 +532,16 @@ def render_command(args: list[str]) -> int:
     markdown_text = source.read_text(encoding="utf-8")
     target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     target_slug = _safe_filename(slug or source.stem)[:48] or "render"
+    # Honesty rule: a frontmatter `css:` block replaces the style pack
+    # entirely — never report a style the page is not actually wearing.
+    reported_style = config.outputs.style
+    if document_uses_custom_css(markdown_text):
+        reported_style = "custom-css"
+        print(
+            "warning: frontmatter `css:` overrides the configured style pack; "
+            "rendering with the document's own stylesheet",
+            file=sys.stderr,
+        )
     try:
         outputs, warnings, pages = write_custom_markdown(
             config,
@@ -490,7 +551,7 @@ def render_command(args: list[str]) -> int:
             metadata={
                 "mode": "render",
                 "source": str(source),
-                "style": config.outputs.style,
+                "style": reported_style,
                 "palette": config.outputs.palette,
             },
         )
@@ -502,16 +563,22 @@ def render_command(args: list[str]) -> int:
         return 1
     for warning in warnings:
         print(f"warning: {warning}", file=sys.stderr)
+    delivered, rc = _deliver_pdf(outputs, output_arg)
+    if rc:
+        return rc
+    output_paths = {key: str(value) for key, value in outputs.items() if key != "dir"}
+    if delivered:
+        output_paths["pdf"] = delivered
     print(
         json.dumps(
             {
                 "date": target_date,
                 "mode": "render",
-                "style": config.outputs.style,
+                "style": reported_style,
                 "palette": config.outputs.palette,
                 "pages": pages,
                 "warnings": warnings,
-                "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
+                "outputs": output_paths,
                 "output_dir": str(outputs["dir"]),
             },
             indent=2,
@@ -663,6 +730,7 @@ def estimate_command(args: list[str]) -> int:
             markdown,
             style=style or config.outputs.style,
             palette=palette or config.outputs.palette,
+            font_scale=config.outputs.font_scale,
         )
     except StyleError as exc:
         print(str(exc), file=sys.stderr)

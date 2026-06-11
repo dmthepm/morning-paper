@@ -402,6 +402,237 @@ class BuildFlowTest(unittest.TestCase):
             self.assertIn("Could not fetch article", stderr.getvalue())
 
 
+def _build_no_pdf(*, style: str, staging: dict | None = None) -> tuple[dict, str, str]:
+    """Run a full build with pdf/html off; returns (payload, markdown text, stderr)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        config_path = tmp_path / "config.yaml"
+        output_dir = tmp_path / "out"
+        rc = cli.main(["init", "--config", str(config_path)])
+        assert rc == 0
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        config["outputs"]["directory"] = str(output_dir)
+        config["outputs"]["style"] = style
+        # pdf/html off: exercise the template path without the pretty stack
+        config["outputs"]["pdf"] = False
+        config["outputs"]["html"] = False
+        config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+
+        if staging:
+            staging_dir = output_dir / "staging" / "2026-04-14"
+            staging_dir.mkdir(parents=True, exist_ok=True)
+            (staging_dir / "queue.json").write_text(json.dumps(staging["queue"]), encoding="utf-8")
+            for name, text in staging.get("files", {}).items():
+                (staging_dir / name).write_text(text, encoding="utf-8")
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch("morning_paper.sources.requests.get", side_effect=_fake_get):
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
+        assert rc == 0
+        payload = json.loads(stdout.getvalue())
+        markdown = Path(payload["outputs"]["markdown"]).read_text(encoding="utf-8")
+        return payload, markdown, stderr.getvalue()
+
+
+class BuildTemplateDispatchTest(unittest.TestCase):
+    """P0 (0.4.3): the first edition must be styled — the build template
+    has to match outputs.style, not assume typewriter."""
+
+    def test_default_editorial_style_gets_editorial_template(self) -> None:
+        payload, markdown, _stderr = _build_no_pdf(style="editorial")
+        self.assertIn("masthead-title", markdown)
+        self.assertIn("dept-kicker", markdown)
+        self.assertIn('<table class="data">', markdown)
+        # no typewriter-only classes on an editorial page
+        self.assertNotIn("page-1-header", markdown)
+        self.assertNotIn("hn-card", markdown)
+        self.assertEqual(payload["staged_included"], [])
+
+    def test_typewriter_style_keeps_typewriter_template(self) -> None:
+        _payload, markdown, _stderr = _build_no_pdf(style="typewriter")
+        self.assertIn("page-1-header", markdown)
+        self.assertNotIn("masthead-title", markdown)
+
+    def test_other_styles_default_to_editorial_template(self) -> None:
+        _payload, markdown, _stderr = _build_no_pdf(style="magazine")
+        self.assertIn("masthead-title", markdown)
+        self.assertNotIn("page-1-header", markdown)
+
+
+class StagedInclusionTest(unittest.TestCase):
+    """P0 (0.4.3): material queued via `stage` must reach the edition."""
+
+    _QUEUE_ITEM = {
+        "slug": "staged-note",
+        "kind": "file",
+        "source": "/somewhere/staged-note.md",
+        "title": "A Staged Note",
+        "words": 18,
+        "est_pages": 1,
+        "staged_at": "2026-04-13T18:00:00",
+        "truncated": False,
+        "words_extracted": None,
+        "warning": "",
+        "extractor_note": "",
+    }
+    _STAGED_BODY = "# A staged note\n\nQueued yesterday, printed today — the staging seam works."
+
+    def test_build_appends_staged_section_editorial(self) -> None:
+        payload, markdown, _stderr = _build_no_pdf(
+            style="editorial",
+            staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
+        )
+        self.assertEqual(payload["staged_included"], ["staged-note"])
+        self.assertIn("Staged for Today", markdown)
+        self.assertIn("A Staged Note", markdown)
+        self.assertIn("the staging seam works", markdown)
+
+    def test_build_appends_staged_section_typewriter(self) -> None:
+        payload, markdown, _stderr = _build_no_pdf(
+            style="typewriter",
+            staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
+        )
+        self.assertEqual(payload["staged_included"], ["staged-note"])
+        self.assertIn("STAGED FOR TODAY", markdown)
+        self.assertIn("the staging seam works", markdown)
+
+    def test_truncated_staged_item_carries_on_page_notice(self) -> None:
+        item = dict(self._QUEUE_ITEM)
+        item.update(truncated=True, words_extracted=11000, warning="truncated: extracted 11000 words but only ~4500 will print")
+        payload, markdown, _stderr = _build_no_pdf(
+            style="editorial",
+            staging={"queue": [item], "files": {"staged-note.md": self._STAGED_BODY}},
+        )
+        self.assertEqual(payload["staged_included"], ["staged-note"])
+        self.assertIn("trunc-notice", markdown)
+        self.assertIn("11000", markdown)
+
+    def test_missing_staged_file_warns_loudly(self) -> None:
+        payload, markdown, stderr = _build_no_pdf(
+            style="editorial",
+            staging={"queue": [self._QUEUE_ITEM], "files": {}},
+        )
+        self.assertEqual(payload["staged_included"], [])
+        self.assertNotIn("Staged for Today", markdown)
+        self.assertIn("STAGED ITEM NOT INCLUDED", stderr)
+        self.assertTrue(any("STAGED ITEM NOT INCLUDED" in w for w in payload["warnings"]))
+
+    def test_portable_renderer_warns_staged_items_not_included(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            output_dir = tmp_path / "out"
+            rc = cli.main(["init", "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            config["outputs"]["directory"] = str(output_dir)
+            config["outputs"]["renderer"] = "portable"
+            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+
+            staging_dir = output_dir / "staging" / "2026-04-14"
+            staging_dir.mkdir(parents=True, exist_ok=True)
+            (staging_dir / "queue.json").write_text(json.dumps([self._QUEUE_ITEM]), encoding="utf-8")
+            (staging_dir / "staged-note.md").write_text(self._STAGED_BODY, encoding="utf-8")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with patch("morning_paper.sources.requests.get", side_effect=_fake_get):
+                with redirect_stdout(stdout), redirect_stderr(stderr):
+                    rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["staged_included"], [])
+            self.assertIn("STAGED ITEMS NOT INCLUDED", stderr.getvalue())
+            self.assertIn("outputs.renderer: typewriter", stderr.getvalue())
+
+
+class RenderCommandTest(unittest.TestCase):
+    def _portable_config(self, tmp_path: Path) -> Path:
+        config_path = tmp_path / "config.yaml"
+        rc = cli.main(["init", "--config", str(config_path)])
+        self.assertEqual(rc, 0)
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        config["outputs"]["directory"] = str(tmp_path / "out")
+        config["outputs"]["renderer"] = "portable"
+        config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+        return config_path
+
+    def test_render_output_flag_delivers_pdf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._portable_config(tmp_path)
+            source = tmp_path / "doc.md"
+            source.write_text("# Hello\n\nA page of prose.\n", encoding="utf-8")
+            target = tmp_path / "delivered" / "edition.pdf"
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["render", str(source), "--config", str(config_path), "--output", str(target)]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["outputs"]["pdf"], str(target))
+            self.assertTrue(target.is_file())
+            self.assertGreater(target.stat().st_size, 0)
+
+    def test_render_frontmatter_css_reports_custom_css_and_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._portable_config(tmp_path)
+            source = tmp_path / "doc.md"
+            source.write_text(
+                "---\ntitle: Custom\ncss: |\n  body { font-family: Georgia; }\n---\n# Hello\n",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                rc = cli.main(["render", str(source), "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            # honesty: never report a style pack the page is not wearing
+            self.assertEqual(payload["style"], "custom-css")
+            self.assertIn("frontmatter `css:` overrides the configured style pack", stderr.getvalue())
+
+    def test_render_without_custom_css_reports_configured_style(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._portable_config(tmp_path)
+            source = tmp_path / "doc.md"
+            source.write_text("# Hello\n\nPlain prose.\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                rc = cli.main(["render", str(source), "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["style"], "editorial")
+            self.assertNotIn("custom-css", stderr.getvalue())
+
+    def test_render_applies_config_font_scale_to_html(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._portable_config(tmp_path)
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            config["outputs"]["font_scale"] = 1.25
+            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+            source = tmp_path / "doc.md"
+            source.write_text("# Hello\n\nLarge print, please.\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["render", str(source), "--config", str(config_path)])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            html_text = Path(payload["outputs"]["html"]).read_text(encoding="utf-8")
+            self.assertIn("--mp-font-scale: 1.25", html_text)
+
+
 class CliSurfaceTest(unittest.TestCase):
     def test_help_lists_commands_and_docs(self) -> None:
         stdout = io.StringIO()

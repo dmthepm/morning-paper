@@ -814,6 +814,7 @@ body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-siz
 .article-flow blockquote p { text-indent: 0; margin: 0; }
 .article-image { margin: var(--mp-image-gap-top) 0.01in var(--mp-image-gap-bottom) 0.01in; break-inside: avoid-column; }
 .article-image img { display: block; width: 100%; max-height: var(--mp-image-max-height); object-fit: contain; border: 1px solid #c7c7c7; background: #fff; padding: 0.015in; }
+.trunc-notice { margin: 0.05in 0; padding: 0.04in 0.07in; border: 1px dashed #777777; font-size: 7.2pt; color: #444444; line-height: 1.35; text-indent: 0; break-inside: avoid-column; }
 .article-source { font-size: 6.6pt; color: var(--mp-color-text); margin-top: 0.015in; }
 .article-source a { color: var(--mp-color-text); text-decoration: none; }
 a { color: var(--mp-color-text); text-decoration: underline; }
@@ -919,6 +920,14 @@ a { color: var(--mp-color-text); text-decoration: underline; }
 
         block_items = delay_initial_image(list(block_items), text_blocks_before_image=8)
         body_html = "".join(render_blocks(block_items))
+        # Honesty rule: a clipped article says so on the page itself, not just
+        # in the JSON — the reader holding the paper sees the same truth.
+        report = article_truncation_report(article)
+        if report["truncated"]:
+            body_html += (
+                '<div class="trunc-notice">Truncated at extraction; '
+                f"{report['words_rendered']} of {report['words_extracted']} words shown.</div>"
+            )
         byline_meta = article.handle or article.source_name
         affiliation = _affiliation_line(article)
         if affiliation:
