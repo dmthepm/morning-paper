@@ -416,6 +416,19 @@ def _render_typewriter_pdf(markdown: str, *, output_path: Path, style: str = "ty
     html_cls(string=html_doc, base_url=str(output_path.parent)).write_pdf(str(output_path))
 
 
+def count_pages(markdown: str, *, style: str = "typewriter", palette: str = "mono") -> int:
+    """Lay the document out without writing anything; return its page count.
+
+    The agent-facing `estimate`/`stage` verbs use this to answer "how many
+    pages would this add?" before composition time.
+    """
+    html_cls, error = _load_weasyprint()
+    if html_cls is None:
+        raise RuntimeError(error or "WeasyPrint unavailable")
+    html_doc = _render_html_from_markdown(markdown, style=style, palette=palette)
+    return len(html_cls(string=html_doc).render().pages)
+
+
 def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> None:
     _meta, body = _split_frontmatter(markdown)
     rendered_body = _MARKDOWN.render(body)

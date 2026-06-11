@@ -25,6 +25,11 @@ class Palette:
 
 
 STYLES: dict[str, StylePack] = {
+    "editorial": StylePack(
+        name="editorial",
+        css_resource="styles/editorial.css",
+        description="THE unified paper: serif editorial system for operator and reading content; no forced breaks, drawn marks, restrained color.",
+    ),
     "typewriter": StylePack(
         name="typewriter",
         css_resource="styles/typewriter.css",

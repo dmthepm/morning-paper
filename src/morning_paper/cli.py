@@ -20,7 +20,7 @@ from .styles import PALETTES, STYLES, StyleError
 DOCS_URL = "https://github.com/dmthepm/morning-paper"
 ROADMAP_URL = f"{DOCS_URL}/blob/main/ROADMAP.md"
 PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
-ROADMAP_COMMANDS = {"add", "status", "remove", "list"}
+ROADMAP_COMMANDS = {"remove", "list"}
 HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own sources.
 
 Commands:
@@ -28,13 +28,15 @@ Commands:
   build             Build today's paper from configured sources
   print <url>       Print a single article right now
   render <file.md>  Typeset any markdown file through a style pack
+  stage <url|file>  Queue material for tomorrow's paper (returns a page estimate)
+  queue             Show what's staged vs the page budget (JSON)
+  estimate <file>   Page count for a markdown file, nothing written
   styles            List available styles and palettes
   doctor            Check config, dependencies, and renderer status
   --version         Show installed version
 
-Coming soon:
-  add <url|file>    Add content to tomorrow's paper
-  status            Show what's staged and estimated page count
+Agents: every command prints JSON. `stage` + `queue` are the seam for
+"add this to tomorrow's brief" workflows. See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
 Docs:   {DOCS_URL}
@@ -388,6 +390,153 @@ def render_command(args: list[str]) -> int:
     return 0
 
 
+def _parse_common(args: list[str], usage: str) -> tuple[Path, str | None, list[str]] | int:
+    config_path = DEFAULT_CONFIG_PATH
+    date = None
+    rest: list[str] = []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        rest.append(arg)
+        index += 1
+    return config_path, date, rest
+
+
+def stage_command(args: list[str]) -> int:
+    from .staging import default_edition_date, stage_markdown
+
+    usage = "usage: morning-paper stage <url|file.md> [--title T] [--date YYYY-MM-DD] [--config PATH]"
+    title_override = None
+    if "--title" in args:
+        i = args.index("--title")
+        if i + 1 < len(args):
+            title_override = args[i + 1]
+            args = args[:i] + args[i + 2 :]
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if len(rest) != 1:
+        print(usage, file=sys.stderr)
+        return 2
+    target = rest[0]
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    date_str = date or default_edition_date(config)
+    if target.startswith("http://") or target.startswith("https://"):
+        try:
+            article = fetch_article(target, extractor_name=config.article_extractor)
+        except ArticleExtractionError as exc:
+            print(json.dumps({"staged": False, "error": str(exc)}, indent=2))
+            return 1
+        markdown = render_article_markdown(
+            config,
+            [article],
+            date_str=date_str,
+            images_dir=config.outputs.directory / "staging" / date_str / "_images",
+        )
+        item = stage_markdown(
+            config, markdown, date_str=date_str, kind="url", source=target,
+            title=title_override or article.title,
+        )
+    else:
+        source = Path(target).expanduser()
+        if not source.is_file():
+            print(f"no such file: {source}", file=sys.stderr)
+            return 1
+        item = stage_markdown(
+            config, source.read_text(encoding="utf-8"), date_str=date_str,
+            kind="file", source=str(source), title=title_override or source.stem,
+        )
+    from dataclasses import asdict
+
+    payload = {"staged": True, "edition_date": date_str, **asdict(item)}
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def queue_command(args: list[str]) -> int:
+    from .staging import default_edition_date, queue_status
+
+    usage = "usage: morning-paper queue [--date YYYY-MM-DD] [--config PATH]"
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if rest:
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(queue_status(config, date or default_edition_date(config)), indent=2))
+    return 0
+
+
+def estimate_command(args: list[str]) -> int:
+    from .renderers import count_pages
+
+    usage = "usage: morning-paper estimate <file.md> [--style NAME] [--palette NAME] [--config PATH]"
+    style = palette = None
+    for flag in ("--style", "--palette"):
+        if flag in args:
+            i = args.index(flag)
+            if i + 1 < len(args):
+                value = args[i + 1]
+                args = args[:i] + args[i + 2 :]
+                if flag == "--style":
+                    style = value
+                else:
+                    palette = value
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, _date, rest = parsed
+    if len(rest) != 1:
+        print(usage, file=sys.stderr)
+        return 2
+    source = Path(rest[0]).expanduser()
+    if not source.is_file():
+        print(f"no such file: {source}", file=sys.stderr)
+        return 1
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    markdown = source.read_text(encoding="utf-8")
+    try:
+        pages = count_pages(
+            markdown,
+            style=style or config.outputs.style,
+            palette=palette or config.outputs.palette,
+        )
+    except StyleError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"estimate requires the pretty print stack: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"file": str(source), "words": len(markdown.split()), "est_pages": pages}, indent=2))
+    return 0
+
+
 def print_help() -> int:
     print(HELP_TEXT.rstrip())
     return 0
@@ -413,6 +562,12 @@ def main(argv: list[str] | None = None) -> int:
         return print_command(extra)
     if command == "render":
         return render_command(extra)
+    if command in {"stage", "add"}:
+        return stage_command(extra)
+    if command in {"queue", "status"}:
+        return queue_command(extra)
+    if command == "estimate":
+        return estimate_command(extra)
     if command == "styles":
         return styles_command()
     if command == "doctor":
