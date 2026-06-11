@@ -1,0 +1,145 @@
+/* Style pack: zine — the pocket how-to guide.
+ * Modeled on the Iffy Books Meshtastic zine (CC0, studied 2026-06-10):
+ * half-letter page, brush-marker display type, single readable column,
+ * checkbox task steps, centered bold URLs, bordered photos. Built to be
+ * stapled, folded, and handed to someone.
+ * Consumes palette tokens; compose with a palette sheet.
+ * Print note: half-letter pages 2-up on Letter = pdfbook2 / `lp -o number-up=2`.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Open+Sans:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --zn-display: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
+  --zn-body-font: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --zn-body: 9.5pt;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@page {
+  /* half-letter: 5.5in x 8.5in */
+  size: 396pt 612pt;
+  margin: 0.45in 0.45in 0.55in 0.45in;
+  @bottom-center { content: counter(page); font-family: 'Open Sans', Helvetica, sans-serif; font-size: 8pt; color: #555555; }
+}
+
+.mp-footer-date, .mp-footer-name {
+  display: block; height: 0; overflow: hidden;
+  font-size: 0; line-height: 0; visibility: hidden;
+}
+.mp-footer-date { string-set: mp-date content(); }
+.mp-footer-name { string-set: mp-name content(); }
+
+body {
+  font-family: var(--zn-body-font);
+  font-size: var(--zn-body);
+  line-height: 1.48;
+  color: var(--mp-ink);
+  background: var(--mp-paper);
+}
+
+/* cover */
+.zn-cover { text-align: center; padding-top: 0.6in; }
+.zn-cover-title {
+  font-family: var(--zn-display);
+  font-size: 27pt;
+  line-height: 1.3;
+  margin-bottom: 0.25in;
+}
+.zn-cover-sub {
+  font-family: var(--zn-display);
+  font-size: 14pt;
+  margin-bottom: 0.08in;
+}
+.zn-cover-meta {
+  font-size: 9pt;
+  font-weight: 700;
+  font-style: italic;
+  margin-top: 0.3in;
+  line-height: 1.6;
+}
+.zn-cover-blurb { text-align: left; margin-top: 0.35in; font-size: 9.5pt; }
+
+/* section heads: centered, bold, caps (inner pages) */
+h1 {
+  font-family: var(--zn-body-font);
+  font-size: 12pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.02em;
+  margin: 0.16in 0 0.07in 0;
+}
+h2 {
+  font-family: var(--zn-display);
+  font-size: 13pt;
+  margin: 0.14in 0 0.06in 0;
+}
+
+p { margin-bottom: 0.09in; }
+
+/* checkbox steps — the zine's signature */
+.zn-step {
+  margin-bottom: 0.09in;
+  padding-left: 0.22in;
+  text-indent: -0.22in;
+}
+.zn-step::before { content: "\2750\00a0 "; font-size: 10.5pt; }
+.zn-step strong { font-weight: 700; }
+
+/* centered bold URL / command lines */
+.zn-url {
+  text-align: center;
+  font-weight: 700;
+  margin: 0.07in 0 0.1in 0;
+  font-size: 9.5pt;
+  word-break: break-all;
+}
+.zn-cmd {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 8.5pt;
+  background: var(--mp-card-bg);
+  border: 1px solid var(--mp-track);
+  padding: 0.05in 0.08in;
+  margin: 0.06in 0 0.1in 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* bordered figures */
+.zn-img { text-align: center; margin: 0.1in 0; break-inside: avoid; }
+.zn-img img { max-width: 80%; border: 1px solid var(--mp-rule); padding: 0.02in; background: var(--mp-paper); }
+.zn-img .cap { font-size: 7.5pt; color: var(--mp-muted); margin-top: 0.03in; }
+
+/* warnings */
+.zn-warn {
+  border: 1.5px solid var(--mp-alert);
+  background: var(--mp-alert-bg);
+  padding: 0.06in 0.09in;
+  margin: 0.1in 0;
+  font-size: 9pt;
+  break-inside: avoid;
+}
+.zn-warn strong { color: var(--mp-alert); font-weight: 700; }
+
+.not-configured { margin: 0.08in 0; padding: 0.06in 0.08in; border: 1px dashed var(--mp-muted); font-size: 8.5pt; color: var(--mp-muted); }
+
+/* charts work here too */
+.mp-chart { margin: 0.1in 0; break-inside: avoid; }
+.mp-chart-title { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mp-muted); margin-bottom: 0.03in; }
+.mp-chart svg { display: block; width: 100%; height: auto; }
+.mp-stats { display: flex; gap: 0.08in; margin: 0.08in 0; flex-wrap: wrap; }
+.mp-stat { flex: 1 1 0; min-width: 0.9in; border-top: 2px solid var(--mp-rule); padding: 0.04in 0.02in 0 0.02in; }
+.mp-stat-value { font-size: 13pt; font-weight: 700; color: var(--mp-chart-ink); }
+.mp-stat-delta { font-size: 6.5pt; color: var(--mp-muted); }
+.mp-stat-label { font-size: 6pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); margin-top: 0.015in; }
+
+table.data { width: 100%; border-collapse: collapse; margin: 0.06in 0; font-size: 8.5pt; }
+table.data th { text-align: left; font-size: 7pt; text-transform: uppercase; color: var(--mp-muted); border-bottom: 1px solid var(--mp-rule); padding: 0.02in 0.04in 0.02in 0; }
+table.data td { padding: 0.02in 0.04in 0.02in 0; border-bottom: 1px solid var(--mp-track); vertical-align: top; }
+
+ul, ol { margin: 0.02in 0 0.08in 0.22in; }
+li { line-height: 1.45; margin-bottom: 0.025in; }
+a { color: var(--mp-ink); font-weight: 700; text-decoration: none; }
+.page-break { page-break-before: always; }

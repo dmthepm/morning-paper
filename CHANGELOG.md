@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-11
+
+### Added
+- `magazine` style pack — long-read essay page (serif body on the Palatino/Georgia chain, kicker/dek/byline header, pull quotes, raised-cap lede, end mark)
+- `zine` style pack — pocket how-to guide (half-letter page, marker display type, checkbox steps, command blocks, warning boxes; print 2-up on Letter for folding)
+
+### Fixed
+- Avoided a WeasyPrint crash on floated `::first-letter` (drop caps render as raised caps instead)
+
 ## [0.2.0] - 2026-06-11
 
 ### Added
