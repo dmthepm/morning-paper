@@ -34,6 +34,7 @@ class StagedItem:
     truncated: bool = False           # honesty flag: the staged copy is incomplete
     words_extracted: int | None = None  # words the extractor recovered before any render cap
     warning: str = ""                 # plain-language explanation when truncated
+    extractor_note: str = ""          # honesty note: e.g. local extraction fell back to jina
 
 
 def staging_dir(config: MorningPaperConfig, date_str: str) -> Path:
@@ -69,6 +70,7 @@ def stage_markdown(
     truncated: bool = False,
     words_extracted: int | None = None,
     warning: str = "",
+    extractor_note: str = "",
 ) -> StagedItem:
     sdir = staging_dir(config, date_str)
     slug = _safe_filename(title)[:48] or "staged"
@@ -95,6 +97,7 @@ def stage_markdown(
         truncated=truncated,
         words_extracted=words_extracted,
         warning=warning,
+        extractor_note=extractor_note,
     )
     queue.append(asdict(item))
     _save_queue(sdir, queue)

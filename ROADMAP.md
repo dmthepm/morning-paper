@@ -31,6 +31,13 @@
 - vendored Courier Prime (OFL) for offline-deterministic rendering
 - `doctor --json` and `doctor --strict` for machine-readable install checks
 
+## Shipped (`v0.4.2`)
+
+- `local` article extractor (trafilatura, core dependency) as the default —
+  URLs stay on your machine; `jina` demoted to explicit option + honest
+  auto-fallback with a privacy note in the result
+- "Set up with AI" onboarding prompt at the top of the README
+
 ## Next (`v0.4`)
 
 - queue management verbs: `morning-paper remove`, `morning-paper list`
@@ -49,4 +56,5 @@
 - coverage / breadth analysis for major stories
 - image-of-the-day or full-page visual mode
 - E Ink / device delivery surfaces
-- additional extractor backends beyond Jina
+- additional extractor backends beyond `local` and `jina` (readability exports,
+  paywalled-page sessions)

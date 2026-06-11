@@ -365,6 +365,11 @@ def print_command(args: list[str]) -> int:
         for article in articles
         if (message := article_truncation_warning(article))
     ]
+    # Honesty rule: if the local extractor fell back to the remote jina reader,
+    # say so — the reader should know this URL left the machine.
+    truncation_warnings.extend(
+        f"{article.url} {article.extraction_note}" for article in articles if article.extraction_note
+    )
     try:
         outputs, warnings, pages = write_custom_markdown(
             config,
@@ -583,6 +588,7 @@ def stage_command(args: list[str]) -> int:
             truncated=bool(report["truncated"]),
             words_extracted=int(report["words_extracted"]),
             warning=article_truncation_warning(article),
+            extractor_note=article.extraction_note,
         )
     else:
         source = Path(target).expanduser()

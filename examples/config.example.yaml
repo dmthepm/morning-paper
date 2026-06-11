@@ -5,7 +5,9 @@ timezone: America/Los_Angeles
 profile: |
   Add a short note about who this paper is for and what should matter most.
   Example: early-stage AI tools, operator software, media, and founder signal.
-article_extractor: jina
+# local parses pages on this machine (URLs never leave your computer);
+# jina sends each URL to the third-party r.jina.ai reader service
+article_extractor: local
 
 sources:
   hacker_news:

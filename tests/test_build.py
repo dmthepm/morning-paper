@@ -161,6 +161,8 @@ class BuildFlowTest(unittest.TestCase):
             self.assertEqual(config["outputs"]["style"], "editorial")
             self.assertEqual(config["outputs"]["palette"], "color")
             self.assertEqual(config["outputs"]["renderer"], "typewriter")
+            # local-first extraction: URLs stay on this machine by default
+            self.assertEqual(config["article_extractor"], "local")
             config["outputs"]["directory"] = str(output_dir)
             config["outputs"]["renderer"] = "portable"
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")

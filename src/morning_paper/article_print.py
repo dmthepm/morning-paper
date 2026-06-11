@@ -21,6 +21,11 @@ class ArticleExtractionError(RuntimeError):
 
 JINA_TIMEOUT_SECONDS = 40
 PAGE_FETCH_TIMEOUT_SECONDS = 30
+LOCAL_FETCH_TIMEOUT_SECONDS = 30
+LOCAL_FETCH_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
 UNAVATAR_TIMEOUT_SECONDS = 10
 FXTWITTER_TIMEOUT_SECONDS = 15
 MIN_ARTICLE_LENGTH = 200
@@ -79,6 +84,9 @@ class Article:
     views: int | None = None
     bio: str | None = None
     blocks: list[tuple[str, str]] = field(default_factory=list)
+    # honesty note: set when extraction did not happen the way the config promised
+    # (for example: local extraction came up short and the jina fallback ran)
+    extraction_note: str = ""
 
 
 def _clean_text(value: str) -> str:
@@ -343,6 +351,125 @@ class JinaArticleExtractor:
 register_article_extractor(JinaArticleExtractor())
 
 
+MARKDOWN_IMAGE_PATTERN = re.compile(r"^!\[[^\]]*\]\((https?://[^)\s]+)[^)]*\)$")
+_MARKDOWN_INLINE_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_MARKDOWN_EMPHASIS_PATTERN = re.compile(r"(\*{1,3}|_{1,3}|`)(.+?)\1")
+
+
+def _strip_markdown_inline(text: str) -> str:
+    text = _MARKDOWN_INLINE_IMAGE_PATTERN.sub("", text)
+    text = _MARKDOWN_LINK_PATTERN.sub(r"\1", text)
+    previous = None
+    while previous != text:
+        previous = text
+        text = _MARKDOWN_EMPHASIS_PATTERN.sub(r"\2", text)
+    return " ".join(text.split())
+
+
+def _markdown_blocks(markdown_text: str) -> list[tuple[str, str]]:
+    """Parse extractor markdown into the renderer's block vocabulary.
+
+    Kinds: paragraph, blockquote, callout (headings), image. Mirrors the jina
+    parser's output shape so validation, truncation reporting, and rendering
+    work identically for both extraction paths.
+    """
+    blocks: list[tuple[str, str]] = []
+    current_kind: str | None = None
+    current_lines: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_kind, current_lines
+        if current_kind and current_lines:
+            text = _strip_markdown_inline(" ".join(current_lines))
+            if text:
+                blocks.append((current_kind, text))
+        current_kind = None
+        current_lines = []
+
+    for raw in markdown_text.splitlines():
+        line = raw.strip()
+        if not line:
+            flush()
+            continue
+        image_match = MARKDOWN_IMAGE_PATTERN.match(line)
+        if image_match:
+            flush()
+            blocks.append(("image", image_match.group(1)))
+            continue
+        if line.startswith("#"):
+            flush()
+            heading = _strip_markdown_inline(line.lstrip("#"))
+            if heading:
+                blocks.append(("callout", heading))
+            continue
+        if line.startswith(">"):
+            cleaned = line.lstrip(">").strip()
+            if not cleaned:
+                continue
+            if current_kind != "blockquote":
+                flush()
+                current_kind = "blockquote"
+            current_lines.append(cleaned)
+            continue
+        if re.fullmatch(r"[\W_]+", line):
+            continue
+        if current_kind != "paragraph":
+            flush()
+            current_kind = "paragraph"
+        current_lines.append(line)
+    flush()
+    return blocks
+
+
+class LocalArticleExtractor:
+    """On-machine extraction: a direct fetch plus trafilatura.
+
+    Nothing about the URL or the page leaves this machine — unlike the `jina`
+    extractor, which sends each URL to the third-party r.jina.ai reader.
+    """
+
+    name = "local"
+
+    def extract(self, url: str) -> ExtractedArticleContent:
+        import trafilatura
+
+        response = requests.get(
+            url,
+            timeout=LOCAL_FETCH_TIMEOUT_SECONDS,
+            headers={"User-Agent": LOCAL_FETCH_USER_AGENT},
+        )
+        response.raise_for_status()
+        html_text = response.text
+        markdown_text = (
+            trafilatura.extract(
+                html_text,
+                url=url,
+                output_format="markdown",
+                include_images=True,
+                include_links=False,
+            )
+            or ""
+        )
+        metadata = None
+        try:
+            metadata = trafilatura.extract_metadata(html_text, default_url=url)
+        except Exception:
+            metadata = None
+        blocks = _markdown_blocks(markdown_text)
+        paragraphs = [text for kind, text in blocks if kind in {"paragraph", "blockquote", "callout"}]
+        return ExtractedArticleContent(
+            title=str(getattr(metadata, "title", "") or ""),
+            author=str(getattr(metadata, "author", "") or ""),
+            image_url=str(getattr(metadata, "image", "") or ""),
+            paragraphs=paragraphs,
+            blocks=blocks,
+        )
+
+
+register_article_extractor(LocalArticleExtractor())
+
+
 def _fetch_x_profile_metadata(handle: str) -> dict[str, str]:
     try:
         reader = _reader_text(f"https://x.com/{handle.lstrip('@')}")
@@ -468,7 +595,46 @@ def _extract_body(raw_html: str, extracted: ExtractedArticleContent) -> str:
     return "\n\n".join(sentence for sentence in sentences[:MAX_PARAGRAPHS] if sentence)[:MAX_BODY_CHARS]
 
 
-def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
+def _extracted_content_chars(extracted: ExtractedArticleContent) -> int:
+    """Length of the real text an extractor recovered, mirroring the validation gate."""
+    fragments = list(extracted.paragraphs or [])
+    if extracted.blocks:
+        fragments = [value for kind, value in extracted.blocks if kind != "image"]
+    combined = " ".join(part for part in fragments if part)
+    return len(re.sub(r"\s+", " ", combined).strip())
+
+
+JINA_FALLBACK_NOTE = (
+    "local extraction recovered too little content, so this article was re-fetched "
+    "through the jina remote reader (the URL was sent to the third-party r.jina.ai service)"
+)
+
+
+def _extract_with_fallback(extractor, url: str) -> tuple[ExtractedArticleContent, str]:
+    """Run the configured extractor; chain local -> jina when local comes up short.
+
+    Returns (content, note). The note is the honest record that the privacy
+    promise of `local` was traded for content on this URL — surfaced in the
+    print/stage results, never silent.
+    """
+    try:
+        extracted = extractor.extract(url)
+    except Exception:
+        if extractor.name != "local":
+            raise
+        extracted = ExtractedArticleContent()
+    if extractor.name != "local" or _extracted_content_chars(extracted) >= MIN_ARTICLE_LENGTH:
+        return extracted, ""
+    try:
+        fallback = get_article_extractor("jina").extract(url)
+    except Exception:
+        return extracted, ""
+    if _extracted_content_chars(fallback) > _extracted_content_chars(extracted):
+        return fallback, JINA_FALLBACK_NOTE
+    return extracted, ""
+
+
+def fetch_article(url: str, *, extractor_name: str = "local") -> Article:
     domain = _normalized_domain(url)
     if domain in SKIP_DOMAINS:
         raise ArticleExtractionError(
@@ -486,7 +652,7 @@ def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
             f"Could not fetch article from `{url}`. The source returned an HTTP or network error. Detail: {exc}"
         ) from exc
     raw_html = response.text
-    extracted = extractor.extract(url)
+    extracted, extraction_note = _extract_with_fallback(extractor, url)
     title = _meta_content(raw_html, "og:title")
     if not title:
         match = re.search(r"<title>(.*?)</title>", raw_html, flags=re.IGNORECASE | re.DOTALL)
@@ -539,6 +705,7 @@ def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
         views=int(fx_meta["views"]) if fx_meta.get("views") is not None else None,
         bio=str(fx_meta["bio"]).strip() if fx_meta.get("bio") else None,
         blocks=blocks,
+        extraction_note=extraction_note,
     )
 
 

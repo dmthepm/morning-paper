@@ -144,3 +144,30 @@ mandate — compose whichever zones a document needs. Everything is built on a
 A full single-sheet layout (no folio, no running heads) must null the
 editorial `@page` furniture in its own `<style>` block, across all three
 page contexts (base, `:left`, `:right`).
+
+## Article extraction (`print` / `stage`) and privacy
+
+When you hand the engine a URL (`morning-paper print <url>`,
+`morning-paper stage <url>`), an extractor turns the page into printable
+blocks. Two are registered:
+
+- `local` (default) — fetches the page directly from this machine and parses
+  it with trafilatura. **The URLs your reader cares about never leave their
+  computer.** No key, no rate limits, works offline-adjacent (only the
+  article's own host is contacted).
+- `jina` — sends the URL to the third-party `r.jina.ai` reader service
+  (anonymous tier: shared rate limits, 40-second timeout). Stronger on
+  JavaScript-heavy pages and X posts.
+
+The chain is `local -> jina`: when local extraction recovers too little
+content, the engine retries through jina and the result carries an honest
+note (`extraction_note` on the article, an `extractor_note` field in the
+stage JSON, and a warning line in `print` output) saying the URL was sent to
+the third-party service. It never falls back silently — if your reader's
+threat model forbids the remote reader entirely, respect the note and skip
+the article instead of staging it. Pin a backend with `article_extractor:
+local` or `article_extractor: jina` in config.
+
+Both paths feed the same validation gate (shell pages and too-short
+extractions are rejected, never printed) and the same truncation reporting
+(`truncated`, `words_extracted`, plain-language `warning`).

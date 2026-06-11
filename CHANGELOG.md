@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-11
+
+### Added
+- `local` article extractor — fetches the page directly from your machine and parses it with trafilatura (now a core dependency). It is the **default** for `print`/`stage`: the URLs you read never leave your computer. Headings, blockquotes, and inline images carry through to print; the validation gate and truncation reporting work identically to the jina path
+- "Set up with AI (recommended)" section at the top of the README — a copy-paste prompt that walks any strong model through the full onboarding arc (read, explore, interview, install, doctor, demo, private newsroom repo, first printed edition, daily loop), mirrored in the For Agents section
+- Stage JSON now carries `extractor_note`; `print` output adds a warning line when the extractor fell back
+
+### Changed
+- `jina` (`r.jina.ai`) is demoted from default to explicit option + automatic fallback. Privacy note, stated plainly in README and docs: jina sends each URL you read to a third-party service. When local extraction recovers too little content the engine chains `local -> jina` and flags the result with an honest note — never a silent fallback
+- Default config (`init`) now writes `article_extractor: local` with the privacy trade documented in a comment
+
 ## [0.4.1] - 2026-06-11
 
 ### Fixed

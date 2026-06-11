@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morning-paper"
-version = "0.4.1"
+version = "0.4.2"
 description = "Build a personalized daily newspaper as a print-ready PDF."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -41,6 +41,7 @@ dependencies = [
   "Pillow>=11.3.0",
   "PyYAML>=6.0.2",
   "requests>=2.32.3",
+  "trafilatura>=1.12",
 ]
 
 [project.optional-dependencies]

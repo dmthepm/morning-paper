@@ -170,6 +170,16 @@ X.com is actively hostile to content extraction. There is no free, open source, 
   3. `manual` — user pastes thread content as markdown (always works)
 - If no X backend is configured and user tries an X URL: clear message with options, never a broken/garbage PDF.
 
+> **Amended 2026-06-11 (0.4.2):** the default flipped. General article
+> extraction is now **local-first**: trafilatura ships as a core dependency
+> and `article_extractor: local` is the default — URLs stay on the reader's
+> machine. Jina Reader is demoted to an explicit option and an automatic
+> fallback when local extraction recovers too little content; the fallback
+> is always flagged with an honest note in the result, never silent. The
+> privacy concern (every read URL sent to a third-party SaaS) outweighed
+> the zero-dependency appeal of the original default. The `[local]` extra
+> described below no longer exists — trafilatura is core.
+
 ### pyproject.toml extras
 
 ```toml
@@ -178,6 +188,9 @@ pretty = ["weasyprint>=62.0"]
 twitter = ["twscrape"]
 local = ["trafilatura"]
 ```
+
+(As of 0.4.2: `twitter` and `local` extras were never wired and are gone;
+trafilatura moved into core `dependencies`.)
 
 ### Content validation gate
 
@@ -193,8 +206,11 @@ The February 2026 Pay-Per-Use pricing ($0.005/post, no free tier) makes it unsui
 ## 12. Article Extraction Architecture
 
 Decision date: 2026-04-14
+Amended: 2026-06-11 (0.4.2) — default is now the **local** trafilatura
+extractor; Jina Reader is the documented fallback in the `local -> jina`
+chain below and remains selectable via `article_extractor: jina`.
 
-Default extractor: **Jina Reader** (`https://r.jina.ai/{url}`)
+Original default extractor: **Jina Reader** (`https://r.jina.ai/{url}`)
 
 Request headers include `X-With-Images: true` which returns 33-90% more content on X Articles with better heading and image preservation.
 
@@ -205,10 +221,14 @@ Why Jina over trafilatura as the default:
 - Images come in print-friendly sizes (`small` variant, perfect for newspaper columns)
 - trafilatura drops images and requires extra parsing for the same content
 
-Fallback chain in `fetch_article()`:
-1. Jina Reader → if content passes validation gate → return Article
-2. If Jina fails validation → raise ArticleExtractionError with clear message
-3. For X URLs specifically: suggest configuring twitter backend or manual paste
+Fallback chain in `fetch_article()` (as of 0.4.2):
+1. Local trafilatura extraction → if it recovers enough content → return Article
+2. If local recovers too little → Jina Reader retry, result carries an honest
+   `extraction_note` ("the URL was sent to the third-party r.jina.ai service")
+3. If the winning extraction fails the validation gate → raise
+   ArticleExtractionError with clear message
+4. For X URLs specifically: the local fetch sees the noscript shell, so jina
+   handles X posts in practice; shell responses still fail with a clear error
 
 Content validation gate (implemented in v0.1.1):
 - Minimum 200 characters of extracted text
@@ -225,7 +245,7 @@ Image handling:
 Honest limitations:
 - Jina is an external free service — rate limits and future changes are possible
 - Some X posts fail extraction (noscript shell returned) — validation gate catches these
-- No offline mode without the optional `morning-paper[local]` extra (trafilatura)
+- ~~No offline mode without the optional `morning-paper[local]` extra (trafilatura)~~ — resolved in 0.4.2: trafilatura is core and local extraction is the default
 
 ## 13. X/Twitter Metadata via FxTwitter
 
@@ -291,8 +311,8 @@ Morning Paper should treat article extraction as a replaceable backend, not a pe
 
 Current shape:
 - extractor interface: `src/morning_paper/extractors.py`
-- current registered extractor: `jina`
-- config field: `article_extractor: jina`
+- registered extractors: `local` (default since 0.4.2) and `jina`
+- config field: `article_extractor: local` (or `jina`)
 - `fetch_article()` resolves the configured extractor, then applies shared validation, metadata enrichment, and rendering
 
 Reason:

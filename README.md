@@ -11,6 +11,27 @@
 
 ---
 
+## Set up with AI (recommended)
+
+Open your strongest model — Claude Fable with the 1M context works great — and paste this:
+
+```text
+I want a Morning Paper: an open-source personal newspaper my agent composes
+and prints, with preferences I own as files
+(https://github.com/dmthepm/morning-paper). First read the entire README,
+then explore the repo enough to understand the architecture (agent composes,
+code renders; a private newsroom repo holds my preference files; the honesty
+doctrine binds). Then interview me briefly about my sources, page budget, and
+printer. Then: install the engine, run `morning-paper doctor` and fix
+anything it flags, run `morning-paper demo` so I see the product, create my
+private newsroom repo, build my first real edition, and teach me the daily
+loop — including the desk sheet and how my handwritten notes get read back.
+Get me to a printed (or PDF) first edition, then stop and show me what you
+set up.
+```
+
+Prefer to drive it yourself? Everything below is the manual path.
+
 ## Try it
 
 Typeset the bundled sample edition — no config, no network, no keys:
@@ -47,7 +68,10 @@ skill composes and prints each day's paper.
 
 ## For Agents (read this first if you are one)
 
-Your human wants a daily printed paper. You can give them one:
+Your human wants a daily printed paper. You can give them one. If they pasted
+the ["Set up with AI" prompt](#set-up-with-ai-recommended) above, follow it —
+it is the full onboarding arc (read, explore, interview, install, demo,
+newsroom repo, first edition, daily loop). Otherwise:
 
 1. Install: `uv tool install "morning-paper[pretty]"` (or
    `pipx install "morning-paper[pretty]"`; use `pip` only inside a venv —
@@ -70,9 +94,12 @@ Your human wants a daily printed paper. You can give them one:
    `estimate` fails without it, and `stage` falls back to a rough
    words-per-page heuristic instead of a real layout pass. Run
    `morning-paper doctor` first if the numbers matter.
-5. URL fetching goes through the anonymous Jina Reader tier: no key needed,
-   but rate limits and a 40-second timeout apply. Failures raise clean
-   errors instead of staging garbage.
+5. Article extraction is local by default (`trafilatura`): the URL is fetched
+   from this machine and never sent to a third party. If local extraction
+   recovers too little, the `jina` fallback re-fetches through `r.jina.ai`
+   (anonymous tier: shared rate limits, 40-second timeout) and the result
+   carries an honest note saying the URL left the machine. Failures raise
+   clean errors instead of staging garbage.
 6. Composition contract, class vocabulary, and chart directives: [docs/composing.md](docs/composing.md).
 7. Honesty rule: a section with no data says "not configured" — never fabricate.
 
@@ -161,13 +188,21 @@ silently generating a lower-quality PDF. `morning-paper doctor` says plainly
 which path you are on, and on macOS prints the exact Pango fix when that is
 the problem.
 
-Article extraction defaults to the anonymous Jina Reader tier (`r.jina.ai`):
-no API key, shared rate limits, 40-second timeout. Some domains (YouTube,
-GitHub, Instagram, LinkedIn, HN comment pages) do not extract meaningfully
-and are rejected with a clear error. A validation gate rejects shell pages
-and too-short extractions instead of printing garbage. Extraction is a
-replaceable backend; the renderer, validation, and image pipeline are
-designed to survive extractor upgrades.
+Article extraction defaults to `local`: the page is fetched directly from
+your machine and parsed with [trafilatura](https://trafilatura.readthedocs.io/)
+— no API key, no rate limits, and **the URLs you read never leave your
+computer**. The `jina` extractor (the anonymous `r.jina.ai` reader tier)
+remains available, and runs automatically as a fallback when local
+extraction recovers too little content — with the privacy trade stated
+plainly: jina sends each URL to a third-party service, so the fallback is
+flagged with an honest note in the `print`/`stage` output rather than
+happening silently. Set `article_extractor: jina` in config if you prefer
+the remote reader. Some domains (YouTube, GitHub, Instagram, LinkedIn, HN
+comment pages) do not extract meaningfully and are rejected with a clear
+error. A validation gate rejects shell pages and too-short extractions
+instead of printing garbage. Extraction is a replaceable backend; the
+renderer, validation, and image pipeline are designed to survive extractor
+upgrades.
 
 ## The honesty doctrine
 
