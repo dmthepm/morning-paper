@@ -28,7 +28,7 @@
 
 body {
   font-family: var(--oc-font);
-  font-size: var(--oc-body);
+  font-size: calc(var(--mp-font-scale, 1) * var(--oc-body));
   line-height: 1.4;
   color: var(--mp-ink);
   background: var(--mp-paper);
@@ -140,6 +140,6 @@ table.oc-table td strong { font-weight: 700; }
 
 ul { margin: 0.02in 0 0.04in 0.18in; }
 li { font-size: 8pt; line-height: 1.4; margin-bottom: 0.015in; }
-p { font-size: var(--oc-body); }
+p { font-size: calc(var(--mp-font-scale, 1) * var(--oc-body)); }
 a { color: var(--mp-ink); text-decoration: none; }
 .page-break { page-break-before: always; }

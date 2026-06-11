@@ -64,7 +64,7 @@
 
 body {
   font-family: var(--mp-font-body);
-  font-size: var(--mp-body-size);
+  font-size: calc(var(--mp-font-scale, 1) * var(--mp-body-size));
   line-height: var(--mp-body-line-height);
   color: var(--mp-ink);
   background: var(--mp-paper);
@@ -292,3 +292,10 @@ li::marker { color: var(--mp-muted); }
 .mp-stat-label { font-size: 6pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); margin-top: 0.015in; }
 
 .page-break { page-break-before: always; }
+
+/* truncation notice: honesty furniture for clipped staged articles */
+.trunc-notice {
+  margin: 0.04in 0 0.06in 0; padding: 0.035in 0.06in;
+  border: 1px dashed var(--mp-muted);
+  font-size: var(--mp-list-size); color: var(--mp-muted); line-height: 1.4;
+}

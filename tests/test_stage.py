@@ -62,6 +62,40 @@ class TruncationReportTest(unittest.TestCase):
         self.assertIn("mid-sentence", str(report["reason"]))
 
 
+class OnPageTruncationNoticeTest(unittest.TestCase):
+    def test_truncated_article_prints_notice_on_page(self) -> None:
+        from morning_paper.article_print import render_article_markdown
+        from morning_paper.config import MorningPaperConfig
+
+        article = _article(MAX_RENDER_BLOCKS + 10)
+        report = article_truncation_report(article)
+        with tempfile.TemporaryDirectory() as tmp:
+            markdown = render_article_markdown(
+                MorningPaperConfig(),
+                [article],
+                date_str="2026-06-12",
+                images_dir=Path(tmp) / "_images",
+            )
+        self.assertIn("trunc-notice", markdown)
+        self.assertIn(
+            f"Truncated at extraction; {report['words_rendered']} of {report['words_extracted']} words shown.",
+            markdown,
+        )
+
+    def test_complete_article_prints_no_notice(self) -> None:
+        from morning_paper.article_print import render_article_markdown
+        from morning_paper.config import MorningPaperConfig
+
+        with tempfile.TemporaryDirectory() as tmp:
+            markdown = render_article_markdown(
+                MorningPaperConfig(),
+                [_article(5)],
+                date_str="2026-06-12",
+                images_dir=Path(tmp) / "_images",
+            )
+        self.assertNotIn("Truncated at extraction", markdown)
+
+
 class StageTruncationTest(unittest.TestCase):
     def _stage(self, article: Article) -> dict:
         with tempfile.TemporaryDirectory() as tmp:

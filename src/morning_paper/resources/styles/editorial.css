@@ -11,8 +11,6 @@
  * the code rides the running header and prefixes the folio ("R2 · 7").
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-
 :root {
   --ed-serif: 'Palatino', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Times New Roman', serif;
   --ed-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -54,7 +52,7 @@
 
 body {
   font-family: var(--ed-serif);
-  font-size: 10.5pt;
+  font-size: calc(var(--mp-font-scale, 1) * 10.5pt);
   line-height: 1.55;
   color: var(--mp-ink);
   background: var(--mp-paper);
@@ -207,6 +205,20 @@ blockquote { font-style: italic; border-left: 2px solid var(--mp-track); padding
 
 /* ---- end mark: drawn, not a glyph ---- */
 .endmark { display: inline-block; width: 5.5pt; height: 5.5pt; background: var(--mp-ink); margin-left: 0.05in; vertical-align: -0.2pt; }
+
+/* ---- forced page break: the documented escape hatch ----
+ * The editorial flow philosophy stands — separators flow, nothing forces a
+ * page — but single-sheet furniture (a desk sheet that must land on its own
+ * back page for a duplex tear-off) needs a deliberate break. Opt in with
+ * <div class="page-break"></div>; see docs/composing.md. */
+.page-break { break-before: page; page-break-before: always; }
+
+/* ---- truncation notice: honesty furniture for clipped articles ---- */
+.trunc-notice {
+  margin: 0.06in 0 0.1in 0; padding: 0.05in 0.09in;
+  border: 1px dashed var(--mp-muted);
+  font-family: var(--ed-sans); font-size: 8pt; color: var(--mp-muted); line-height: 1.4;
+}
 
 /* ---- desk sheet ----
  * Ruled writing furniture: solid rules are the paper talking, dotted rules

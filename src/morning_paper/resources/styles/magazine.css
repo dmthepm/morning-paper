@@ -33,7 +33,7 @@
 
 body {
   font-family: var(--mg-serif);
-  font-size: var(--mg-body);
+  font-size: calc(var(--mp-font-scale, 1) * var(--mg-body));
   line-height: var(--mg-lh);
   color: var(--mp-ink);
   background: var(--mp-paper);
@@ -127,6 +127,26 @@ blockquote {
   padding-left: 0.15in;
   margin: 0.1in 0 0.12in 0.05in;
 }
+
+/* code: fenced blocks get a bordered, smaller-mono treatment so a how-to's
+   most instructional moment doesn't bleed into the next paragraph */
+code {
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+  font-size: 0.88em;
+}
+pre {
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+  font-size: 8.5pt;
+  line-height: 1.45;
+  background: var(--mp-card-bg);
+  border: 1px solid var(--mp-track);
+  padding: 0.07in 0.1in;
+  margin: 0.1in 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  break-inside: avoid;
+}
+pre code { font-size: inherit; }
 
 /* notes, asides, honest degradation */
 .mg-note {
