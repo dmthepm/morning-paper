@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-11
+
+### Fixed
+- `stage <url>` (and `print <url>`) no longer truncate long articles silently. The article renderer keeps the first 80 extracted blocks; an ~11k-word essay was being staged at ~4.5k words with `staged: true` and a page estimate computed on the clipped text. The stage JSON now carries `truncated`, `words_extracted`, and a plain-language `warning` (exit stays 0), `print` surfaces the same warning, and a mid-sentence-cut check also flags extractions clipped upstream
+- README install guidance now leads with `uv tool install "morning-paper[pretty]"` (pipx as the alternative), documents the PEP 668 `externally-managed-environment` failure on brew/system Pythons, and keeps `pip` for venv users — the literal `pip install` line stranded non-venv users
+- Demo's "Make it yours" line now bridges the uvx try-it path to a persistent install (`uv tool install "morning-paper[pretty]" && morning-paper init`) — `morning-paper` was not on PATH for uvx users who typed the old suggestion verbatim
+- `.claude-plugin/plugin.json` version no longer lags the package (0.3.0 -> 0.4.1)
+- Starter config comment now lists all six styles instead of three
+
+### Changed
+- Default `outputs.style`/`outputs.palette` are now `editorial`/`color` — the first personal edition now matches the look the demo sold (renderer stays `typewriter`)
+
+### Added
+- `build`, `demo`, `print`, and `render` JSON output now report `"pages"` — the page count of the produced PDF (null when no PDF is written)
+
 ## [0.4.0] - 2026-06-11
 
 ### Added

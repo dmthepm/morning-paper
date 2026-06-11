@@ -542,6 +542,55 @@ def fetch_article(url: str, *, extractor_name: str = "jina") -> Article:
     )
 
 
+_SENTENCE_END_PATTERN = re.compile(r"[.!?…\"”'’)\]:]$")
+
+
+def article_truncation_report(article: Article) -> dict[str, object]:
+    """Honesty check: report whether rendering will clip this article.
+
+    `render_article_markdown` caps body blocks at MAX_RENDER_BLOCKS, so a long
+    essay loses its tail at render time. Separately, the upstream extractor can
+    clip a page mid-sentence. Both cases must be surfaced, never silent.
+    """
+    text_blocks = [(kind, value) for kind, value in (article.blocks or []) if kind != "image"]
+    if article.blocks:
+        words_extracted = sum(len(value.split()) for _kind, value in text_blocks)
+        words_rendered = sum(
+            len(value.split()) for kind, value in article.blocks[:MAX_RENDER_BLOCKS] if kind != "image"
+        )
+        blocks_dropped = max(0, len(article.blocks) - MAX_RENDER_BLOCKS)
+    else:
+        words_extracted = words_rendered = len(article.body.split())
+        blocks_dropped = 0
+    last_text = (text_blocks[-1][1] if text_blocks else article.body).strip()
+    ends_mid_sentence = bool(last_text) and not _SENTENCE_END_PATTERN.search(last_text)
+    truncated = blocks_dropped > 0 or ends_mid_sentence
+    reasons: list[str] = []
+    if blocks_dropped:
+        reasons.append(
+            f"the render cap keeps the first {MAX_RENDER_BLOCKS} of {len(article.blocks)} extracted blocks"
+        )
+    if ends_mid_sentence:
+        reasons.append("the extracted text ends mid-sentence, so the source was likely clipped during extraction")
+    return {
+        "truncated": truncated,
+        "words_extracted": words_extracted,
+        "words_rendered": words_rendered,
+        "reason": "; ".join(reasons),
+    }
+
+
+def article_truncation_warning(article: Article) -> str:
+    """Plain-language warning when an article will print incomplete, else ''."""
+    report = article_truncation_report(article)
+    if not report["truncated"]:
+        return ""
+    return (
+        f"truncated: extracted {report['words_extracted']} words but only ~{report['words_rendered']} "
+        f"will print ({report['reason']}); the staged copy and its page estimate cover the truncated text only"
+    )
+
+
 def render_article_markdown(config: MorningPaperConfig, articles: list[Article], *, date_str: str, images_dir: Path) -> str:
     date_label = datetime.fromisoformat(date_str).strftime("%A, %B %d, %Y")
     css = """

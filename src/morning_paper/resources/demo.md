@@ -60,7 +60,7 @@ The vote is scheduled for tonight, after the matter of the pier lamps. The keepe
 
 <div class="move">
 <span class="move-label">The Move</span>
-This page is the demo. Make it yours: run <code>morning-paper init</code>, point the config at your own feeds, and queue tomorrow's reading with <code>morning-paper stage</code> — the edition prints itself each morning.
+This page is the demo. Make it yours: install with <code>uv tool install "morning-paper[pretty]"</code>, run <code>morning-paper init</code>, point the config at your own feeds, and queue tomorrow's reading with <code>morning-paper stage</code> — the edition prints itself each morning.
 </div>
 
 <div class="edition-divider"><div class="oxford"></div><div class="edition-divider-label">Today's Queue</div></div>

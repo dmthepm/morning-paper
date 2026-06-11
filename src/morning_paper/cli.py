@@ -10,7 +10,13 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from .article_print import ArticleExtractionError, fetch_article, render_article_markdown
+from .article_print import (
+    ArticleExtractionError,
+    article_truncation_report,
+    article_truncation_warning,
+    fetch_article,
+    render_article_markdown,
+)
 from .builder import build_paper
 from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_config, render_default_config
 from .renderers import TypewriterRendererUnavailable, _load_weasyprint, write_custom_markdown, _safe_filename
@@ -202,7 +208,7 @@ def demo_command(args: list[str]) -> int:
     config.outputs.pdf = True
     target_date = datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     try:
-        outputs, warnings = write_custom_markdown(
+        outputs, warnings, pages = write_custom_markdown(
             config,
             markdown_text,
             date_str=target_date,
@@ -221,6 +227,7 @@ def demo_command(args: list[str]) -> int:
                 "mode": "demo",
                 "style": "editorial",
                 "palette": "color",
+                "pages": pages,
                 "warnings": warnings,
                 "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
                 "output_dir": str(outputs["dir"]),
@@ -229,7 +236,7 @@ def demo_command(args: list[str]) -> int:
         )
     )
     print(f"Print it: lp {outputs['pdf']}")
-    print("Make it yours: morning-paper init (or run the setup skill in Claude Code)")
+    print('Make it yours: uv tool install "morning-paper[pretty]" && morning-paper init (or run the setup skill in Claude Code)')
     print("Post your paper: https://github.com/dmthepm/morning-paper/discussions")
     return 0
 
@@ -352,8 +359,14 @@ def print_command(args: list[str]) -> int:
     target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     bundle_title = title or articles[0].title
     slug = _safe_filename(bundle_title)[:48] or "article-print"
+    # Honesty rule: never silently clip — flag any article that will print incomplete.
+    truncation_warnings = [
+        f"{article.url} {message}"
+        for article in articles
+        if (message := article_truncation_warning(article))
+    ]
     try:
-        outputs, warnings = write_custom_markdown(
+        outputs, warnings, pages = write_custom_markdown(
             config,
             render_article_markdown(
                 config,
@@ -368,6 +381,7 @@ def print_command(args: list[str]) -> int:
     except TypewriterRendererUnavailable as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    warnings = truncation_warnings + warnings
     for warning in warnings:
         print(f"warning: {warning}", file=sys.stderr)
     print(
@@ -376,6 +390,7 @@ def print_command(args: list[str]) -> int:
                 "date": target_date,
                 "mode": "print",
                 "article_count": len(articles),
+                "pages": pages,
                 "warnings": warnings,
                 "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
                 "output_dir": str(outputs["dir"]),
@@ -462,7 +477,7 @@ def render_command(args: list[str]) -> int:
     target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     target_slug = _safe_filename(slug or source.stem)[:48] or "render"
     try:
-        outputs, warnings = write_custom_markdown(
+        outputs, warnings, pages = write_custom_markdown(
             config,
             markdown_text,
             date_str=target_date,
@@ -489,6 +504,7 @@ def render_command(args: list[str]) -> int:
                 "mode": "render",
                 "style": config.outputs.style,
                 "palette": config.outputs.palette,
+                "pages": pages,
                 "warnings": warnings,
                 "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
                 "output_dir": str(outputs["dir"]),
@@ -558,9 +574,15 @@ def stage_command(args: list[str]) -> int:
             date_str=date_str,
             images_dir=config.outputs.directory / "staging" / date_str / "_images",
         )
+        # Honesty rule: if extraction or the render cap clipped the article,
+        # say so plainly in the JSON instead of staging silently.
+        report = article_truncation_report(article)
         item = stage_markdown(
             config, markdown, date_str=date_str, kind="url", source=target,
             title=title_override or article.title,
+            truncated=bool(report["truncated"]),
+            words_extracted=int(report["words_extracted"]),
+            warning=article_truncation_warning(article),
         )
     else:
         source = Path(target).expanduser()

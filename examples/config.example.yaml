@@ -22,9 +22,10 @@ sources:
 outputs:
   directory: ~/.local/share/morning-paper
   renderer: typewriter
-  # style: typewriter | flow | ops-card    palette: mono | color
-  style: typewriter
-  palette: mono
+  # style: editorial | typewriter | flow | magazine | ops-card | zine    palette: mono | color
+  # editorial/color is what the demo prints — the default recommendation
+  style: editorial
+  palette: color
   pdf: true
   html: true
   markdown: true

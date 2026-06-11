@@ -52,13 +52,18 @@ class DemoCommandTest(unittest.TestCase):
             self.assertEqual(payload["mode"], "demo")
             self.assertEqual(payload["style"], "editorial")
             self.assertEqual(payload["palette"], "color")
+            self.assertIsInstance(payload["pages"], int)
+            self.assertGreaterEqual(payload["pages"], 1)
             for key in ("json", "markdown", "html", "pdf"):
                 path = Path(payload["outputs"][key])
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
 
             self.assertEqual(lines[-3], f"Print it: lp {payload['outputs']['pdf']}")
-            self.assertEqual(lines[-2], "Make it yours: morning-paper init (or run the setup skill in Claude Code)")
+            self.assertEqual(
+                lines[-2],
+                'Make it yours: uv tool install "morning-paper[pretty]" && morning-paper init (or run the setup skill in Claude Code)',
+            )
             self.assertEqual(lines[-1], "Post your paper: https://github.com/dmthepm/morning-paper/discussions")
 
             # offline-deterministic: the typeset HTML carries vendored fonts, no network fetches

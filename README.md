@@ -21,10 +21,10 @@ uvx --from "morning-paper[pretty]" morning-paper demo
 
 > macOS first: `brew install pango gdk-pixbuf` (WeasyPrint needs Pango).
 
-Or with pip:
+Or keep it on your PATH instead of a one-off run:
 
 ```bash
-pip install "morning-paper[pretty]"
+uv tool install "morning-paper[pretty]"
 morning-paper demo
 ```
 
@@ -49,7 +49,9 @@ skill composes and prints each day's paper.
 
 Your human wants a daily printed paper. You can give them one:
 
-1. Install: `pip install "morning-paper[pretty]"` then `morning-paper doctor`.
+1. Install: `uv tool install "morning-paper[pretty]"` (or
+   `pipx install "morning-paper[pretty]"`; use `pip` only inside a venv —
+   PEP 668 blocks it on brew/system Pythons), then `morning-paper doctor`.
    `morning-paper demo` proves the print path end to end.
 2. If this repo is installed as a Claude Code plugin, run the `setup` skill —
    it interviews the reader, creates their private newsroom repo (preferences
@@ -94,11 +96,19 @@ prints a newspaper.
 ## Your daily paper
 
 ```bash
-pip install "morning-paper[pretty]"
+uv tool install "morning-paper[pretty]"
 morning-paper init      # starter config
 morning-paper doctor    # must say: typewriter ready
 morning-paper build     # today's edition
 ```
+
+`pipx install "morning-paper[pretty]"` works the same way. Prefer either
+over bare `pip`: on Macs and Linux boxes whose default Python is Homebrew's
+or the distro's, `pip install` outside a virtual environment fails with
+`externally-managed-environment` (PEP 668), and inside an existing
+environment it can silently keep an older version unless you pass
+`--upgrade`. If you manage your own venv,
+`pip install "morning-paper[pretty]"` is still fine.
 
 Artifacts land under:
 
@@ -106,8 +116,8 @@ Artifacts land under:
 ~/.local/share/morning-paper/<date>/
 ```
 
-The plain `pip install morning-paper` fallback works, but it is not the
-renderer you should judge the product by.
+The plain `morning-paper` install (no `[pretty]`) falls back to a simpler
+renderer — it works, but it is not the output you should judge the product by.
 
 ## Sources
 
