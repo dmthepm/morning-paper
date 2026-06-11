@@ -408,9 +408,13 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("https://github.com/dmthepm/morning-paper", output)
 
     def test_doctor_prints_update_notice_when_pypi_newer(self) -> None:
+        from morning_paper import __version__
+
+        major = int(__version__.split(".")[0])
+        newer = f"{major + 1}.0.0"
         stdout = io.StringIO()
         with patch("morning_paper.cli._load_weasyprint", return_value=(None, "missing")):
-            with patch("morning_paper.cli.requests.get", return_value=_FakeResponse(text=json.dumps({"info": {"version": "0.1.5"}}))):
+            with patch("morning_paper.cli.requests.get", return_value=_FakeResponse(text=json.dumps({"info": {"version": newer}}))):
                 with redirect_stdout(stdout):
                     rc = cli.doctor()
         self.assertEqual(rc, 0)
@@ -418,7 +422,7 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("doctor: ok", output)
         self.assertIn("renderer: typewriter unavailable", output)
         self.assertIn("fallback-only install", output)
-        self.assertIn("update available: 0.1.5 (you have 0.1.4)", output)
+        self.assertIn(f"update available: {newer} (you have {__version__})", output)
         self.assertIn("pip install --upgrade morning-paper", output)
 
     def test_doctor_skips_update_notice_when_offline(self) -> None:
