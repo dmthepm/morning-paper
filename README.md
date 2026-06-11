@@ -23,8 +23,18 @@ Your human wants a daily printed paper. You can give them one:
    - `morning-paper queue` -> what's staged vs the page budget
    - `morning-paper estimate <file.md>` -> page count, nothing written
    - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
-4. Composition contract, class vocabulary, and chart directives: `docs/composing.md`.
-5. Honesty rule: a section with no data says "not configured" — never fabricate.
+   - `morning-paper doctor --json` -> machine-readable install status
+     (add `--strict` to get a nonzero exit when the typewriter renderer
+     is unavailable)
+4. Page estimates need the pretty print stack (`[pretty]` + WeasyPrint):
+   `estimate` fails without it, and `stage` falls back to a rough
+   words-per-page heuristic instead of a real layout pass. Run
+   `morning-paper doctor` first if the numbers matter.
+5. URL fetching goes through the anonymous Jina Reader tier: no key needed,
+   but rate limits and a 40-second timeout apply. Failures raise clean
+   errors instead of staging garbage.
+6. Composition contract, class vocabulary, and chart directives: `docs/composing.md`.
+7. Honesty rule: a section with no data says "not configured" — never fabricate.
 
 ## What It Does
 
@@ -161,6 +171,16 @@ outputs:
 
 `jina` is the current default article extractor, but extraction is now a replaceable backend. The print renderer, validation, image pipeline, and metadata enrichment are designed to survive extractor upgrades.
 
+Know the limits of the `jina` extractor before depending on it:
+
+- It calls the anonymous tier of Jina Reader (`r.jina.ai`) — no API key, which
+  also means shared rate limits that Morning Paper cannot raise
+- Requests time out after 40 seconds; slow pages fail rather than hang
+- Some domains do not extract meaningfully (YouTube, GitHub, Instagram,
+  LinkedIn, Hacker News comment pages) and are rejected with a clear error
+- A validation gate rejects shell pages, timeout responses, and too-short
+  extractions instead of printing garbage
+
 If `typewriter` cannot render, Morning Paper now fails clearly instead of
 silently generating a lower-quality PDF. If you explicitly want the simpler
 fallback, set:
@@ -201,8 +221,11 @@ morning-paper doctor
 ## Roadmap
 
 1. Keep improving article print fidelity in the `typewriter` renderer
-2. Add queueing and staging commands for agent-driven daily workflows
+2. Queue management verbs (`remove`, `list`) for the staging workflow
 3. Add optional LLM scoring without making it a requirement
+
+Staging and queueing themselves shipped in v0.3.0 (`stage`, `queue`,
+`estimate`). See [ROADMAP.md](ROADMAP.md) for the full picture.
 
 ## Contributing
 

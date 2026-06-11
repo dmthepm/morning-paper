@@ -21,15 +21,22 @@
 - Page footers via CSS paged-media margin boxes
 - `morning-paper styles` listing command
 
-## Next (`v0.2.x` / `v0.3`)
+## Shipped (`v0.3.x`)
 
-- `morning-paper add <url-or-file> [--date DATE]`
-- `morning-paper status`
-- page-budget estimation and overflow warnings
-- vendor Courier Prime (OFL) for offline-deterministic rendering
+- `morning-paper stage <url|file>` (alias: `add`) — queue material for
+  tomorrow's paper with a page estimate
+- `morning-paper queue` (alias: `status`) — staged items vs the page budget
+- `morning-paper estimate <file.md>` — page-budget estimation
+- `editorial` style pack and the Claude Code plugin (`setup` + `edition` skills)
+- vendored Courier Prime (OFL) for offline-deterministic rendering
+- `doctor --json` and `doctor --strict` for machine-readable install checks
+
+## Next (`v0.4`)
+
+- queue management verbs: `morning-paper remove`, `morning-paper list`
+- `doctor` render self-test (actually lay out a page, not just import checks)
 - CI job that exercises the WeasyPrint path + a (style × palette) snapshot matrix
 - palette-aware article image pipeline (color images on the color palette)
-- `doctor --json` with a real render self-test
 - source plugins for YouTube transcripts and X/Twitter thread workflows
 - optional LLM scoring via OpenRouter / Anthropic / OpenAI
 - named sections and better front-page composition

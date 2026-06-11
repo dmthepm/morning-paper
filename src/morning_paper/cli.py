@@ -33,11 +33,12 @@ Commands:
   queue             Show what's staged vs the page budget (JSON)
   estimate <file>   Page count for a markdown file, nothing written
   styles            List available styles and palettes
-  doctor            Check config, dependencies, and renderer status
+  doctor            Check config, dependencies, and renderer status (--json, --strict)
   --version         Show installed version
 
-Agents: every command prints JSON. `stage` + `queue` are the seam for
-"add this to tomorrow's brief" workflows. See docs/composing.md.
+Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
+the bare version). `stage` + `queue` are the seam for "add this to
+tomorrow's brief" workflows. See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
 Docs:   {DOCS_URL}
@@ -82,8 +83,35 @@ def _pretty_install_hint_lines() -> list[str]:
     return lines
 
 
-def doctor() -> int:
-    missing: list[str] = []
+def _renderer_hint_lines(renderer_error: str | None) -> list[str]:
+    if renderer_error and sys.platform == "darwin" and "pango" in renderer_error.lower():
+        # WeasyPrint imported but could not load the Pango system library:
+        # this is the one macOS failure with an exact known fix.
+        return [
+            "detected: WeasyPrint cannot load Pango (the text layout library)",
+            "fix: brew install pango gdk-pixbuf",
+            'if it still fails: export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH"',
+        ]
+    return _pretty_install_hint_lines()
+
+
+def doctor(args: list[str] | None = None) -> int:
+    usage = "usage: morning-paper doctor [--json] [--strict]"
+    as_json = False
+    strict = False
+    for arg in args or []:
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--json":
+            as_json = True
+            continue
+        if arg == "--strict":
+            strict = True
+            continue
+        print(f"unknown doctor argument: {arg}", file=sys.stderr)
+        return 2
+    checks: list[dict[str, object]] = []
     required_modules = [
         "morning_paper.cli",
         "morning_paper.article_print",
@@ -97,33 +125,58 @@ def doctor() -> int:
     for module_name in required_modules:
         try:
             import_module(module_name)
+            checks.append({"name": module_name, "ok": True})
         except Exception:
-            missing.append(module_name)
+            checks.append({"name": module_name, "ok": False})
+    resource_check = "morning_paper/resources/typewriter.md"
     try:
         resource = resources.files("morning_paper").joinpath("resources", "typewriter.md")
-        if not resource.is_file():
-            missing.append("morning_paper/resources/typewriter.md")
+        checks.append({"name": resource_check, "ok": bool(resource.is_file())})
     except Exception:
-        missing.append("morning_paper/resources/typewriter.md")
+        checks.append({"name": resource_check, "ok": False})
+    missing = [str(check["name"]) for check in checks if not check["ok"]]
+    _, renderer_error = _load_weasyprint()
+    typewriter_ready = renderer_error is None
+    hints = [] if typewriter_ready else _renderer_hint_lines(renderer_error)
+    if missing:
+        status = "broken"
+    elif typewriter_ready:
+        status = "ok"
+    else:
+        status = "fallback-only"
+    exit_code = 0
+    if missing or (strict and not typewriter_ready):
+        exit_code = 1
+    if as_json:
+        payload: dict[str, object] = {
+            "checks": checks,
+            "renderer": {
+                "typewriter": typewriter_ready,
+                "error": renderer_error,
+                "hints": hints,
+            },
+            "status": status,
+        }
+        print(json.dumps(payload, indent=2))
+        return exit_code
     if missing:
         print("doctor: missing required files:", file=sys.stderr)
         for item in missing:
             print(f"- {item}", file=sys.stderr)
-        return 1
-    _, renderer_error = _load_weasyprint()
-    if renderer_error:
+        return exit_code
+    if not typewriter_ready:
         print("doctor: ok")
         print("renderer: typewriter unavailable")
         print("status: fallback-only install; high-quality print output is not available yet")
-        for line in _pretty_install_hint_lines():
+        for line in hints:
             print(line)
         _print_update_notice()
-        return 0
+        return exit_code
     print("doctor: ok")
     print("renderer: typewriter ready")
     print("status: high-quality print path available")
     _print_update_notice()
-    return 0
+    return exit_code
 
 
 def demo_command(args: list[str]) -> int:
@@ -137,7 +190,7 @@ def demo_command(args: list[str]) -> int:
     _, renderer_error = _load_weasyprint()
     if renderer_error:
         print("demo needs the pretty print stack (WeasyPrint) to typeset the sample edition", file=sys.stderr)
-        for line in _pretty_install_hint_lines():
+        for line in _renderer_hint_lines(renderer_error):
             print(line, file=sys.stderr)
         print("then run `morning-paper doctor` to confirm the renderer is ready", file=sys.stderr)
         return 1
@@ -629,9 +682,9 @@ def main(argv: list[str] | None = None) -> int:
     if command == "styles":
         return styles_command()
     if command == "doctor":
-        return doctor()
+        return doctor(extra)
     if command in ROADMAP_COMMANDS:
-        print(f'"{command}" is planned for v0.2. See {ROADMAP_URL}', file=sys.stderr)
+        print(f'"{command}" is not implemented yet. It is on the roadmap: {ROADMAP_URL}', file=sys.stderr)
         return 2
     print(f"unknown command: {command}", file=sys.stderr)
     print_help()

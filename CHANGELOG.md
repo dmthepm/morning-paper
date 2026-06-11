@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- `doctor --json` — machine-readable `{checks, renderer, status}` output for agents
+- `doctor --strict` — nonzero exit when the typewriter renderer is unavailable
+- `doctor` and `demo` now detect the macOS Pango load failure specifically and print the exact fix (`brew install pango gdk-pixbuf` plus the `DYLD_FALLBACK_LIBRARY_PATH` hint)
+- `init` now detects the machine's timezone from `/etc/localtime` instead of assuming the author's
+
+### Changed
+- Reserved-command message (`remove`, `list`) now says plainly the verb is not implemented yet and links the roadmap, instead of citing a stale version
+- README documents the `jina` extractor's limits (anonymous tier, 40-second timeout, unsupported domains) and the pretty-stack requirement behind `stage`/`estimate` page numbers
+- ROADMAP marks `stage`/`add`, `queue`/`status`, `estimate`, vendored Courier Prime, and `doctor --json` as shipped
+
+### Removed
+- Unwired `[twitter]` and `[local]` extras from packaging (nothing imported them)
+- Funding URL from package metadata
+
 ## [0.3.0] - 2026-06-11
 
 ### Added

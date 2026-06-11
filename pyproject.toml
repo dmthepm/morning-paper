@@ -45,8 +45,6 @@ dependencies = [
 
 [project.optional-dependencies]
 pretty = ["weasyprint>=62.0"]
-twitter = ["twscrape"]
-local = ["trafilatura"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]
@@ -57,7 +55,6 @@ Homepage = "https://github.com/dmthepm/morning-paper"
 Repository = "https://github.com/dmthepm/morning-paper"
 Issues = "https://github.com/dmthepm/morning-paper/issues"
 Changelog = "https://github.com/dmthepm/morning-paper/blob/main/CHANGELOG.md"
-Funding = "https://skool.com/main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

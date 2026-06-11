@@ -164,12 +164,36 @@ def load_config(path: Path) -> MorningPaperConfig:
     )
 
 
+FALLBACK_TIMEZONE = "America/Los_Angeles"
+
+
+def detect_system_timezone() -> str:
+    """Best-effort IANA timezone name for this machine, without new dependencies.
+
+    Resolves the /etc/localtime symlink (macOS and most Linux distros point it
+    into a zoneinfo tree) and validates the result. Falls back to a fixed
+    default rather than guessing.
+    """
+    try:
+        parts = Path("/etc/localtime").resolve().parts
+        if "zoneinfo" in parts:
+            index = len(parts) - 1 - parts[::-1].index("zoneinfo")
+            name = "/".join(parts[index + 1 :])
+            if name:
+                ZoneInfo(name)
+                return name
+    except Exception:
+        pass
+    return FALLBACK_TIMEZONE
+
+
 def render_default_config() -> str:
-    return """name: Morning Paper
-timezone: America/Los_Angeles
+    return f"""name: Morning Paper
+# detected from this machine; change it if your mornings happen elsewhere
+timezone: {detect_system_timezone()}
 profile: |
   Add a short note about who this paper is for and what should matter most.
-  Example: early-stage AI tools, operator software, media, and founder signal.
+  Replace this with your own beat: the topics, projects, and people you follow.
 article_extractor: jina
 # target length for a full edition; `morning-paper queue` reports against this
 page_budget: 20
@@ -178,6 +202,7 @@ sources:
   hacker_news:
     enabled: true
     limit: 20
+  # sample feeds — replace with yours
   rss:
     - name: Simon Willison
       url: https://simonwillison.net/atom/everything/
