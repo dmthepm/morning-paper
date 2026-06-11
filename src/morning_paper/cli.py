@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 from datetime import datetime
 from importlib import import_module, resources
@@ -15,9 +14,9 @@ from .article_print import ArticleExtractionError, fetch_article, render_article
 from .builder import build_paper
 from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_config, render_default_config
 from .renderers import TypewriterRendererUnavailable, _load_weasyprint, write_custom_markdown, _safe_filename
+from .styles import PALETTES, STYLES, StyleError
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 DOCS_URL = "https://github.com/dmthepm/morning-paper"
 ROADMAP_URL = f"{DOCS_URL}/blob/main/ROADMAP.md"
 PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
@@ -28,6 +27,8 @@ Commands:
   init              Create a starter config
   build             Build today's paper from configured sources
   print <url>       Print a single article right now
+  render <file.md>  Typeset any markdown file through a style pack
+  styles            List available styles and palettes
   doctor            Check config, dependencies, and renderer status
   --version         Show installed version
 
@@ -38,14 +39,6 @@ Coming soon:
 Config: {DEFAULT_CONFIG_PATH}
 Docs:   {DOCS_URL}
 """
-SCRIPT_MAP = {
-    "pass1": REPO_ROOT / "scripts" / "run_pass1.py",
-    "pass2": REPO_ROOT / "scripts" / "run_pass2.py",
-    "pass3": REPO_ROOT / "scripts" / "run_pass3.py",
-    "assemble": REPO_ROOT / "scripts" / "assemble_brief.py",
-    "render": REPO_ROOT / "scripts" / "build_live_brief.py",
-    "digest": REPO_ROOT / "scripts" / "send_brief_digest.py",
-}
 
 
 def _version_key(value: str) -> tuple[int, ...]:
@@ -84,18 +77,6 @@ def _pretty_install_hint_lines() -> list[str]:
     elif sys.platform.startswith("win"):
         lines.append("Windows typewriter support is best-effort today; portable mode is more reliable")
     return lines
-
-
-def run_script(script: Path, args: list[str]) -> int:
-    if not script.exists():
-        print(
-            "This command requires the private Morning Brief harness. "
-            "Use `morning-paper init` and `morning-paper build` instead.",
-            file=sys.stderr,
-        )
-        return 1
-    cmd = [sys.executable, str(script), *args]
-    return subprocess.call(cmd, cwd=REPO_ROOT)
 
 
 def doctor() -> int:
@@ -294,16 +275,117 @@ def print_command(args: list[str]) -> int:
     return 0
 
 
-def smoke() -> int:
-    script = REPO_ROOT / "scripts" / "smoke_test.sh"
-    if not script.exists():
-        print(
-            "This command requires the private Morning Brief harness. "
-            "Use `morning-paper init` and `morning-paper build` instead.",
-            file=sys.stderr,
-        )
+def styles_command() -> int:
+    listing = {
+        "styles": {name: pack.description for name, pack in sorted(STYLES.items())},
+        "palettes": {name: pal.description for name, pal in sorted(PALETTES.items())},
+    }
+    print(json.dumps(listing, indent=2))
+    return 0
+
+
+def render_command(args: list[str]) -> int:
+    config_path = DEFAULT_CONFIG_PATH
+    date = None
+    slug = None
+    style = None
+    palette = None
+    source: Path | None = None
+    index = 0
+    usage = "usage: morning-paper render <file.md> [--style NAME] [--palette NAME] [--date YYYY-MM-DD] [--slug NAME] [--config PATH]"
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        if arg == "--slug" and index + 1 < len(args):
+            slug = args[index + 1]
+            index += 2
+            continue
+        if arg == "--style" and index + 1 < len(args):
+            style = args[index + 1]
+            index += 2
+            continue
+        if arg == "--palette" and index + 1 < len(args):
+            palette = args[index + 1]
+            index += 2
+            continue
+        if arg.startswith("-"):
+            print(f"unknown render argument: {arg}", file=sys.stderr)
+            return 2
+        if source is not None:
+            print("render takes exactly one markdown file", file=sys.stderr)
+            return 2
+        source = Path(arg).expanduser()
+        index += 1
+    if source is None:
+        print(usage, file=sys.stderr)
+        return 2
+    if not source.is_file():
+        print(f"no such file: {source}", file=sys.stderr)
         return 1
-    return subprocess.call(["bash", str(script)], cwd=REPO_ROOT)
+    try:
+        config, has_user_config = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    if not has_user_config:
+        print("using built-in defaults (run `morning-paper init` to customize)", file=sys.stderr)
+    if style:
+        config.outputs.style = style
+    if palette:
+        config.outputs.palette = palette
+    # render exists to typeset: always produce html+pdf regardless of the
+    # build-pipeline output toggles in config
+    config.outputs.html = True
+    config.outputs.pdf = True
+    markdown_text = source.read_text(encoding="utf-8")
+    target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
+    target_slug = _safe_filename(slug or source.stem)[:48] or "render"
+    try:
+        outputs, warnings = write_custom_markdown(
+            config,
+            markdown_text,
+            date_str=target_date,
+            slug=target_slug,
+            metadata={
+                "mode": "render",
+                "source": str(source),
+                "style": config.outputs.style,
+                "palette": config.outputs.palette,
+            },
+        )
+    except StyleError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except TypewriterRendererUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    print(
+        json.dumps(
+            {
+                "date": target_date,
+                "mode": "render",
+                "style": config.outputs.style,
+                "palette": config.outputs.palette,
+                "warnings": warnings,
+                "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
+                "output_dir": str(outputs["dir"]),
+            },
+            indent=2,
+        )
+    )
+    return 0
 
 
 def print_help() -> int:
@@ -329,12 +411,12 @@ def main(argv: list[str] | None = None) -> int:
         return build_command(extra)
     if command == "print":
         return print_command(extra)
-    if command in SCRIPT_MAP:
-        return run_script(SCRIPT_MAP[command], extra)
+    if command == "render":
+        return render_command(extra)
+    if command == "styles":
+        return styles_command()
     if command == "doctor":
         return doctor()
-    if command == "smoke":
-        return smoke()
     if command in ROADMAP_COMMANDS:
         print(f'"{command}" is planned for v0.2. See {ROADMAP_URL}', file=sys.stderr)
         return 2

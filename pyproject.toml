@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morning-paper"
-version = "0.1.4"
+version = "0.2.0"
 description = "Build a personalized daily newspaper as a print-ready PDF."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -66,4 +66,4 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-morning_paper = ["resources/*.md"]
+morning_paper = ["resources/*.md", "resources/styles/*.css", "resources/palettes/*.css"]

@@ -22,6 +22,9 @@ sources:
 outputs:
   directory: ~/.local/share/morning-paper
   renderer: typewriter
+  # style: typewriter | flow | ops-card    palette: mono | color
+  style: typewriter
+  palette: mono
   pdf: true
   html: true
   markdown: true

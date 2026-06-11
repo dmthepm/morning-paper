@@ -1,0 +1,145 @@
+/* Style pack: ops-card — the boxed reference one-pager.
+ * The genre: a call script, a runbook card, a cheat sheet you keep next to
+ * the phone. Sans-serif, centered title over a heavy rule, alert banner,
+ * boxed panels, dense two-column tables, a do/don't split.
+ * Consumes palette tokens; compose with a palette sheet.
+ */
+
+:root {
+  --oc-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --oc-body: 8.5pt;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@page {
+  size: Letter;
+  margin: 0.45in 0.5in;
+  @bottom-left  { content: string(mp-date); font-family: Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #555555; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #555555; }
+}
+
+.mp-footer-date, .mp-footer-name {
+  display: block; height: 0; overflow: hidden;
+  font-size: 0; line-height: 0; visibility: hidden;
+}
+.mp-footer-date { string-set: mp-date content(); }
+.mp-footer-name { string-set: mp-name content(); }
+
+body {
+  font-family: var(--oc-font);
+  font-size: var(--oc-body);
+  line-height: 1.4;
+  color: var(--mp-ink);
+  background: var(--mp-paper);
+}
+
+/* centered card title over a heavy rule */
+.oc-title {
+  text-align: center;
+  font-size: 16pt;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding-bottom: 0.05in;
+  border-bottom: 2.5px solid var(--mp-rule);
+}
+.oc-subtitle {
+  text-align: center;
+  font-size: 7.5pt;
+  color: var(--mp-muted);
+  margin: 0.035in 0 0.1in 0;
+}
+
+/* alert banner — the one thing to never get wrong */
+.oc-banner {
+  border: 1.5px solid var(--mp-alert);
+  background: var(--mp-alert-bg);
+  padding: 0.05in 0.08in;
+  margin-bottom: 0.08in;
+  font-size: 8.5pt;
+  line-height: 1.45;
+  text-align: center;
+}
+.oc-banner strong { font-weight: 800; color: var(--mp-alert); }
+
+/* boxed panel with a small caps header */
+.oc-panel {
+  border: 1.5px solid var(--mp-rule);
+  padding: 0.055in 0.08in;
+  margin-bottom: 0.08in;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.oc-panel-head {
+  font-size: 8pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.04in;
+}
+.oc-panel ol { margin: 0 0 0 0.2in; }
+.oc-panel ol li { font-size: 9.5pt; font-weight: 700; line-height: 1.6; }
+.oc-panel p { font-size: 8.5pt; line-height: 1.45; margin-bottom: 0.03in; }
+.oc-panel p:last-child { margin-bottom: 0; }
+
+/* centered exit-line panel */
+.oc-exit { text-align: center; }
+.oc-exit .oc-panel-head { color: var(--mp-muted); font-weight: 700; }
+.oc-exit p { font-size: 10pt; font-weight: 700; }
+
+/* section header outside panels */
+h1 {
+  font-family: var(--oc-font);
+  font-size: 10pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0.1in 0 0.04in 0;
+}
+
+/* dense two-column ask/say table */
+table.oc-table { width: 100%; border-collapse: collapse; margin-bottom: 0.08in; border: 1.5px solid var(--mp-rule); }
+table.oc-table th {
+  text-align: left;
+  font-size: 7.5pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--mp-card-bg);
+  border: 1px solid var(--mp-rule);
+  padding: 0.03in 0.05in;
+}
+table.oc-table td {
+  font-size: 8pt;
+  line-height: 1.35;
+  border: 1px solid var(--mp-rule);
+  padding: 0.03in 0.05in;
+  vertical-align: top;
+}
+table.oc-table td strong { font-weight: 700; }
+
+/* do / don't split */
+.oc-split { display: flex; gap: 0.08in; margin-bottom: 0.08in; }
+.oc-col { flex: 1 1 50%; border: 1.5px solid var(--mp-rule); padding: 0.05in 0.07in; }
+.oc-col-head { font-size: 8.5pt; font-weight: 800; margin-bottom: 0.035in; }
+.oc-col-head.no { color: var(--mp-alert); }
+.oc-col-head.yes { color: var(--mp-positive); }
+.oc-col ul { margin: 0 0 0 0.16in; }
+.oc-col li { font-size: 7.8pt; line-height: 1.45; margin-bottom: 0.018in; }
+
+/* footnote rail */
+.oc-foot {
+  border-top: 1.5px solid var(--mp-rule);
+  padding-top: 0.03in;
+  font-size: 6.8pt;
+  color: var(--mp-muted);
+  line-height: 1.5;
+}
+.oc-foot strong { color: var(--mp-ink); font-weight: 700; }
+.oc-foot code { font-family: 'Courier New', monospace; font-size: 6.8pt; }
+
+ul { margin: 0.02in 0 0.04in 0.18in; }
+li { font-size: 8pt; line-height: 1.4; margin-bottom: 0.015in; }
+p { font-size: var(--oc-body); }
+a { color: var(--mp-ink); text-decoration: none; }
+.page-break { page-break-before: always; }

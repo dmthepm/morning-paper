@@ -1,0 +1,16 @@
+/* Palette: mono — the laser-printer base. Emphasis is weight and pattern,
+ * never hue. Every style pack consumes these tokens. */
+:root {
+  --mp-ink: #000000;
+  --mp-paper: #ffffff;
+  --mp-muted: #555555;
+  --mp-rule: #000000;
+  --mp-alert: #000000;
+  --mp-alert-bg: #ffffff;
+  --mp-accent: #000000;
+  --mp-card-bg: rgba(0, 0, 0, 0.02);
+  --mp-card-bg-soft: rgba(0, 0, 0, 0.012);
+  --mp-track: #dddddd;
+  --mp-chart-ink: #222222;
+  --mp-positive: #000000;
+}

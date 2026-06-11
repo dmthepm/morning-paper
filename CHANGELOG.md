@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-11
+
+### Added
+- `morning-paper render <file.md>` — typeset any markdown file through a style pack (`--style`, `--palette`, `--date`, `--slug`); the seam for agent-composed documents (see `docs/composing.md`)
+- `morning-paper styles` — list available styles and palettes as JSON
+- Style packs: `typewriter` (the newspaper), `flow` (continuous operator brief, no forced page breaks), `ops-card` (boxed reference one-pager)
+- Palettes: `mono` (laser, weight carries emphasis) and `color` (inkjet: warm ink, working red, data blue) — designed separately, selectable per render
+- Chart directives: `mp-bars`, `mp-spark`, `mp-stats` fenced blocks render to print-quality inline SVG / stat blocks (stdlib only); malformed data degrades to an honest placeholder
+- `outputs.style` and `outputs.palette` config keys
+- Real page footers (date, paper name, `Page N of M`) via CSS paged-media margin boxes on every style, including article print
+
+### Changed
+- Typewriter CSS moved out of template frontmatter into `resources/styles/typewriter.css`, re-tokenized onto shared palette variables
+- Masthead no longer hardcodes `AT HOME`; HN section heading now reflects the configured item count
+- Frontmatter `css:` is now an override; documents without it get the configured style pack instead of rendering unstyled
+
+### Removed
+- Private operator harness leftovers: `scripts/`, private fixtures/golden files, private runtime docs, stale `templates/` copies, and the internal script-map CLI commands (`pass1`–`digest`, `smoke`)
+- Dead Chromium-style `pdf_options` header/footer blocks (they never applied under WeasyPrint)
+- Article-specific extraction filters that could silently corrupt future articles
+
 ## [0.1.4] - 2026-04-15
 
 ### Changed

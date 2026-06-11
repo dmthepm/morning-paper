@@ -17,8 +17,10 @@ from fpdf import FPDF
 from markdown_it import MarkdownIt
 import yaml
 
+from .charts import expand_chart_directives
 from .config import MorningPaperConfig
 from .models import SourceItem
+from .styles import compose_css, get_palette
 
 
 class TypewriterRendererUnavailable(RuntimeError):
@@ -216,9 +218,10 @@ def render_typewriter_markdown(config: MorningPaperConfig, collected: dict[str, 
     hn_items = collected.get("hacker_news") or []
     reads = _render_full_reads(rss_items if rss_items else hn_items, limit=2)
     replacements = {
+        "{NAME}": html.escape(config.name),
         "{DATE}": _display_date(date_str),
         "{TIME}": _display_time(config.timezone),
-        "{LOCATION}": "AT HOME",
+        "{HN_COUNT}": str(len(hn_items)),
         '<!-- Banner, tweet count, HN count, runtime -->': _render_info_row(
             banner, len(rss_items), len(hn_items), config.outputs.renderer
         ),
@@ -337,7 +340,7 @@ def render_html(config: MorningPaperConfig, collected: dict[str, list[SourceItem
 
 def render_typewriter_html(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
     markdown = render_typewriter_markdown(config, collected, date_str=date_str)
-    return _render_html_from_markdown(markdown)
+    return _render_html_from_markdown(markdown, style=config.outputs.style, palette=config.outputs.palette)
 
 
 def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str, output_path: Path) -> None:
@@ -383,9 +386,15 @@ def render_pdf(config: MorningPaperConfig, collected: dict[str, list[SourceItem]
     pdf.output(str(output_path))
 
 
-def _render_html_from_markdown(markdown: str) -> str:
+def _render_html_from_markdown(markdown: str, *, style: str = "typewriter", palette: str = "mono") -> str:
     meta, body = _split_frontmatter(markdown)
-    css = str(meta.get("css", "")).strip()
+    # Frontmatter `css:` is an override for callers bringing their own sheet;
+    # otherwise the style pack + palette supply it.
+    css = str(meta.get("css", "")).strip() or compose_css(
+        str(meta.get("style", style)), str(meta.get("palette", palette))
+    )
+    palette_pack = get_palette(str(meta.get("palette", palette)))
+    body = expand_chart_directives(body, ink=palette_pack.chart_ink, track=palette_pack.chart_track)
     title = html.escape(str(meta.get("title", "Morning Paper")))
     rendered_body = _MARKDOWN.render(body)
     return (
@@ -398,11 +407,11 @@ def _render_html_from_markdown(markdown: str) -> str:
     )
 
 
-def _render_typewriter_pdf(markdown: str, *, output_path: Path) -> None:
+def _render_typewriter_pdf(markdown: str, *, output_path: Path, style: str = "typewriter", palette: str = "mono") -> None:
     html_cls, error = _load_weasyprint()
     if html_cls is None:
         raise RuntimeError(error or "WeasyPrint unavailable")
-    html_doc = _render_html_from_markdown(markdown)
+    html_doc = _render_html_from_markdown(markdown, style=style, palette=palette)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     html_cls(string=html_doc, base_url=str(output_path.parent)).write_pdf(str(output_path))
 
@@ -466,7 +475,12 @@ def write_outputs(config: MorningPaperConfig, collected: dict[str, list[SourceIt
     if config.outputs.pdf:
         if config.outputs.renderer == "typewriter":
             try:
-                _render_typewriter_pdf(markdown, output_path=paths["pdf"])
+                _render_typewriter_pdf(
+                    markdown,
+                    output_path=paths["pdf"],
+                    style=config.outputs.style,
+                    palette=config.outputs.palette,
+                )
             except Exception as exc:
                 raise TypewriterRendererUnavailable(
                     "typewriter renderer requires the pretty print stack. "
@@ -503,11 +517,19 @@ def write_custom_markdown(
     if config.outputs.markdown:
         paths["markdown"].write_text(markdown, encoding="utf-8")
     if config.outputs.html:
-        paths["html"].write_text(_render_html_from_markdown(markdown), encoding="utf-8")
+        paths["html"].write_text(
+            _render_html_from_markdown(markdown, style=config.outputs.style, palette=config.outputs.palette),
+            encoding="utf-8",
+        )
     if config.outputs.pdf:
         if config.outputs.renderer == "typewriter":
             try:
-                _render_typewriter_pdf(markdown, output_path=paths["pdf"])
+                _render_typewriter_pdf(
+                    markdown,
+                    output_path=paths["pdf"],
+                    style=config.outputs.style,
+                    palette=config.outputs.palette,
+                )
             except Exception as exc:
                 raise TypewriterRendererUnavailable(
                     "typewriter renderer requires the pretty print stack. "

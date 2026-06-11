@@ -40,6 +40,8 @@ class SourcesConfig:
 class OutputsConfig:
     directory: Path = DEFAULT_OUTPUT_DIR
     renderer: str = "typewriter"
+    style: str = "typewriter"
+    palette: str = "mono"
     pdf: bool = True
     html: bool = True
     markdown: bool = True
@@ -94,6 +96,22 @@ def _validate_renderer(value: str) -> str:
     return value
 
 
+def _validate_style(value: str) -> str:
+    from .styles import STYLES
+
+    if value not in STYLES:
+        raise ConfigError(f"outputs.style must be one of: {', '.join(sorted(STYLES))}")
+    return value
+
+
+def _validate_palette(value: str) -> str:
+    from .styles import PALETTES
+
+    if value not in PALETTES:
+        raise ConfigError(f"outputs.palette must be one of: {', '.join(sorted(PALETTES))}")
+    return value
+
+
 def _validate_article_extractor(value: str) -> str:
     if value not in {"jina"}:
         raise ConfigError("article_extractor must be one of: jina")
@@ -131,6 +149,8 @@ def load_config(path: Path) -> MorningPaperConfig:
                 _expand_path(outputs.get("directory"), default=DEFAULT_OUTPUT_DIR)
             ),
             renderer=_validate_renderer(str(outputs.get("renderer", "typewriter"))),
+            style=_validate_style(str(outputs.get("style", "typewriter"))),
+            palette=_validate_palette(str(outputs.get("palette", "mono"))),
             pdf=bool(outputs.get("pdf", True)),
             html=bool(outputs.get("html", True)),
             markdown=bool(outputs.get("markdown", True)),
@@ -162,6 +182,9 @@ sources:
 outputs:
   directory: ~/.local/share/morning-paper
   renderer: typewriter
+  # style: typewriter | flow | ops-card    palette: mono | color
+  style: typewriter
+  palette: mono
   pdf: true
   html: true
   markdown: true

@@ -13,8 +13,11 @@ No database. No Docker. No SaaS requirement.
 - Builds a daily paper from Hacker News and RSS feeds
 - Prints one or more articles on demand with `morning-paper print <url>`
 - Produces JSON, Markdown, HTML, and PDF artifacts
+- Typesets any markdown file through print style packs with `morning-paper render`
+- Renders charts from plain-text directives (bars, sparklines, stat blocks) — no plotting library
+- Ships mono and color palettes, each designed for its printer
 - Works without an LLM key
-- Uses a richer `typewriter` renderer when available and falls back cleanly
+- Uses the `typewriter` print stack when installed; `doctor` says plainly when you are on the portable fallback, and the typewriter path fails clearly rather than degrading silently
 
 ## Quick Start
 
@@ -92,6 +95,12 @@ morning-paper build --date 2026-04-15
 
 # Print an article right now
 morning-paper print https://example.com/article
+
+# Typeset your own markdown through a style pack (see docs/composing.md)
+morning-paper render brief.md --style flow --palette mono
+
+# List styles and palettes
+morning-paper styles
 
 # Verify the install
 morning-paper doctor

@@ -214,12 +214,6 @@ def _extract_jina_article_metadata(url: str) -> dict[str, object]:
         "published time:",
         "image:",
     )
-    preview_noise = {
-        "sarah wooders",
-        "@sarahwooders",
-        "why memory isn't a plugin (it's the harness)",
-    }
-
     current_kind: str | None = None
     current_lines: list[str] = []
 
@@ -245,10 +239,6 @@ def _extract_jina_article_metadata(url: str) -> dict[str, object]:
             continue
         lowered = line.lower()
         if any(token in lowered for token in noise):
-            continue
-        if lowered in preview_noise or lowered.startswith("why memory isn't a plugin"):
-            flush_current()
-            skip_preview_images = max(skip_preview_images, 2)
             continue
         if lowered.startswith("#"):
             continue
@@ -302,19 +292,11 @@ def _extract_jina_article_metadata(url: str) -> dict[str, object]:
         if not cleaned:
             continue
         lowered = cleaned.lower()
-        if lowered.startswith("thank you to a few people"):
-            break
-        if lowered.startswith("this is why we are building"):
-            break
-        if lowered in {"sarah wooders wrote a"}:
-            continue
         cleaned = re.sub(r"\s+\(\s*$", "", cleaned)
         cleaned = re.sub(r"\s*-\s*$", "", cleaned)
         cleaned = re.sub(r"\s+,", ",", cleaned)
         cleaned = re.sub(r"\(\s*\)", "", cleaned)
         cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
-        if lowered.startswith("on why “memory isn’t a plugin") or lowered.startswith('on why "memory isn'):
-            continue
         if kind == "paragraph" and len(cleaned) < SHORT_PARAGRAPH_DROP_THRESHOLD:
             continue
         if (
@@ -589,7 +571,12 @@ def render_article_markdown(config: MorningPaperConfig, articles: list[Article],
   --mp-byline-meta-gap: 0.018in;
 }
 body { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: var(--mp-body-size); line-height: 1.34; color: var(--mp-color-text); background: #fff; }
-@page { size: Letter; margin: 0.34in 0.38in 0.5in 0.38in; }
+@page {
+  size: Letter;
+  margin: 0.34in 0.38in 0.5in 0.38in;
+  @bottom-center { content: "Morning Paper"; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 7pt; color: #111111; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: 'Courier Prime', 'Courier New', monospace; font-size: 7pt; color: #111111; }
+}
 .paper-header { text-align: center; margin: 0 0 0.125in 0; }
 .paper-date { font-size: 18.8pt; font-weight: 700; letter-spacing: 0.03em; }
 .paper-subtitle { font-size: 9pt; color: var(--mp-color-rule); margin-top: 0.04in; margin-bottom: 0.045in; letter-spacing: 0.07em; }
@@ -617,13 +604,6 @@ a { color: var(--mp-color-text); text-decoration: underline; }
 """
     sections: list[str] = [
         "---",
-        "pdf_options:",
-        "  format: Letter",
-        "  margin: 0.62in 0.55in 0.72in 0.55in",
-        "  printBackground: true",
-        "  displayHeaderFooter: true",
-        "  headerTemplate: \"<span></span>\"",
-        "  footerTemplate: \"<div style='font-size:7pt;color:#111;font-family:Courier New,monospace;width:100%;padding:0 0.55in;'><div style='display:flex;justify-content:space-between;align-items:baseline;'><span>Morning Paper</span><span>Page <span class='pageNumber'></span> of <span class='totalPages'></span></span></div></div>\"",
         "css: |",
     ]
     for line in css.strip().splitlines():
