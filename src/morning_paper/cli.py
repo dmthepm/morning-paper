@@ -47,7 +47,9 @@ Commands:
   estimate <file>   Page count for a markdown file, nothing written
   styles            List available styles and palettes
   routine           Schedule the daily edition (install [--time HH:MM]
-                    [--command CMD] | status | uninstall) — launchd/systemd/cron
+                    [--command CMD] [--workdir PATH] | status | uninstall) —
+                    launchd/systemd/cron; the run starts in the directory you
+                    install from (your newsroom)
   doctor            Check config, dependencies, and renderer status (--json, --strict)
   --version         Show installed version
 
