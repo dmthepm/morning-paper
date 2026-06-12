@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-12
+
+### Fixed
+- **The scheduled edition now runs IN your newsroom directory.** `routine install` wrote scheduler jobs with no working directory, so the headless `claude -p` edition run started in `$HOME` and could not find the newsroom — `specs/`, `collectors/`, `editions/` were simply not there, and every scheduled paper composed blind. Install now captures the directory you install from (the contract: you install from your newsroom) and pins the job to it: launchd gets a `WorkingDirectory` plist key, the systemd service a `WorkingDirectory=` line, and the cron job a quote-safe `cd` into the newsroom inside its `sh -c` wrapper. `--workdir PATH` overrides the default (validated: must be an existing directory); the install JSON reports the resolved `workdir`, and `routine status` / `doctor` surface it where the artifact makes it cheap (the launchd plist). **Upgrading from 0.5.1: re-run `morning-paper routine install` from your newsroom** (or pass `--workdir`) — existing installs keep the old directory-less job until reinstalled
+
+### Changed
+- Edition skill, "Read the newsroom": the editor now also reads, when present, `memory/reads-ledger.md` (the cumulative record of everything already printed — repeating a read the owner already got is a hard fail; today's reads are appended when the paper ships), the most recent `editions/<date>/operator-answers.md` (triaged owner ink: deep-read picks, queue answers, steers — honored exactly), and checks an `inbox/scans/` directory for untriaged captures before composing
+
 ## [0.5.1] - 2026-06-12
 
 ### Added

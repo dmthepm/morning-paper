@@ -113,6 +113,113 @@ class UnitGenerationTests(RoutineHomeTestCase):
         self.assertIn("'\\''", line)  # single quotes inside the single-quoted command
 
 
+class WorkdirTests(RoutineHomeTestCase):
+    """The scheduled run must start in the newsroom, not wherever the
+    scheduler feels like ($HOME for launchd/cron) — otherwise the headless
+    editor cannot find specs/, collectors/, editions/."""
+
+    def test_plist_contains_workdir_when_passed(self) -> None:
+        data = routine.build_launchd_plist(workdir="/srv/newsroom")
+        self.assertEqual(data["WorkingDirectory"], "/srv/newsroom")
+
+    def test_plist_omits_workdir_when_none(self) -> None:
+        self.assertNotIn("WorkingDirectory", routine.build_launchd_plist())
+
+    def test_systemd_service_workdir_line(self) -> None:
+        service = routine.build_systemd_service("echo hi", workdir="/srv/newsroom")
+        self.assertIn("WorkingDirectory=/srv/newsroom\n", service)
+        # the directive belongs to [Service], ahead of ExecStart
+        self.assertLess(service.index("[Service]"), service.index("WorkingDirectory="))
+        self.assertLess(service.index("WorkingDirectory="), service.index("ExecStart="))
+        self.assertNotIn("WorkingDirectory", routine.build_systemd_service("echo hi"))
+
+    def test_cron_line_cds_into_workdir(self) -> None:
+        line = routine.build_cron_line("05:00", "echo hi", workdir="/srv/newsroom")
+        # the path is single-quoted inside the single-quoted sh -c command,
+        # so its quotes arrive pre-escaped with the same '\'' idiom
+        self.assertIn("cd '\\''/srv/newsroom'\\'' && echo hi", line)
+        self.assertNotIn("cd ", routine.build_cron_line("05:00", "echo hi"))
+
+    def test_cron_workdir_single_quote_survives_shell(self) -> None:
+        workdir = self.home / "it's the newsroom"
+        workdir.mkdir()
+        line = routine.build_cron_line("05:00", "pwd", workdir=str(workdir))
+        # cron hands the command field to /bin/sh after unescaping \% -> %
+        field = " ".join(line.split()[5:])
+        field = field[: field.rindex(">>")].replace(r"\%", "%")
+        proc = subprocess.run(["/bin/sh", "-c", field], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn(str(workdir), proc.stdout)
+
+    def test_install_defaults_workdir_to_cwd(self) -> None:
+        # the contract: the user installs from their newsroom
+        fake = FakeRun()
+        newsroom = self.home / "newsroom"
+        newsroom.mkdir()
+        with patch.object(routine, "_run", fake), patch.object(
+            routine, "_current_platform", return_value="darwin"
+        ), patch.object(
+            routine, "_resolve_claude", return_value="/usr/local/bin/claude"
+        ), patch.object(routine.os, "getcwd", return_value=str(newsroom)):
+            stdout = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(io.StringIO()):
+                rc = cli.main(["routine", "install"])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["workdir"], str(newsroom))
+        with routine.launchd_plist_path().open("rb") as handle:
+            data = plistlib.load(handle)
+        self.assertEqual(data["WorkingDirectory"], str(newsroom))
+
+    def test_install_systemd_writes_workdir(self) -> None:
+        fake = FakeRun()
+        newsroom = self.home / "newsroom"
+        newsroom.mkdir()
+        with patch.object(routine, "_run", fake), patch.object(
+            routine, "_current_platform", return_value="linux"
+        ), patch.object(routine, "_resolve_claude", return_value="/usr/bin/claude"), patch.object(
+            routine, "_tool_exists", lambda name: name == "systemctl"
+        ), patch.object(routine.os, "getcwd", return_value=str(newsroom)):
+            stdout = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(io.StringIO()):
+                rc = cli.main(["routine", "install"])
+        self.assertEqual(rc, 0)
+        service = routine.systemd_service_path().read_text(encoding="utf-8")
+        self.assertIn(f"WorkingDirectory={newsroom}\n", service)
+
+    def test_install_workdir_override_and_status_surfaces_it(self) -> None:
+        fake = FakeRun()
+        newsroom = self.home / "the newsroom"
+        newsroom.mkdir()
+        with patch.object(routine, "_run", fake), patch.object(
+            routine, "_current_platform", return_value="darwin"
+        ), patch.object(routine, "_resolve_claude", return_value="/usr/local/bin/claude"):
+            stdout = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(io.StringIO()):
+                rc = cli.main(["routine", "install", "--workdir", str(newsroom)])
+        self.assertEqual(rc, 0)
+        self.assertEqual(json.loads(stdout.getvalue())["workdir"], str(newsroom))
+        with patch.object(routine, "_run", FakeRun()), patch.object(
+            routine, "_tool_exists", lambda name: False
+        ):
+            status_out = io.StringIO()
+            with redirect_stdout(status_out):
+                cli.main(["routine", "status"])
+        self.assertEqual(json.loads(status_out.getvalue())["workdir"], str(newsroom))
+
+    def test_install_workdir_must_be_a_directory(self) -> None:
+        fake = FakeRun()
+        missing = self.home / "nope"
+        with patch.object(routine, "_run", fake):
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                rc = cli.main(["routine", "install", "--workdir", str(missing)])
+        self.assertEqual(rc, 2)
+        self.assertIn("not an existing directory", stderr.getvalue())
+        self.assertEqual(fake.calls, [])
+        self.assertFalse(routine.launchd_plist_path().exists())
+
+
 class InstallDarwinTests(RoutineHomeTestCase):
     def _install(self, argv: list[str], fake: FakeRun):
         with patch.object(routine, "_run", fake), patch.object(
@@ -402,6 +509,8 @@ class DoctorRoutineTests(RoutineHomeTestCase):
         self.assertTrue(payload["routine"]["installed"])
         self.assertEqual(payload["routine"]["scheduler"], "launchd")
         self.assertEqual(payload["routine"]["time"], "06:00")
+        # install ran with no --workdir, so the captured cwd is in the plist
+        self.assertEqual(payload["routine"]["workdir"], os.getcwd())
 
     def test_doctor_human_output_mentions_routine(self) -> None:
         with patch.object(routine, "_tool_exists", lambda name: False):

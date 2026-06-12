@@ -24,7 +24,13 @@ paper.
    agent put it there on purpose). Staged items with a `contributor` name
    render with a FROM <NAME> kicker — the paper says who sent it in.
 2. **Read the newsroom.** `specs/*` (section contracts) and `preferences/*`
-   (reading weights, style notes). These outrank your taste.
+   (reading weights, style notes). These outrank your taste. Also read, when
+   present: `memory/reads-ledger.md` — the cumulative record of everything
+   already printed; repeating a read the owner already got is a hard fail,
+   and when today's paper ships, append today's reads to it. And the most
+   recent `editions/<date>/operator-answers.md` — triaged owner ink (deep-read
+   picks, queue answers, steers); honor it exactly. If the newsroom keeps an
+   `inbox/scans/` directory, check it for untriaged captures before composing.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
    docs/composing.md for the class vocabulary and `mp-bars`/`mp-spark`/
    `mp-stats` chart directives):

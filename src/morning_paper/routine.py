@@ -175,9 +175,13 @@ def next_fire(time_str: str, now: datetime | None = None) -> str:
 # --- unit generation (pure, fully testable) ---
 
 
-def build_launchd_plist(time_str: str = DEFAULT_TIME, command: str = DEFAULT_COMMAND) -> dict:
+def build_launchd_plist(
+    time_str: str = DEFAULT_TIME,
+    command: str = DEFAULT_COMMAND,
+    workdir: str | None = None,
+) -> dict:
     hour, minute = parse_time(time_str)
-    return {
+    plist: dict = {
         "Label": LAUNCHD_LABEL,
         # /bin/sh -c keeps the command a plain shell string the user can read
         # back out of the plist; launchd itself does no shell parsing.
@@ -200,6 +204,11 @@ def build_launchd_plist(time_str: str = DEFAULT_TIME, command: str = DEFAULT_COM
         "StandardOutPath": str(log_path()),
         "StandardErrorPath": str(log_path()),
     }
+    if workdir:
+        # launchd starts agents nowhere near the newsroom; without this key
+        # the headless editor cannot find specs/, collectors/, editions/.
+        plist["WorkingDirectory"] = workdir
+    return plist
 
 
 def _systemd_escape(command: str) -> str:
@@ -208,14 +217,18 @@ def _systemd_escape(command: str) -> str:
     return command.replace("\\", "\\\\").replace("%", "%%").replace('"', '\\"')
 
 
-def build_systemd_service(command: str = DEFAULT_COMMAND) -> str:
+def build_systemd_service(command: str = DEFAULT_COMMAND, workdir: str | None = None) -> str:
     wrapped = _systemd_escape(_wrap_command(command))
+    # Without WorkingDirectory the service starts in $HOME and the headless
+    # editor cannot find the newsroom (specs/, collectors/, editions/).
+    workdir_line = f"WorkingDirectory={workdir}\n" if workdir else ""
     return (
         "[Unit]\n"
         "Description=Morning Paper daily edition\n"
         "\n"
         "[Service]\n"
         "Type=oneshot\n"
+        f"{workdir_line}"
         f'ExecStart=/bin/sh -c "{wrapped}"\n'
         f"StandardOutput=append:{log_path()}\n"
         f"StandardError=append:{log_path()}\n"
@@ -239,8 +252,17 @@ def build_systemd_timer(time_str: str = DEFAULT_TIME) -> str:
     )
 
 
-def build_cron_line(time_str: str = DEFAULT_TIME, command: str = DEFAULT_COMMAND) -> str:
+def build_cron_line(
+    time_str: str = DEFAULT_TIME,
+    command: str = DEFAULT_COMMAND,
+    workdir: str | None = None,
+) -> str:
     hour, minute = parse_time(time_str)
+    if workdir:
+        # cron starts jobs in $HOME, where the newsroom is not; cd first. The
+        # path rides single-quoted with the same '\'' escape the outer wrapper
+        # uses below, so a workdir containing single quotes survives both layers.
+        command = "cd '{}' && {}".format(workdir.replace("'", "'\\''"), command)
     # The wrapped command rides inside single quotes, so embedded single
     # quotes (the date format, "today's") become '\'' — and cron turns an
     # unescaped % into a newline inside the command field, hence \%.
@@ -309,14 +331,14 @@ def _launchctl_state() -> dict | None:
 # --- install / uninstall / status ---
 
 
-def _install_darwin(time_str: str, command: str) -> tuple[dict, int]:
+def _install_darwin(time_str: str, command: str, workdir: str | None = None) -> tuple[dict, int]:
     plist_file = launchd_plist_path()
     plist_file.parent.mkdir(parents=True, exist_ok=True)
     log_path().parent.mkdir(parents=True, exist_ok=True)
     if plist_file.exists():
         # Re-install: unload the old job first so the new time/command takes.
         _bootout_quietly()
-    plist_file.write_bytes(plistlib.dumps(build_launchd_plist(time_str, command)))
+    plist_file.write_bytes(plistlib.dumps(build_launchd_plist(time_str, command, workdir)))
     loaded = False
     note = None
     bootstrap = _run(["launchctl", "bootstrap", f"gui/{os.getuid()}", str(plist_file)])
@@ -349,11 +371,11 @@ def _bootout_quietly() -> None:
         _run(["launchctl", "unload", str(launchd_plist_path())])
 
 
-def _install_systemd(time_str: str, command: str) -> tuple[dict, int]:
+def _install_systemd(time_str: str, command: str, workdir: str | None = None) -> tuple[dict, int]:
     unit_dir = systemd_unit_dir()
     unit_dir.mkdir(parents=True, exist_ok=True)
     log_path().parent.mkdir(parents=True, exist_ok=True)
-    systemd_service_path().write_text(build_systemd_service(command), encoding="utf-8")
+    systemd_service_path().write_text(build_systemd_service(command, workdir), encoding="utf-8")
     systemd_timer_path().write_text(build_systemd_timer(time_str), encoding="utf-8")
     _run(["systemctl", "--user", "daemon-reload"])
     enable = _run(["systemctl", "--user", "enable", "--now", f"{SYSTEMD_UNIT}.timer"])
@@ -373,12 +395,12 @@ def _read_crontab() -> str:
     return listing.stdout if listing.returncode == 0 else ""
 
 
-def _install_cron(time_str: str, command: str) -> tuple[dict, int]:
+def _install_cron(time_str: str, command: str, workdir: str | None = None) -> tuple[dict, int]:
     log_path().parent.mkdir(parents=True, exist_ok=True)
     kept = [
         line for line in _read_crontab().splitlines() if CRON_MARKER not in line
     ]
-    kept.append(build_cron_line(time_str, command))
+    kept.append(build_cron_line(time_str, command, workdir))
     write = _run(["crontab", "-"], input_text="\n".join(kept) + "\n")
     payload = {
         "installed": write.returncode == 0,
@@ -397,11 +419,17 @@ def install_routine(
     time_str: str = DEFAULT_TIME,
     command: str | None = None,
     platform: str | None = None,
+    workdir: str | None = None,
 ) -> tuple[dict, int]:
     hour, minute = parse_time(time_str)  # validates; raises ValueError
     time_str = f"{hour:02d}:{minute:02d}"
     explicit_command = command is not None
     command = command or DEFAULT_COMMAND
+    # The scheduled job inherits no shell cwd, so it must be pinned to a
+    # directory at install time. The contract: the user installs from their
+    # newsroom — capture that directory now so the headless edition run can
+    # find specs/, collectors/, and editions/ every morning.
+    workdir = os.path.abspath(workdir) if workdir else os.getcwd()
     if not explicit_command and _resolve_claude() is None:
         # The default job is headless Claude; installing it without the binary
         # would just fail silently every morning. Refuse, and hand the user
@@ -424,11 +452,11 @@ def install_routine(
         )
     scheduler = detect_scheduler(platform)
     if scheduler == "launchd":
-        payload, code = _install_darwin(time_str, command)
+        payload, code = _install_darwin(time_str, command, workdir)
     elif scheduler == "systemd":
-        payload, code = _install_systemd(time_str, command)
+        payload, code = _install_systemd(time_str, command, workdir)
     elif scheduler == "cron":
-        payload, code = _install_cron(time_str, command)
+        payload, code = _install_cron(time_str, command, workdir)
     else:
         return (
             {
@@ -446,6 +474,7 @@ def install_routine(
                 "semantics": schedule_semantics(scheduler, time_str),
             },
             "command": command,
+            "workdir": workdir,
             "log": str(log_path()),
         }
     )
@@ -465,12 +494,12 @@ def _installed_scheduler() -> str | None:
     return None
 
 
-def _schedule_from_launchd() -> tuple[str | None, str | None]:
+def _schedule_from_launchd() -> tuple[str | None, str | None, str | None]:
     try:
         with launchd_plist_path().open("rb") as handle:
             data = plistlib.load(handle)
     except Exception:
-        return None, None
+        return None, None, None
     interval = data.get("StartCalendarInterval") or {}
     time_str = None
     if isinstance(interval, dict) and "Hour" in interval and "Minute" in interval:
@@ -479,7 +508,8 @@ def _schedule_from_launchd() -> tuple[str | None, str | None]:
     args = data.get("ProgramArguments") or []
     if len(args) == 3 and args[0] == "/bin/sh":
         command = _unwrap_command(args[2]) or args[2]
-    return time_str, command
+    workdir = data.get("WorkingDirectory")
+    return time_str, command, workdir if isinstance(workdir, str) else None
 
 
 def _schedule_from_systemd() -> tuple[str | None, str | None]:
@@ -527,8 +557,9 @@ def routine_status() -> dict:
             "log": str(log_path()),
             "hint": "schedule the daily edition with `morning-paper routine install`",
         }
+    workdir = None
     if scheduler == "launchd":
-        time_str, command = _schedule_from_launchd()
+        time_str, command, workdir = _schedule_from_launchd()
     elif scheduler == "systemd":
         time_str, command = _schedule_from_systemd()
     else:
@@ -545,6 +576,8 @@ def routine_status() -> dict:
         "next_fire": next_fire(time_str) if time_str else None,
         "log": str(log_path()),
     }
+    if workdir:
+        payload["workdir"] = workdir
     if scheduler == "launchd":
         state = _launchctl_state()
         if state:
@@ -578,15 +611,18 @@ def routine_doctor_summary() -> dict:
     """File-checks only (no subprocess) so doctor stays fast and offline."""
     scheduler = None
     time_str = None
+    workdir = None
     if launchd_plist_path().is_file():
         scheduler = "launchd"
-        time_str, _ = _schedule_from_launchd()
+        time_str, _, workdir = _schedule_from_launchd()
     elif systemd_timer_path().is_file():
         scheduler = "systemd"
         time_str, _ = _schedule_from_systemd()
     summary: dict[str, object] = {"installed": scheduler is not None, "scheduler": scheduler}
     if time_str:
         summary["time"] = time_str
+    if workdir:
+        summary["workdir"] = workdir
     return summary
 
 
@@ -596,7 +632,9 @@ def routine_doctor_summary() -> dict:
 def routine_command(args: list[str]) -> int:
     usage = (
         "usage: morning-paper routine <install|status|uninstall> "
-        "[--time HH:MM] [--command CMD]"
+        "[--time HH:MM] [--command CMD] [--workdir PATH]\n"
+        "  --workdir PATH  newsroom directory the daily run starts in "
+        "(default: current directory)"
     )
     if not args or args[0] in {"-h", "--help"}:
         print(usage)
@@ -604,6 +642,7 @@ def routine_command(args: list[str]) -> int:
     action, rest = args[0], args[1:]
     time_str = DEFAULT_TIME
     command: str | None = None
+    workdir: str | None = None
     index = 0
     while index < len(rest):
         arg = rest[index]
@@ -618,11 +657,23 @@ def routine_command(args: list[str]) -> int:
             command = rest[index + 1]
             index += 2
             continue
+        if arg == "--workdir" and index + 1 < len(rest):
+            workdir = rest[index + 1]
+            index += 2
+            continue
         print(f"unknown routine argument: {arg}", file=sys.stderr)
         return 2
     if action == "install":
+        if workdir is not None and not os.path.isdir(workdir):
+            print(
+                f"invalid --workdir {workdir!r}: not an existing directory — pass the "
+                "newsroom directory the daily run should start in "
+                "(default: current directory)",
+                file=sys.stderr,
+            )
+            return 2
         try:
-            payload, code = install_routine(time_str, command)
+            payload, code = install_routine(time_str, command, workdir=workdir)
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return 2
