@@ -33,6 +33,12 @@ Ask in 2-3 messages, not twenty. Capture:
   style (`morning-paper styles` lists the family of four — broadsheet,
   brief, field-card, zine; `broadsheet` is the default recommendation),
   palette (`color` for inkjets, `mono` for laser).
+- **Voice** — how should the paper talk? Offer three registers and write
+  the answer to `preferences/voice.md` in the newsroom: *dense operator*
+  (every word earns its ink; Strunk defluff pass each edition; maximum
+  context per inch), *classic newspaper* (measured, narrative), or
+  *explanatory* (more scaffolding, gentler). Density is a preference, not
+  a virtue — match the reader.
 - **Printer** — CUPS name (`lpstat -p`), duplex capable? Save the print
   command in the newsroom README.
 
