@@ -49,7 +49,7 @@ uv tool install "morning-paper[pretty]"
 morning-paper demo
 ```
 
-The demo renders a fully synthetic edition through the `editorial` style pack
+The demo renders a fully synthetic edition through the `broadsheet` style pack
 and tells you exactly where the PDF landed. Print it. That is the product.
 
 ## The Claude Code plugin
@@ -114,7 +114,7 @@ newsroom repo, first edition, daily loop). Otherwise:
 - Prints any article on demand with `morning-paper print <url>`
 - Stages material for tomorrow's edition against a page budget
   (`stage`, `queue`, `estimate`)
-- Typesets any markdown file through six print style packs with
+- Typesets any markdown file through four print style packs with
   `morning-paper render`
 - Renders charts from plain-text directives (`mp-bars`, `mp-spark`,
   `mp-stats`) as inline SVG — stdlib only, no plotting library
@@ -158,24 +158,26 @@ renderer — it works, but it is not the output you should judge the product by.
 | RSS feeds | No | Included |
 | Article URLs | No | Included via `print` / `stage` |
 
-## Six styles, two palettes
+## Four styles, two palettes
 
-`morning-paper styles` lists them all. Every style pairs with either palette:
+`morning-paper styles` lists them all — a family of four, each named for the
+print genre it is and the job it does. Every style pairs with either palette:
 `mono` (laser printers; weight carries emphasis) or `color` (inkjet: warm
 ink, working red, data blue).
 
 | Style | What it is |
 | --- | --- |
-| `editorial` | The unified paper: serif editorial system, restrained color — the default recommendation |
-| `typewriter` | The newspaper look: Courier Prime, masthead, card sections |
-| `flow` | Continuous operator brief: dense, no forced page breaks |
-| `magazine` | Long-read essay page: serif body, pull quotes, wide margins |
-| `ops-card` | Boxed reference one-pager: scripts, checklists, cheat sheets |
-| `zine` | Pocket how-to guide: half-letter, marker display type, checkbox steps |
+| `broadsheet` | The newspaper you read: unified serif system, restrained color — the default recommendation |
+| `brief` | The operator brief you work through with a pen: dense Courier, queue rows, link cards, no forced page breaks |
+| `field-card` | The reference card you tape next to the phone: boxed sans one-pager — scripts, checklists, do/don't splits |
+| `zine` | The pocket guide you hand to someone: half-letter photocopier paste-up — marker strips, halftone bands, checkbox steps |
 
 ```bash
-morning-paper render brief.md --style editorial --palette color
+morning-paper render brief.md --style broadsheet --palette color
 ```
+
+The 0.4.x names (`editorial`, `flow`, `ops-card`, `magazine`, `typewriter`)
+still work for one release as deprecated aliases of their successors.
 
 ## Rendering
 

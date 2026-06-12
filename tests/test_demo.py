@@ -27,7 +27,7 @@ class VendoredFontsTest(unittest.TestCase):
                 self.assertNotIn("fonts.googleapis.com", css, (style, palette))
 
     def test_compose_css_embeds_vendored_courier_prime(self) -> None:
-        css = compose_css("typewriter", "mono")
+        css = compose_css("brief", "mono")
         self.assertIn("@font-face", css)
         self.assertIn("'Courier Prime'", css)
         self.assertIn("file://", css)
@@ -35,23 +35,25 @@ class VendoredFontsTest(unittest.TestCase):
             self.assertIn(filename, css)
 
     def test_zine_advertised_fonts_are_vendored_or_system(self) -> None:
-        # 0.4.3 honesty fix: Permanent Marker is vendored; Open Sans (which the
-        # stripped Google import could never load) is gone from the stacks.
+        # zine v2 (0.5.0): both display and body faces are vendored — the
+        # typewriter IS the zine voice; tiny labels fall back to system sans.
         css = compose_css("zine", "color")
         self.assertIn("'Permanent Marker'", css)
         self.assertIn("PermanentMarker-Regular.ttf", css)
-        self.assertNotIn("--zn-body-font: 'Open Sans'", css)
+        self.assertIn("'Courier Prime'", css)
+        self.assertIn("CourierPrime-Regular.ttf", css)
+        self.assertNotIn("Open Sans", css)
         self.assertNotIn("fonts.googleapis.com", css)
 
 
 class FontScaleTest(unittest.TestCase):
     def test_compose_css_appends_root_override(self) -> None:
-        css = compose_css("editorial", "color", font_scale=1.2)
+        css = compose_css("broadsheet", "color", font_scale=1.2)
         self.assertIn(":root { --mp-font-scale: 1.2; }", css)
         self.assertIn("calc(var(--mp-font-scale, 1)", css)
 
     def test_default_scale_appends_nothing(self) -> None:
-        css = compose_css("editorial", "color")
+        css = compose_css("broadsheet", "color")
         self.assertNotIn("--mp-font-scale:", css)
 
     def test_every_style_sheet_consumes_the_scale(self) -> None:
@@ -64,7 +66,7 @@ class FontScaleTest(unittest.TestCase):
 
         for value in (0.5, 1.6):
             with self.assertRaises(StyleError):
-                compose_css("editorial", "color", font_scale=value)
+                compose_css("broadsheet", "color", font_scale=value)
 
     def test_config_rejects_out_of_range_font_scale(self) -> None:
         from morning_paper.config import ConfigError, load_config
@@ -94,7 +96,7 @@ class DemoCommandTest(unittest.TestCase):
             lines = stdout.getvalue().rstrip("\n").splitlines()
             payload = json.loads("\n".join(lines[:-3]))
             self.assertEqual(payload["mode"], "demo")
-            self.assertEqual(payload["style"], "editorial")
+            self.assertEqual(payload["style"], "broadsheet")
             self.assertEqual(payload["palette"], "color")
             self.assertIsInstance(payload["pages"], int)
             self.assertGreaterEqual(payload["pages"], 1)

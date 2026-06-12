@@ -44,6 +44,15 @@
   mailbox over IMAP; trusted senders' mail becomes staged pages with a
   FROM <NAME> kicker and a warm confirmation reply (docs/inbox.md)
 
+## Shipped (`v0.5.0`)
+
+- the style family: four packs named for the job — `broadsheet` (was
+  `editorial`, absorbing `magazine`), `brief` (was `flow`, absorbing
+  `typewriter`'s link-card grid), `field-card` (was `ops-card`), and `zine`
+  v2 (the photocopier field zine: paste-up cover plate, halftone bands,
+  rubber stamp, command bars). Old names are deprecated aliases for one
+  release; the build front page is broadsheet-native for every style
+
 ## Next (`v0.4`)
 
 - queue management verbs: `morning-paper remove`, `morning-paper list`

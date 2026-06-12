@@ -1,25 +1,48 @@
-/* Style pack: zine — the pocket how-to guide.
- * Modeled on the Iffy Books Meshtastic zine (CC0, studied 2026-06-10):
- * half-letter page, brush-marker display type, single readable column,
- * checkbox task steps, centered bold URLs, bordered photos. Built to be
- * stapled, folded, and handed to someone.
- * Consumes palette tokens; compose with a palette sheet.
- * Print note: half-letter pages 2-up on Letter = pdfbook2 / `lp -o number-up=2`.
+/* Style pack: zine (v2) — the photocopier field zine.
+ * (Shipped 0.5.0, replacing zine v1 — the .zn-* Word-doc-with-a-marker-title
+ * vocabulary — per the 2026-06-11 style-system audit. The class prefix is
+ * .z2-*.)
  *
- * Fonts (honesty decision, 0.4.3): Permanent Marker — the zine's identity
- * face — is vendored (Apache 2.0, resources/fonts/) and injected by
- * compose_css, so it loads on every platform with no network. The body stack
- * is honest system sans: Open Sans was previously declared via a Google
- * Fonts @import that compose_css strips, so it could never load; vendoring
- * it would cost >1MB of variable-font files with unreliable bold-instance
- * selection in WeasyPrint. Helvetica/Arial is what actually printed — now
- * it is what the sheet says.
+ * WeasyPrint constraints this sheet works around (keep these honest):
+ *   - no box-shadow: hard offset shadows are an ink-plate wrapper + inner
+ *     translate(-0.05in) — the .z2-cut / .z2-colophon two-wrapper markup
+ *   - halftone dot bands must be sized in exact multiples of their dot grid
+ *     (7px×4, 5px×3, 6px×3) or a clipped row renders as a dashed fringe
+ *   - rotation is safe on block elements; body text and commands stay
+ *     dead straight (that is also the Carson rule below)
+ *
+ * Inspirations, each with a named contribution:
+ *   1. Sniffin' Glue / punk paste-up (1976): typewriter body + felt-marker
+ *      display + photocopier contrast. Title set on cut-paper STRIPS,
+ *      each strip slightly rotated, pasted on a solid ink plate.
+ *   2. Risograph one-ink discipline: max two "inks" per page (ink + accent),
+ *      texture from halftone dot bands (CSS radial-gradient grids), big bold
+ *      knockout type. Never decorate with a third color.
+ *   3. Field Notes memo books: the cover is a labeled TOOL — spec rows with
+ *      dotted leaders, an edition rubber stamp, "property of" furniture.
+ *   4. Ray Gun / David Carson: rotation is tension, not chaos. Display
+ *      elements tilt 1–3 degrees; body text and commands stay dead straight.
+ *      Legibility lives exactly where the job lives.
+ *   5. Iffy Books how-to zines (kept from zine v1): half-letter, checkbox
+ *      steps, command blocks — the genre's actual JOB is hand-it-to-someone
+ *      instructions. zine2 keeps the vocabulary, upgrades the clothes.
+ *
+ * Fonts: Permanent Marker (vendored, Apache 2.0) for display;
+ * Courier Prime (vendored, OFL) for body — the typewriter IS the zine voice.
+ * Tiny labels use system Helvetica. No network fonts.
+ *
+ * Consumes --mp-* palette tokens; compose with a palette sheet.
+ * mono palette = pure photocopier. color palette = riso two-ink (red accent).
+ * Texture is 100% CSS: borders, transform rotation, radial-gradient halftone
+ * dot grids, hard offset box-shadows (no blur — print-honest).
+ * Print: half-letter 2-up on Letter = pdfbook2 / `lp -o number-up=2`.
  */
 
 :root {
-  --zn-display: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
-  --zn-body-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --zn-body: 9.5pt;
+  --z2-display: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
+  --z2-mono: 'Courier Prime', 'Courier New', Courier, monospace;
+  --z2-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --z2-body: 8.5pt;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,8 +50,17 @@
 @page {
   /* half-letter: 5.5in x 8.5in */
   size: 396pt 612pt;
-  margin: 0.45in 0.45in 0.55in 0.45in;
-  @bottom-center { content: counter(page); font-family: 'Helvetica Neue', Helvetica, sans-serif; font-size: 8pt; color: #555555; }
+  margin: 0.42in 0.45in 0.58in 0.45in;
+  @bottom-center {
+    content: "- " counter(page) " -";
+    font-family: 'Permanent Marker', 'Marker Felt', cursive;
+    font-size: 8.5pt;
+    color: #000000;
+  }
+}
+@page :first {
+  margin: 0.32in 0.38in 0.42in 0.38in;
+  @bottom-center { content: none; }
 }
 
 .mp-footer-date, .mp-footer-name {
@@ -39,114 +71,332 @@
 .mp-footer-name { string-set: mp-name content(); }
 
 body {
-  font-family: var(--zn-body-font);
-  font-size: calc(var(--mp-font-scale, 1) * var(--zn-body));
-  line-height: 1.48;
+  font-family: var(--z2-mono);
+  font-size: calc(var(--mp-font-scale, 1) * var(--z2-body));
+  line-height: 1.5;
   color: var(--mp-ink);
   background: var(--mp-paper);
 }
 
-/* cover */
-.zn-cover { text-align: center; padding-top: 0.6in; }
-.zn-cover-title {
-  font-family: var(--zn-display);
-  font-size: 27pt;
-  line-height: 1.3;
-  margin-bottom: 0.25in;
-}
-.zn-cover-sub {
-  font-family: var(--zn-display);
-  font-size: 14pt;
-  margin-bottom: 0.08in;
-}
-.zn-cover-meta {
-  font-size: 9pt;
-  font-weight: 700;
-  font-style: italic;
-  margin-top: 0.3in;
-  line-height: 1.6;
-}
-.zn-cover-blurb { text-align: left; margin-top: 0.35in; font-size: 9.5pt; }
+/* ============================== COVER ============================== */
 
-/* section heads: centered, bold, caps (inner pages) */
-h1 {
-  font-family: var(--zn-body-font);
-  font-size: 12pt;
+.z2-masthead {
+  font-family: var(--z2-mono);
+  font-size: 6.5pt;
   font-weight: 700;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   text-align: center;
-  letter-spacing: 0.02em;
-  margin: 0.16in 0 0.07in 0;
-}
-h2 {
-  font-family: var(--zn-display);
-  font-size: 13pt;
-  margin: 0.14in 0 0.06in 0;
+  padding-bottom: 0.05in;
+  margin-bottom: 0.08in;
+  border-bottom: 1px solid var(--mp-rule);
 }
 
-p { margin-bottom: 0.09in; }
-
-/* checkbox steps — the zine's signature */
-.zn-step {
-  margin-bottom: 0.09in;
-  padding-left: 0.22in;
-  text-indent: -0.22in;
-}
-.zn-step::before { content: "\2750\00a0 "; font-size: 10.5pt; }
-.zn-step strong { font-weight: 700; }
-
-/* centered bold URL / command lines */
-.zn-url {
+/* the ink plate: solid black field the title strips are pasted onto */
+.z2-plate {
+  background: var(--mp-ink);
+  padding: 0.42in 0.2in 0;
   text-align: center;
-  font-weight: 700;
-  margin: 0.07in 0 0.1in 0;
-  font-size: 9.5pt;
-  word-break: break-all;
 }
-.zn-cmd {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 8.5pt;
-  background: var(--mp-card-bg);
-  border: 1px solid var(--mp-track);
-  padding: 0.05in 0.08in;
-  margin: 0.06in 0 0.1in 0;
+.z2-strip {
+  display: inline-block;
+  background: var(--mp-paper);
+  color: var(--mp-ink);
+  font-family: var(--z2-display);
+  font-size: 30pt;
+  line-height: 1.1;
+  padding: 0.015in 0.16in 0.05in 0.16in;
+  margin: 0.045in 0;
+  transform: rotate(-1.8deg);
+}
+.z2-strip.alt { transform: rotate(1.3deg); }
+.z2-strip.accent { background: var(--mp-accent); color: var(--mp-paper); }
+.z2-plate-sub {
+  font-family: var(--z2-mono);
+  font-weight: 700;
+  font-size: 9.5pt;
+  color: var(--mp-paper);
+  margin: 0.16in 0 0.3in 0;
+  letter-spacing: 0.04em;
+}
+/* halftone exit band: paper dots over ink, the photocopy fade */
+.z2-plate-dots {
+  height: 0.2917in; /* 4 rows of the 7px dot grid — no clipped row */
+  background-color: var(--mp-ink);
+  background-image: radial-gradient(circle, var(--mp-paper) 30%, transparent 34%);
+  background-size: 7px 7px;
+}
+/* exit fade: ink dots on paper, finer — reads as the band losing toner */
+.z2-dots-exit {
+  height: 0.15625in; /* 3 rows of 5px */
+  background-image: radial-gradient(circle, var(--mp-ink) 20%, transparent 24%);
+  background-size: 5px 5px;
+}
+
+/* rubber stamp: doubled border, tilted, never straight */
+.z2-stamp {
+  display: inline-block;
+  border: 3px double var(--mp-accent);
+  color: var(--mp-accent);
+  font-family: var(--z2-mono);
+  font-weight: 700;
+  font-size: 8pt;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.035in 0.1in;
+  transform: rotate(-2.4deg);
+  border-radius: 2px;
+}
+.z2-stamp-row { text-align: center; margin: 0.18in 0 0.1in 0; }
+
+/* Field Notes spec block: dotted-leader rows */
+.z2-specs {
+  margin: 0.14in 0.1in 0 0.1in;
+  font-family: var(--z2-mono);
+  font-size: 8pt;
+}
+.z2-specs .row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dotted var(--mp-muted);
+  padding: 0.035in 0.02in 0.01in 0.02in;
+}
+.z2-specs .k {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 6.5pt;
+  color: var(--mp-muted);
+  padding-top: 0.012in;
+}
+.z2-specs .v { font-weight: 700; text-align: right; }
+
+/* ========================== SECTION HEADS ========================== */
+
+/* h1: taped label — knockout marker on an ink bar, slight paste tilt */
+h1 {
+  display: inline-block;
+  font-family: var(--z2-display);
+  font-size: 14.5pt;
+  font-weight: 400;
+  color: var(--mp-paper);
+  background: var(--mp-ink);
+  padding: 0.012in 0.12in 0.045in 0.12in;
+  margin: 0.18in 0 0.1in 0;
+  transform: rotate(-1deg);
+  page-break-after: avoid;
+}
+h1:nth-of-type(even) { transform: rotate(0.8deg); }
+
+/* h2: marker with a fat accent underline, only as wide as the words */
+h2 {
+  display: inline-block;
+  font-family: var(--z2-display);
+  font-size: 11.5pt;
+  font-weight: 400;
+  margin: 0.12in 0 0.06in 0;
+  border-bottom: 2.5px solid var(--mp-accent);
+  padding-bottom: 0.008in;
+  page-break-after: avoid;
+}
+
+p { margin-bottom: 0.085in; }
+
+/* ====================== STEPS — THE ZINE'S JOB ====================== */
+
+.z2-step {
+  position: relative;
+  padding-left: 0.27in;
+  margin-bottom: 0.085in;
+}
+.z2-step::before {
+  content: "";
+  position: absolute;
+  left: 0.02in;
+  top: 0.018in;
+  width: 0.115in;
+  height: 0.115in;
+  border: 1.7px solid var(--mp-ink);
+  transform: rotate(-3deg);
+  background: var(--mp-paper);
+}
+.z2-step:nth-child(even)::before { transform: rotate(2deg); }
+.z2-step strong { font-weight: 700; }
+
+/* command block: inverted xerox — paper type on ink, dead straight */
+.z2-cmd {
+  font-family: var(--z2-mono);
+  font-size: 8pt;
+  background: var(--mp-ink);
+  color: var(--mp-paper);
+  padding: 0.055in 0.09in;
+  margin: 0.05in 0 0.1in 0;
   white-space: pre-wrap;
   word-break: break-all;
-}
-
-/* bordered figures */
-.zn-img { text-align: center; margin: 0.1in 0; break-inside: avoid; }
-.zn-img img { max-width: 80%; border: 1px solid var(--mp-rule); padding: 0.02in; background: var(--mp-paper); }
-.zn-img .cap { font-size: 7.5pt; color: var(--mp-muted); margin-top: 0.03in; }
-
-/* warnings */
-.zn-warn {
-  border: 1.5px solid var(--mp-alert);
-  background: var(--mp-alert-bg);
-  padding: 0.06in 0.09in;
-  margin: 0.1in 0;
-  font-size: 9pt;
   break-inside: avoid;
 }
-.zn-warn strong { color: var(--mp-alert); font-weight: 700; }
+.z2-cmd::before { content: "$ "; color: var(--mp-track); font-weight: 700; }
+.z2-cmd .dim { color: var(--mp-track); }
 
-.not-configured { margin: 0.08in 0; padding: 0.06in 0.08in; border: 1px dashed var(--mp-muted); font-size: 8.5pt; color: var(--mp-muted); }
+/* ====================== PASTE-UP FURNITURE ====================== */
 
-/* charts work here too */
-.mp-chart { margin: 0.1in 0; break-inside: avoid; }
-.mp-chart-title { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mp-muted); margin-bottom: 0.03in; }
-.mp-chart svg { display: block; width: 100%; height: auto; }
-.mp-stats { display: flex; gap: 0.08in; margin: 0.08in 0; flex-wrap: wrap; }
-.mp-stat { flex: 1 1 0; min-width: 0.9in; border-top: 2px solid var(--mp-rule); padding: 0.04in 0.02in 0 0.02in; }
-.mp-stat-value { font-size: 13pt; font-weight: 700; color: var(--mp-chart-ink); }
-.mp-stat-delta { font-size: 6.5pt; color: var(--mp-muted); }
-.mp-stat-label { font-size: 6pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); margin-top: 0.015in; }
+/* cut-out scrap: ink plate + inner box shifted up-left = hard offset
+ * shadow without box-shadow (unsupported in WeasyPrint). Markup:
+ * <div class="z2-cut"><div class="z2-cut-in"> … </div></div> */
+.z2-cut {
+  background: var(--mp-ink);
+  transform: rotate(-0.8deg);
+  margin: 0.18in 0.12in 0.16in 0.1in;
+  break-inside: avoid;
+}
+.z2-cut.tilt-r { transform: rotate(0.7deg); }
+.z2-cut-in {
+  background: var(--mp-paper);
+  border: 2px solid var(--mp-ink);
+  padding: 0.1in 0.14in 0.08in 0.14in;
+  transform: translate(-0.05in, -0.05in);
+}
+.z2-cut .say {
+  font-family: var(--z2-display);
+  font-size: 11pt;
+  line-height: 1.45;
+}
+.z2-cut .who {
+  font-family: var(--z2-mono);
+  font-size: 6.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--mp-muted);
+  margin-top: 0.045in;
+}
 
-table.data { width: 100%; border-collapse: collapse; margin: 0.06in 0; font-size: 8.5pt; }
-table.data th { text-align: left; font-size: 7pt; text-transform: uppercase; color: var(--mp-muted); border-bottom: 1px solid var(--mp-rule); padding: 0.02in 0.04in 0.02in 0; }
-table.data td { padding: 0.02in 0.04in 0.02in 0; border-bottom: 1px solid var(--mp-track); vertical-align: top; }
+/* sticker: accent pill slapped on at an angle */
+.z2-sticker {
+  display: inline-block;
+  background: var(--mp-accent);
+  color: var(--mp-paper);
+  font-family: var(--z2-display);
+  font-size: 8.5pt;
+  padding: 0.008in 0.09in 0.03in 0.09in;
+  border-radius: 0.16in;
+  transform: rotate(-2.5deg);
+  margin: 0 0.04in;
+}
 
-ul, ol { margin: 0.02in 0 0.08in 0.22in; }
-li { line-height: 1.45; margin-bottom: 0.025in; }
+/* marginal scrawl */
+.z2-note {
+  font-family: var(--z2-display);
+  font-size: 9pt;
+  transform: rotate(-1.2deg);
+  margin: 0.08in 0.2in 0.12in 0.2in;
+}
+
+/* warning: alert band + bordered body */
+.z2-warn {
+  border: 2px solid var(--mp-alert);
+  margin: 0.12in 0;
+  break-inside: avoid;
+}
+.z2-warn-head {
+  background: var(--mp-alert);
+  color: var(--mp-paper);
+  font-family: var(--z2-sans);
+  font-weight: 700;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0.028in 0.09in;
+}
+.z2-warn-body { padding: 0.055in 0.09in; background: var(--mp-alert-bg); font-size: 8.5pt; }
+
+/* halftone divider band */
+.z2-dots {
+  height: 0.1875in; /* 3 rows of 6px */
+  margin: 0.16in 0.25in;
+  background-image: radial-gradient(circle, var(--mp-ink) 30%, transparent 35%);
+  background-size: 6px 6px;
+}
+
+/* cover lines: what's inside, with dot leaders to folios */
+.z2-toc-title {
+  font-family: var(--z2-display);
+  font-size: 11pt;
+  margin-bottom: 0.05in;
+}
+.z2-toc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8pt;
+  font-weight: 700;
+  border-bottom: 1px dotted var(--mp-muted);
+  padding: 0.028in 0.01in 0.008in 0.01in;
+}
+.z2-toc-row .pg { font-family: var(--z2-display); font-weight: 400; }
+
+/* cut-out card: dashed scissor line, tape it where the job happens */
+.z2-cutout {
+  border: 2px dashed var(--mp-ink);
+  padding: 0.09in 0.12in;
+  margin: 0.2in 0.04in 0.1in 0.04in;
+  break-inside: avoid;
+}
+.z2-cutout-label {
+  font-family: var(--z2-mono);
+  font-size: 6.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--mp-muted);
+  text-align: center;
+  margin-bottom: 0.05in;
+}
+.z2-cutout .t { font-family: var(--z2-display); font-size: 10.5pt; margin-bottom: 0.04in; }
+.z2-cutout .r { font-size: 8pt; padding: 0.012in 0; border-bottom: 1px dotted var(--mp-track); }
+.z2-cutout .r:last-child { border-bottom: none; }
+
+/* ========================= BACK COVER ========================= */
+
+/* same plate trick as .z2-cut:
+ * <div class="z2-colophon"><div class="z2-colophon-in"> … </div></div> */
+.z2-colophon {
+  background: var(--mp-ink);
+  margin-top: 0.22in;
+  transform: rotate(0.5deg);
+}
+.z2-colophon-in {
+  background: var(--mp-paper);
+  border: 2px solid var(--mp-ink);
+  padding: 0.16in 0.18in;
+  text-align: center;
+  transform: translate(-0.05in, -0.05in);
+}
+.z2-colophon .big {
+  font-family: var(--z2-display);
+  font-size: 12pt;
+  margin-bottom: 0.06in;
+}
+.z2-colophon .small {
+  font-size: 7pt;
+  color: var(--mp-muted);
+  line-height: 1.6;
+}
+
+/* ====================== SHARED FURNITURE ====================== */
+
+table.data { width: 100%; border-collapse: collapse; margin: 0.06in 0; font-size: 8pt; }
+table.data th { text-align: left; font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); border-bottom: 1.5px solid var(--mp-rule); padding: 0.02in 0.05in 0.02in 0; }
+table.data td { padding: 0.025in 0.05in 0.025in 0; border-bottom: 1px solid var(--mp-track); vertical-align: top; }
+
+ul, ol { margin: 0.02in 0 0.08in 0.24in; }
+li { line-height: 1.5; margin-bottom: 0.03in; }
 a { color: var(--mp-ink); font-weight: 700; text-decoration: none; }
+code { font-family: var(--z2-mono); font-weight: 700; }
+.not-configured { margin: 0.08in 0; padding: 0.06in 0.08in; border: 1px dashed var(--mp-muted); font-size: 8pt; color: var(--mp-muted); }
+
+/* charts still work here */
+.mp-chart { margin: 0.1in 0; break-inside: avoid; }
+.mp-chart-title { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mp-muted); margin-bottom: 0.03in; }
+.mp-chart svg { display: block; width: 100%; height: auto; }
+
 .page-break { page-break-before: always; }

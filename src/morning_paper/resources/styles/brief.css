@@ -1,4 +1,7 @@
-/* Style pack: flow — the continuous operator brief.
+/* Style pack: brief — the continuous operator brief.
+ * (Canonical name since 0.5.0; `flow` and `typewriter` resolve here as
+ * deprecated aliases — typewriter's one asset, the two-column boxed
+ * link-card grid, lives on as the .cards/.card family below.)
  * Sections run together with NO forced page breaks; the paper reads as one
  * dense column of work. Courier family, signal cards, queue rows, an
  * action-required block, an honest refs line.
@@ -91,8 +94,9 @@ h1 .sec-id { float: right; font-size: 7pt; color: var(--mp-muted); font-weight: 
 .read p:last-child { margin-bottom: 0; }
 .read .q { font-style: italic; }
 
-/* two-column cards */
-.cards2 { columns: 2; column-gap: 0.09in; margin-top: 0.03in; }
+/* two-column link cards — THE card family (the HN-roundup grid salvaged
+ * from the retired typewriter pack; .cards2 is the deprecated 0.4.x name) */
+.cards, .cards2 { columns: 2; column-gap: 0.09in; margin-top: 0.03in; }
 .card { break-inside: avoid; border: 1px solid var(--mp-rule); background: var(--mp-paper); padding: 0.04in 0.055in; margin-bottom: 0.05in; }
 .card-head { display: flex; gap: 0.05in; align-items: baseline; }
 .card-rank { font-weight: 700; font-size: 7.5pt; }

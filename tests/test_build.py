@@ -158,7 +158,7 @@ class BuildFlowTest(unittest.TestCase):
 
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
             # the starter config matches the visual identity the demo sells
-            self.assertEqual(config["outputs"]["style"], "editorial")
+            self.assertEqual(config["outputs"]["style"], "broadsheet")
             self.assertEqual(config["outputs"]["palette"], "color")
             self.assertEqual(config["outputs"]["renderer"], "typewriter")
             # local-first extraction: URLs stay on this machine by default
@@ -437,26 +437,32 @@ def _build_no_pdf(*, style: str, staging: dict | None = None) -> tuple[dict, str
 
 
 class BuildTemplateDispatchTest(unittest.TestCase):
-    """P0 (0.4.3): the first edition must be styled — the build template
-    has to match outputs.style, not assume typewriter."""
+    """Since 0.5.0 every build gets the broadsheet-native template, including
+    builds configured with a retired 0.4.x style name (the alias path)."""
 
-    def test_default_editorial_style_gets_editorial_template(self) -> None:
-        payload, markdown, _stderr = _build_no_pdf(style="editorial")
+    def test_default_broadsheet_style_gets_broadsheet_template(self) -> None:
+        payload, markdown, _stderr = _build_no_pdf(style="broadsheet")
         self.assertIn("masthead-title", markdown)
         self.assertIn("dept-kicker", markdown)
         self.assertIn('<table class="data">', markdown)
-        # no typewriter-only classes on an editorial page
+        # no retired typewriter-template classes on a broadsheet page
         self.assertNotIn("page-1-header", markdown)
         self.assertNotIn("hn-card", markdown)
         self.assertEqual(payload["staged_included"], [])
 
-    def test_typewriter_style_keeps_typewriter_template(self) -> None:
-        _payload, markdown, _stderr = _build_no_pdf(style="typewriter")
-        self.assertIn("page-1-header", markdown)
-        self.assertNotIn("masthead-title", markdown)
+    def test_build_works_via_typewriter_alias(self) -> None:
+        # the retired pack's users keep building: typewriter -> brief, and the
+        # front page routes to the broadsheet template with a deprecation warning
+        from morning_paper import styles
 
-    def test_other_styles_default_to_editorial_template(self) -> None:
-        _payload, markdown, _stderr = _build_no_pdf(style="magazine")
+        styles._WARNED_ALIASES.clear()
+        _payload, markdown, stderr = _build_no_pdf(style="typewriter")
+        self.assertIn("masthead-title", markdown)
+        self.assertNotIn("page-1-header", markdown)
+        self.assertIn("style 'typewriter' is now 'brief'", stderr)
+
+    def test_other_styles_use_broadsheet_template(self) -> None:
+        _payload, markdown, _stderr = _build_no_pdf(style="field-card")
         self.assertIn("masthead-title", markdown)
         self.assertNotIn("page-1-header", markdown)
 
@@ -479,9 +485,9 @@ class StagedInclusionTest(unittest.TestCase):
     }
     _STAGED_BODY = "# A staged note\n\nQueued yesterday, printed today — the staging seam works."
 
-    def test_build_appends_staged_section_editorial(self) -> None:
+    def test_build_appends_staged_section_broadsheet(self) -> None:
         payload, markdown, _stderr = _build_no_pdf(
-            style="editorial",
+            style="broadsheet",
             staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
         )
         self.assertEqual(payload["staged_included"], ["staged-note"])
@@ -489,20 +495,21 @@ class StagedInclusionTest(unittest.TestCase):
         self.assertIn("A Staged Note", markdown)
         self.assertIn("the staging seam works", markdown)
 
-    def test_build_appends_staged_section_typewriter(self) -> None:
+    def test_build_appends_staged_section_via_alias(self) -> None:
+        # staged inclusion still works for a 0.4.x config naming a retired pack
         payload, markdown, _stderr = _build_no_pdf(
             style="typewriter",
             staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
         )
         self.assertEqual(payload["staged_included"], ["staged-note"])
-        self.assertIn("STAGED FOR TODAY", markdown)
+        self.assertIn("Staged for Today", markdown)
         self.assertIn("the staging seam works", markdown)
 
     def test_truncated_staged_item_carries_on_page_notice(self) -> None:
         item = dict(self._QUEUE_ITEM)
         item.update(truncated=True, words_extracted=11000, warning="truncated: extracted 11000 words but only ~4500 will print")
         payload, markdown, _stderr = _build_no_pdf(
-            style="editorial",
+            style="broadsheet",
             staging={"queue": [item], "files": {"staged-note.md": self._STAGED_BODY}},
         )
         self.assertEqual(payload["staged_included"], ["staged-note"])
@@ -511,7 +518,7 @@ class StagedInclusionTest(unittest.TestCase):
 
     def test_missing_staged_file_warns_loudly(self) -> None:
         payload, markdown, stderr = _build_no_pdf(
-            style="editorial",
+            style="broadsheet",
             staging={"queue": [self._QUEUE_ITEM], "files": {}},
         )
         self.assertEqual(payload["staged_included"], [])
@@ -611,7 +618,7 @@ class RenderCommandTest(unittest.TestCase):
                 rc = cli.main(["render", str(source), "--config", str(config_path)])
             self.assertEqual(rc, 0)
             payload = json.loads(stdout.getvalue())
-            self.assertEqual(payload["style"], "editorial")
+            self.assertEqual(payload["style"], "broadsheet")
             self.assertNotIn("custom-css", stderr.getvalue())
 
     def test_render_applies_config_font_scale_to_html(self) -> None:
@@ -698,7 +705,7 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIsNone(payload["renderer"]["error"])
         check_names = {check["name"] for check in payload["checks"]}
         self.assertIn("morning_paper.renderers", check_names)
-        self.assertIn("morning_paper/resources/typewriter.md", check_names)
+        self.assertIn("morning_paper/resources/broadsheet-build.md", check_names)
         self.assertTrue(all(check["ok"] for check in payload["checks"]))
 
     def test_doctor_json_fallback_only_exits_zero_without_strict(self) -> None:

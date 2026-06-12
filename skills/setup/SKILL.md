@@ -30,8 +30,9 @@ Ask in 2-3 messages, not twenty. Capture:
   URLs are credentials: store in `~/.config/morning-paper/env.sh`, never in a
   repo), Hacker News yes/no.
 - **Shape** — `page_budget` (suggest 12-20), how many full reads per edition,
-  style (`morning-paper styles` lists them; `editorial` is the default
-  recommendation), palette (`color` for inkjets, `mono` for laser).
+  style (`morning-paper styles` lists the family of four — broadsheet,
+  brief, field-card, zine; `broadsheet` is the default recommendation),
+  palette (`color` for inkjets, `mono` for laser).
 - **Printer** — CUPS name (`lpstat -p`), duplex capable? Save the print
   command in the newsroom README.
 

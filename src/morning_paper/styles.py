@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -26,38 +27,63 @@ class Palette:
     chart_track: str
 
 
+# The style family: four packs, four jobs — each a print genre a stranger
+# could sketch (2026-06-11 style-system audit). Names say the job, never a
+# font or a CSS property.
 STYLES: dict[str, StylePack] = {
-    "editorial": StylePack(
-        name="editorial",
-        css_resource="styles/editorial.css",
-        description="THE unified paper: serif editorial system for operator and reading content; no forced breaks, drawn marks, restrained color.",
+    "broadsheet": StylePack(
+        name="broadsheet",
+        css_resource="styles/broadsheet.css",
+        description="The newspaper you READ: unified serif system for operator front + reading edition; no forced breaks, drawn marks, restrained color.",
     ),
-    "typewriter": StylePack(
-        name="typewriter",
-        css_resource="styles/typewriter.css",
-        description="The newspaper look: Courier Prime, masthead, card sections.",
+    "brief": StylePack(
+        name="brief",
+        css_resource="styles/brief.css",
+        description="The operator brief you work through with a pen: dense Courier, queue rows, status cards, link-card grid, no forced page breaks.",
     ),
-    "flow": StylePack(
-        name="flow",
-        css_resource="styles/flow.css",
-        description="Continuous operator brief: dense, no forced page breaks.",
-    ),
-    "ops-card": StylePack(
-        name="ops-card",
-        css_resource="styles/ops-card.css",
-        description="Boxed reference one-pager: scripts, checklists, cheat sheets.",
-    ),
-    "magazine": StylePack(
-        name="magazine",
-        css_resource="styles/magazine.css",
-        description="Long-read essay page: serif body, pull quotes, wide margins.",
+    "field-card": StylePack(
+        name="field-card",
+        css_resource="styles/field-card.css",
+        description="The reference card you tape next to the phone: boxed sans one-pager — scripts, checklists, do/don't splits.",
     ),
     "zine": StylePack(
         name="zine",
         css_resource="styles/zine.css",
-        description="Pocket how-to guide: half-letter, marker display type, checkbox steps.",
+        description="The pocket guide you hand to someone: half-letter photocopier paste-up — marker strips, halftone bands, checkbox steps, command blocks.",
     ),
 }
+
+# 0.4.x pack names resolve to their successors for one release of grace
+# (0.5.0): magazine was broadsheet's article layer; typewriter's link-card
+# grid lives on in brief. Using an alias prints a deprecation warning once.
+STYLE_ALIASES: dict[str, str] = {
+    "editorial": "broadsheet",
+    "magazine": "broadsheet",
+    "flow": "brief",
+    "typewriter": "brief",
+    "ops-card": "field-card",
+}
+
+_WARNED_ALIASES: set[str] = set()
+
+
+def resolve_style_name(name: str) -> str:
+    """Canonical pack name for `name`; deprecated aliases warn once on stderr.
+
+    Unknown names pass through unchanged so get_style raises its usual
+    StyleError with the canonical list.
+    """
+    canonical = STYLE_ALIASES.get(name)
+    if canonical is None:
+        return name
+    if name not in _WARNED_ALIASES:
+        _WARNED_ALIASES.add(name)
+        print(
+            f"warning: style '{name}' is now '{canonical}' — the old name is deprecated "
+            "and will be removed in a future release",
+            file=sys.stderr,
+        )
+    return canonical
 
 PALETTES: dict[str, Palette] = {
     "mono": Palette(
@@ -132,7 +158,7 @@ def _font_face_css() -> str:
 
 def get_style(name: str) -> StylePack:
     try:
-        return STYLES[name]
+        return STYLES[resolve_style_name(name)]
     except KeyError:
         raise StyleError(f"unknown style: {name} (available: {', '.join(sorted(STYLES))})") from None
 
@@ -144,7 +170,7 @@ def get_palette(name: str) -> Palette:
         raise StyleError(f"unknown palette: {name} (available: {', '.join(sorted(PALETTES))})") from None
 
 
-def compose_css(style: str = "typewriter", palette: str = "mono", *, font_scale: float = 1.0) -> str:
+def compose_css(style: str = "broadsheet", palette: str = "mono", *, font_scale: float = 1.0) -> str:
     """Palette tokens first, then the style sheet that consumes them.
 
     Google Fonts @import lines in the shipped sheets are stripped and replaced

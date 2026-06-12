@@ -142,7 +142,7 @@ def doctor(args: list[str] | None = None) -> int:
             checks.append({"name": module_name, "ok": True})
         except Exception:
             checks.append({"name": module_name, "ok": False})
-    for template_name in ("typewriter.md", "editorial-build.md"):
+    for template_name in ("broadsheet-build.md",):
         resource_check = f"morning_paper/resources/{template_name}"
         try:
             resource = resources.files("morning_paper").joinpath("resources", template_name)
@@ -244,7 +244,7 @@ def demo_command(args: list[str]) -> int:
         return 1
     markdown_text = resources.files("morning_paper").joinpath("resources", "demo.md").read_text(encoding="utf-8")
     config = MorningPaperConfig()
-    config.outputs.style = "editorial"
+    config.outputs.style = "broadsheet"
     config.outputs.palette = "color"
     config.outputs.html = True
     config.outputs.pdf = True
@@ -255,7 +255,7 @@ def demo_command(args: list[str]) -> int:
             markdown_text,
             date_str=target_date,
             slug="demo",
-            metadata={"mode": "demo", "style": "editorial", "palette": "color"},
+            metadata={"mode": "demo", "style": "broadsheet", "palette": "color"},
         )
     except TypewriterRendererUnavailable as exc:
         print(str(exc), file=sys.stderr)
@@ -273,7 +273,7 @@ def demo_command(args: list[str]) -> int:
             {
                 "date": target_date,
                 "mode": "demo",
-                "style": "editorial",
+                "style": "broadsheet",
                 "palette": "color",
                 "pages": pages,
                 "warnings": warnings,
@@ -455,8 +455,12 @@ def print_command(args: list[str]) -> int:
 
 
 def styles_command() -> int:
+    from .styles import STYLE_ALIASES
+
     listing = {
         "styles": {name: pack.description for name, pack in sorted(STYLES.items())},
+        # 0.4.x names, accepted for one release with a deprecation warning
+        "deprecated_aliases": dict(sorted(STYLE_ALIASES.items())),
         "palettes": {name: pal.description for name, pal in sorted(PALETTES.items())},
     }
     print(json.dumps(listing, indent=2))
