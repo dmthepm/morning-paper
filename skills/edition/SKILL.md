@@ -34,13 +34,21 @@ paper.
      typeset; not summaries.
    - Every claim traceable to collected data. A missing source prints
      "not configured". NEVER fabricate a number.
-4. **Budget.** `morning-paper estimate draft.md` — fit `page_budget` ±2 by
+4. **The defluff pass (mandatory when `preferences/voice.md` exists, recommended always).**
+   Re-read your draft as an editor cutting for a paper where every word
+   costs the reader time: omit needless words (Strunk), kill decoration and
+   restatement, keep every fact that enables action. Aim: same information,
+   markedly fewer words — then spend the reclaimed space on MORE useful
+   context, not whitespace. The reader's voice preferences in
+   `preferences/voice.md` override these defaults; honor them exactly.
+
+5. **Budget.** `morning-paper estimate draft.md` — fit `page_budget` ±2 by
    cutting the weakest material, never by shrinking type.
-5. **Render.** `morning-paper render draft.md --style <their style> --palette
+6. **Render.** `morning-paper render draft.md --style <their style> --palette
    <their palette> --date <today> --slug edition`.
-6. **QA.** Rasterize page 1 + one inner page (`pdftoppm -png -r 60`) and look:
+7. **QA.** Rasterize page 1 + one inner page (`pdftoppm -png -r 60`) and look:
    no overflow, no missing glyphs (tofu), footers present.
-7. **Deliver.** Their saved print command (duplex flag and all), or just hand
+8. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. Archive markdown + html into `editions/<date>/`.
 
 ## Voice
