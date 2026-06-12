@@ -140,6 +140,12 @@ Reason:
 - `typewriter` describes the visual language
 - version suffixes create fake product choices where none exist
 
+**Superseded for style packs (0.5.0, style-system audit):** a pack name is a
+print genre a stranger could sketch — broadsheet, brief, field-card, zine —
+never a font or a CSS property. The `typewriter` *style pack* retired into
+`brief`; the `typewriter` *renderer* name (this section's original subject,
+vs `portable`) is unchanged. The no-version-suffix rule stands.
+
 ## 11. X/Twitter Extraction Strategy
 
 Decision date: 2026-04-14

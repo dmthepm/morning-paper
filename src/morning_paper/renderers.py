@@ -134,84 +134,7 @@ def _html_paragraphs(text: str) -> str:
     return "\n".join(f"<p>{html.escape(part)}</p>" for part in parts[:4])
 
 
-def _render_info_row(banner: SourceItem | None, rss_count: int, hn_count: int, renderer: str) -> str:
-    banner_value = html.escape((banner.title[:64] + "…") if banner and len(banner.title) > 64 else (banner.title if banner else "No banner"))
-    runtime_value = "Typewriter" if renderer == "typewriter" else "Portable"
-    return "\n".join(
-        [
-            '<div class="info-block"><div class="info-label">Banner</div><div class="info-value">' + banner_value + "</div></div>",
-            f'<div class="info-block"><div class="info-label">Signals</div><div class="info-value">{rss_count}</div></div>',
-            f'<div class="info-block"><div class="info-label">Hacker News</div><div class="info-value">{hn_count}</div></div>',
-            f'<div class="info-block"><div class="info-label">Print</div><div class="info-value">{html.escape(runtime_value)}</div></div>',
-        ]
-    )
-
-
-def _render_signal_cards(items: list[SourceItem]) -> str:
-    blocks: list[str] = []
-    pair_buffer: list[str] = []
-    for item in items:
-        card = (
-            '<div class="tweet">'
-            f'<div class="tweet-header"><span class="tweet-author">{html.escape(item.source_name)}</span>'
-            f'<span class="tweet-meta">{html.escape(item.published_at[:10] if item.published_at else "signal")}</span></div>'
-            f'<div class="tweet-text">{html.escape(item.title)}</div>'
-            f'<div class="tweet-stats">{html.escape(item.summary[:180])}</div>'
-            "</div>"
-        )
-        if len((item.summary or item.title)) < 180:
-            pair_buffer.append(card)
-            if len(pair_buffer) == 2:
-                blocks.append('<div class="tweet-pair">' + "".join(pair_buffer) + "</div>")
-                pair_buffer = []
-        else:
-            if pair_buffer:
-                blocks.append('<div class="tweet-pair">' + "".join(pair_buffer) + "</div>")
-                pair_buffer = []
-            blocks.append(card)
-    if pair_buffer:
-        blocks.append('<div class="tweet-pair">' + "".join(pair_buffer) + "</div>")
-    return "\n".join(blocks) or "<p>No signals available.</p>"
-
-
-def _render_full_reads(items: list[SourceItem], *, limit: int = 2) -> list[str]:
-    reads: list[str] = []
-    for item in items[:limit]:
-        meta_parts = [item.source_name]
-        if item.author:
-            meta_parts.append(item.author)
-        if item.published_at:
-            meta_parts.append(item.published_at[:10])
-        reads.append(
-            '<div class="full-read">'
-            f'<div class="full-read-title">{html.escape(item.title)}</div>'
-            f'<div class="full-read-source">{html.escape(" · ".join(part for part in meta_parts if part))}</div>'
-            f'<div class="full-read-body">{_html_paragraphs(item.summary or item.url)}</div>'
-            "</div>"
-        )
-    while len(reads) < limit:
-        reads.append("<p>No full read available.</p>")
-    return reads
-
-
-def _render_hn_cards(items: list[SourceItem]) -> str:
-    cards: list[str] = []
-    for index, item in enumerate(items, 1):
-        cards.append(
-            '<div class="hn-card">'
-            '<div class="hn-card-header">'
-            f'<span class="hn-rank">#{index}</span>'
-            f'<span class="hn-domain">{html.escape(item.source_name)}</span>'
-            "</div>"
-            f'<div class="hn-title">{html.escape(item.title)}</div>'
-            f'<div class="hn-meta">{html.escape(item.summary)}</div>'
-            f'<div class="hn-desc">{html.escape(item.url)}</div>'
-            "</div>"
-        )
-    return "\n".join(cards) or "<p>No HN items available.</p>"
-
-
-def _render_editorial_strip(banner: SourceItem | None, rss_count: int, hn_count: int, renderer: str) -> str:
+def _render_broadsheet_strip(banner: SourceItem | None, rss_count: int, hn_count: int, renderer: str) -> str:
     banner_value = html.escape(
         (banner.title[:64] + "…") if banner and len(banner.title) > 64 else (banner.title if banner else "No banner")
     )
@@ -228,7 +151,7 @@ def _render_editorial_strip(banner: SourceItem | None, rss_count: int, hn_count:
     )
 
 
-def _render_editorial_signal_rows(items: list[SourceItem]) -> str:
+def _render_broadsheet_signal_rows(items: list[SourceItem]) -> str:
     if not items:
         return '<p class="not-configured">No signals available — add RSS feeds to your config.</p>'
     rows = ['<table class="data">', "<tr><th>Source</th><th>Signal</th><th>Date</th></tr>"]
@@ -245,7 +168,7 @@ def _render_editorial_signal_rows(items: list[SourceItem]) -> str:
     return "\n".join(rows)
 
 
-def _render_editorial_reads(items: list[SourceItem], *, limit: int = 2) -> str:
+def _render_broadsheet_reads(items: list[SourceItem], *, limit: int = 2) -> str:
     if not items:
         return '<p class="not-configured">No full read available.</p>'
     reads: list[str] = []
@@ -266,7 +189,7 @@ def _render_editorial_reads(items: list[SourceItem], *, limit: int = 2) -> str:
     return "\n".join(reads)
 
 
-def _render_editorial_hn_rows(items: list[SourceItem]) -> str:
+def _render_broadsheet_hn_rows(items: list[SourceItem]) -> str:
     if not items:
         return '<p class="not-configured">No HN items available.</p>'
     rows = ['<table class="data">', "<tr><th>#</th><th>Story</th><th>Activity</th></tr>"]
@@ -280,15 +203,15 @@ def _render_editorial_hn_rows(items: list[SourceItem]) -> str:
     return "\n".join(rows)
 
 
-def render_editorial_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
-    """Editorial-native build front page: masthead, strip, dept sections.
+def render_broadsheet_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
+    """Broadsheet-native build front page: masthead, strip, dept sections.
 
-    The first paper a fresh `init` builds is editorial-styled, so the build
-    template must speak the editorial class vocabulary — typewriter.md's
-    classes do not exist in editorial.css and rendered unstyled (the 0.4.3
-    first-edition cliff).
+    The first paper a fresh `init` builds is broadsheet-styled, so the build
+    template must speak the broadsheet class vocabulary (the 0.4.3
+    first-edition cliff was a template whose classes the configured style
+    did not define).
     """
-    template = _package_template_text("editorial-build.md")
+    template = _package_template_text("broadsheet-build.md")
     banner = _banner_item(collected)
     rss_items = collected.get("rss") or []
     hn_items = collected.get("hacker_news") or []
@@ -297,12 +220,12 @@ def render_editorial_markdown(config: MorningPaperConfig, collected: dict[str, l
         "{DATE}": _display_date(date_str),
         "{TIME}": _display_time(config.timezone),
         "{HN_COUNT}": str(len(hn_items)),
-        "<!-- Strip: banner, signal count, HN count, print runtime -->": _render_editorial_strip(
+        "<!-- Strip: banner, signal count, HN count, print runtime -->": _render_broadsheet_strip(
             banner, len(rss_items), len(hn_items), config.outputs.renderer
         ),
-        "<!-- Signals: RSS items as table.data rows -->": _render_editorial_signal_rows(rss_items),
-        "<!-- Featured Reads -->": _render_editorial_reads(rss_items if rss_items else hn_items, limit=2),
-        "<!-- HN items as table.data rows -->": _render_editorial_hn_rows(hn_items),
+        "<!-- Signals: RSS items as table.data rows -->": _render_broadsheet_signal_rows(rss_items),
+        "<!-- Featured Reads -->": _render_broadsheet_reads(rss_items if rss_items else hn_items, limit=2),
+        "<!-- HN items as table.data rows -->": _render_broadsheet_hn_rows(hn_items),
         "<!-- Reference links -->": (
             '<div class="dept-list">'
             "<p><strong>Feeds:</strong> Hacker News, RSS</p>"
@@ -316,44 +239,14 @@ def render_editorial_markdown(config: MorningPaperConfig, collected: dict[str, l
 
 
 def render_build_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
-    """Pick the build template that matches the configured style.
+    """The build front page for every style.
 
-    `typewriter` keeps its original template; `editorial` (the default) and
-    every other style get the editorial-native template — its vocabulary is
-    the closest match and degrades to readable text everywhere.
+    Since 0.5.0 there is one build template — the broadsheet-native one. Its
+    vocabulary is the closest match in every pack and degrades to readable
+    text everywhere; the retired typewriter template's users (now the `brief`
+    alias path) route here too.
     """
-    if config.outputs.style == "typewriter":
-        return render_typewriter_markdown(config, collected, date_str=date_str)
-    return render_editorial_markdown(config, collected, date_str=date_str)
-
-
-def render_typewriter_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
-    template = _package_template_text("typewriter.md")
-    banner = _banner_item(collected)
-    rss_items = collected.get("rss") or []
-    hn_items = collected.get("hacker_news") or []
-    reads = _render_full_reads(rss_items if rss_items else hn_items, limit=2)
-    replacements = {
-        "{NAME}": html.escape(config.name),
-        "{DATE}": _display_date(date_str),
-        "{TIME}": _display_time(config.timezone),
-        "{HN_COUNT}": str(len(hn_items)),
-        '<!-- Banner, tweet count, HN count, runtime -->': _render_info_row(
-            banner, len(rss_items), len(hn_items), config.outputs.renderer
-        ),
-        '<!-- Tweets: short ones (< 180 chars) paired 2-col, long ones full-width -->': _render_signal_cards(rss_items),
-        '<!-- Featured Reads -->': "".join(reads),
-        '<!-- HN cards go here -->': _render_hn_cards(hn_items),
-        '<!-- Reference links -->': (
-            "<div class='ref-list'>"
-            "<div class='ref-item'><span class='ref-label'>Feeds:</span> Hacker News, RSS</div>"
-            "<div class='ref-item'><span class='ref-label'>Generated by:</span> Morning Paper</div>"
-            "</div>"
-        ),
-    }
-    for needle, value in replacements.items():
-        template = template.replace(needle, value)
-    return template
+    return render_broadsheet_markdown(config, collected, date_str=date_str)
 
 
 def render_markdown(config: MorningPaperConfig, collected: dict[str, list[SourceItem]], *, date_str: str) -> str:
@@ -467,7 +360,7 @@ def render_typewriter_html(config: MorningPaperConfig, collected: dict[str, list
 _STAGED_PLACEHOLDER = "<!-- Staged for today -->"
 
 
-def _staged_section(config: MorningPaperConfig, date_str: str, *, template_style: str) -> tuple[str, list[str], list[str]]:
+def _staged_section(config: MorningPaperConfig, date_str: str) -> tuple[str, list[str], list[str]]:
     """Collect staged material for this edition date into a markdown fragment.
 
     Returns (fragment, included slugs, warnings). The build pipeline must
@@ -518,30 +411,23 @@ def _staged_section(config: MorningPaperConfig, date_str: str, *, template_style
         if item.get("truncated"):
             detail = html.escape(str(item.get("warning") or "the staged copy is incomplete"))
             notice = f'<div class="trunc-notice">Incomplete: {detail}</div>\n\n'
-        if template_style == "typewriter":
-            byline = f"From {contributor} — {source}" if contributor else (f"From {source}" if source else "")
-            head = f"### {title}\n\n" + (f'<p class="subhead">{byline}</p>\n\n' if byline else "")
-        else:
-            kicker = f"From {contributor}" if contributor else f"Staged · {html.escape(str(item.get('kind') or 'item'))}"
-            head = (
-                '<div class="article-head">'
-                f'<div class="dept-kicker">{kicker}</div>'
-                f'<div class="dept-title">{title}</div>'
-                + (f'<div class="mg-byline">From <strong>{source}</strong></div>' if source else "")
-                + "</div>\n\n"
-            )
+        kicker = f"From {contributor}" if contributor else f"Staged · {html.escape(str(item.get('kind') or 'item'))}"
+        head = (
+            '<div class="article-head">'
+            f'<div class="dept-kicker">{kicker}</div>'
+            f'<div class="dept-title">{title}</div>'
+            + (f'<div class="mg-byline">From <strong>{source}</strong></div>' if source else "")
+            + "</div>\n\n"
+        )
         parts.append(head + notice + body.strip() + "\n")
         included.append(slug)
     if not parts:
         return "", [], warnings
-    if template_style == "typewriter":
-        section = "\n## STAGED FOR TODAY\n\n" + "\n\n".join(parts)
-    else:
-        section = (
-            '\n<div class="edition-divider"><div class="oxford"></div>'
-            '<div class="edition-divider-label">Staged for Today</div></div>\n\n'
-            + '\n<div class="dept-rule"></div>\n\n'.join(parts)
-        )
+    section = (
+        '\n<div class="edition-divider"><div class="oxford"></div>'
+        '<div class="edition-divider-label">Staged for Today</div></div>\n\n'
+        + '\n<div class="dept-rule"></div>\n\n'.join(parts)
+    )
     return section, included, warnings
 
 
@@ -597,7 +483,7 @@ def document_uses_custom_css(markdown: str) -> bool:
 
 
 def _render_html_from_markdown(
-    markdown: str, *, style: str = "typewriter", palette: str = "mono", font_scale: float = 1.0
+    markdown: str, *, style: str = "broadsheet", palette: str = "mono", font_scale: float = 1.0
 ) -> str:
     meta, body = _split_frontmatter(markdown)
     # Frontmatter `css:` is an override for callers bringing their own sheet;
@@ -620,7 +506,7 @@ def _render_html_from_markdown(
 
 
 def _render_typewriter_pdf(
-    markdown: str, *, output_path: Path, style: str = "typewriter", palette: str = "mono", font_scale: float = 1.0
+    markdown: str, *, output_path: Path, style: str = "broadsheet", palette: str = "mono", font_scale: float = 1.0
 ) -> int:
     html_cls, error = _load_weasyprint()
     if html_cls is None:
@@ -632,7 +518,7 @@ def _render_typewriter_pdf(
     return len(document.pages)
 
 
-def count_pages(markdown: str, *, style: str = "typewriter", palette: str = "mono", font_scale: float = 1.0) -> int:
+def count_pages(markdown: str, *, style: str = "broadsheet", palette: str = "mono", font_scale: float = 1.0) -> int:
     """Lay the document out without writing anything; return its page count.
 
     The agent-facing `estimate`/`stage` verbs use this to answer "how many
@@ -691,9 +577,7 @@ def write_outputs(
     staged_included: list[str] = []
     if config.outputs.renderer == "typewriter":
         markdown = render_build_markdown(config, collected, date_str=date_str)
-        staged_fragment, staged_included, staged_warnings = _staged_section(
-            config, date_str, template_style=config.outputs.style
-        )
+        staged_fragment, staged_included, staged_warnings = _staged_section(config, date_str)
         warnings.extend(staged_warnings)
         markdown = markdown.replace(_STAGED_PLACEHOLDER, staged_fragment)
     else:
@@ -701,7 +585,7 @@ def write_outputs(
         # Honesty rule: the portable fallback renders items directly (fpdf),
         # so staged markdown cannot be typeset into it — say so loudly rather
         # than letting queued material vanish.
-        _fragment, would_include, staged_warnings = _staged_section(config, date_str, template_style="editorial")
+        _fragment, would_include, staged_warnings = _staged_section(config, date_str)
         warnings.extend(staged_warnings)
         if would_include:
             warnings.append(

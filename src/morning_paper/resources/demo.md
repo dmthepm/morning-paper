@@ -1,6 +1,6 @@
 ---
 title: Morning Paper — Demo Edition
-style: editorial
+style: broadsheet
 palette: color
 ---
 
@@ -68,4 +68,4 @@ This page is the demo. Make it yours: install with <code>uv tool install "mornin
 <div class="q-row"><span class="cb"></span><div class="q-body"><div class="q-t">Walk the breakwater before the vote</div><div class="q-d">Count the working pier lamps yourself; the agenda says eleven, the keeper says nine.</div><div class="q-u">Fictional task · <strong>demo data</strong></div></div><div class="q-min">20 min</div></div>
 <div class="q-row"><span class="cb"></span><div class="q-body"><div class="q-t">Read the ferry's spring schedule</div><div class="q-d">The <em>Maribel</em> adds a 06:10 crossing Monday; decide whether the early boat changes your morning.</div><div class="q-u">Fictional task · <strong>demo data</strong></div></div><div class="q-min">5 min</div></div>
 
-<div class="mg-note">Set in the <strong>editorial</strong> style pack with the <strong>color</strong> palette. The markdown behind this page is plain text plus a small class vocabulary — see docs/composing.md in the Morning Paper repository for the full contract.</div>
+<div class="mg-note">Set in the <strong>broadsheet</strong> style pack with the <strong>color</strong> palette. The markdown behind this page is plain text plus a small class vocabulary — see docs/composing.md in the Morning Paper repository for the full contract.</div>

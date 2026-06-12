@@ -12,7 +12,7 @@ import requests
 from .config import MorningPaperConfig
 from .extractors import ExtractedArticleContent, UnknownArticleExtractorError, get_article_extractor, register_article_extractor
 from .image_tools import process_for_print
-from .renderers import _display_date, _display_time, _package_template_text, _render_info_row, _safe_filename
+from .renderers import _safe_filename
 
 
 class ArticleExtractionError(RuntimeError):

@@ -14,11 +14,12 @@ from morning_paper.renderers import _load_weasyprint, _render_typewriter_pdf, re
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
+# 0.5.0: the typewriter pack (and its build template + baseline) retired;
+# the broadsheet front page is the one product face the build produces.
 BASELINES = {
-    "typewriter": SNAPSHOT_DIR / "frontpage_typewriter_page1.png",
-    "editorial": SNAPSHOT_DIR / "frontpage_editorial_page1.png",
+    "broadsheet": SNAPSHOT_DIR / "frontpage_broadsheet_page1.png",
 }
-PALETTES = {"typewriter": "mono", "editorial": "color"}
+PALETTES = {"broadsheet": "color"}
 FONT_IMPORT = "  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');"
 
 
@@ -43,7 +44,7 @@ def _fixture_item(source_type: str, source_name: str, title: str, summary: str, 
     )
 
 
-def _render_frontpage_png(tmp_path: Path, *, style: str = "typewriter") -> Path:
+def _render_frontpage_png(tmp_path: Path, *, style: str = "broadsheet") -> Path:
     config = MorningPaperConfig()
     config.outputs.renderer = "typewriter"
     config.outputs.style = style
@@ -134,7 +135,7 @@ def _render_frontpage_png(tmp_path: Path, *, style: str = "typewriter") -> Path:
 
 
 @pytest.mark.skipif(not _pretty_stack_ready(), reason="visual snapshot requires weasyprint and pdftoppm")
-@pytest.mark.parametrize("style", ["typewriter", "editorial"])
+@pytest.mark.parametrize("style", ["broadsheet"])
 def test_frontpage_visual_snapshot(tmp_path: Path, style: str) -> None:
     baseline_path = BASELINES[style]
     page_png = _render_frontpage_png(tmp_path, style=style)

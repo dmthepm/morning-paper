@@ -70,8 +70,8 @@ class InboxConfig:
 class OutputsConfig:
     directory: Path = DEFAULT_OUTPUT_DIR
     renderer: str = "typewriter"
-    # editorial/color is the product's visual identity — the same look the demo sells
-    style: str = "editorial"
+    # broadsheet/color is the product's visual identity — the same look the demo sells
+    style: str = "broadsheet"
     palette: str = "color"
     # multiplies each style's base body size; 1.0 is the designed scale
     font_scale: float = 1.0
@@ -132,11 +132,15 @@ def _validate_renderer(value: str) -> str:
 
 
 def _validate_style(value: str) -> str:
-    from .styles import STYLES
+    from .styles import STYLES, resolve_style_name
 
-    if value not in STYLES:
+    # deprecated 0.4.x names (editorial, flow, ops-card, magazine, typewriter)
+    # are accepted for one release and stored as their canonical successors;
+    # resolve_style_name prints the deprecation warning
+    resolved = resolve_style_name(value)
+    if resolved not in STYLES:
         raise ConfigError(f"outputs.style must be one of: {', '.join(sorted(STYLES))}")
-    return value
+    return resolved
 
 
 def _validate_palette(value: str) -> str:
@@ -239,7 +243,7 @@ def load_config(path: Path) -> MorningPaperConfig:
                 _expand_path(outputs.get("directory"), default=DEFAULT_OUTPUT_DIR)
             ),
             renderer=_validate_renderer(str(outputs.get("renderer", "typewriter"))),
-            style=_validate_style(str(outputs.get("style", "editorial"))),
+            style=_validate_style(str(outputs.get("style", "broadsheet"))),
             palette=_validate_palette(str(outputs.get("palette", "color"))),
             font_scale=_validate_font_scale(float(outputs.get("font_scale", 1.0))),
             pdf=bool(outputs.get("pdf", True)),
@@ -305,9 +309,9 @@ sources:
 outputs:
   directory: ~/.local/share/morning-paper
   renderer: typewriter
-  # style: editorial | typewriter | flow | magazine | ops-card | zine    palette: mono | color
-  # editorial/color is what the demo prints — the default recommendation
-  style: editorial
+  # style: broadsheet | brief | field-card | zine    palette: mono | color
+  # broadsheet/color is what the demo prints — the default recommendation
+  style: broadsheet
   palette: color
   # body type scale for the whole paper: 0.8 (compact) to 1.5 (large print)
   font_scale: 1.0

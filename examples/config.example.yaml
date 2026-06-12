@@ -24,9 +24,9 @@ sources:
 outputs:
   directory: ~/.local/share/morning-paper
   renderer: typewriter
-  # style: editorial | typewriter | flow | magazine | ops-card | zine    palette: mono | color
-  # editorial/color is what the demo prints — the default recommendation
-  style: editorial
+  # style: broadsheet | brief | field-card | zine    palette: mono | color
+  # broadsheet/color is what the demo prints — the default recommendation
+  style: broadsheet
   palette: color
   pdf: true
   html: true

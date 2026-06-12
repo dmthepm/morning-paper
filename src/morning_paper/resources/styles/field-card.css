@@ -1,4 +1,6 @@
-/* Style pack: ops-card — the boxed reference one-pager.
+/* Style pack: field-card — the boxed reference one-pager.
+ * (Canonical name since 0.5.0; `ops-card` resolves here as a deprecated
+ * alias. The .oc-* class vocabulary is unchanged.)
  * The genre: a call script, a runbook card, a cheat sheet you keep next to
  * the phone. Sans-serif, centered title over a heavy rule, alert banner,
  * boxed panels, dense two-column tables, a do/don't split.

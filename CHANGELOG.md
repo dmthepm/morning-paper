@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-11
+
+### Changed
+- **The style family** (per the 2026-06-11 style-system audit): six packs become four, each named for the print genre it is — a name a stranger could sketch, never a font or a CSS property:
+
+  | 0.4.x name | 0.5.0 name | What happened |
+  | --- | --- | --- |
+  | `editorial` | `broadsheet` | renamed — it is the paper itself, not a column genre |
+  | `flow` | `brief` | renamed — it literally renders the operator brief; name the artifact |
+  | `ops-card` | `field-card` | renamed — keeps the card job, loses the jargon |
+  | `magazine` | `broadsheet` | merged — it was broadsheet's article layer in a different kicker; its one real asset (the fenced-code-block `pre` treatment from 0.4.3) is folded into broadsheet |
+  | `typewriter` | `brief` | retired — its newspaper job went to broadsheet, its Courier voice was already brief's; its one asset, the two-column boxed link-card grid, is now brief's canonical `.cards`/`.card` family (`.cards2` stays as a deprecated alias selector) |
+  | `zine` | `zine` | right name, wrong execution — replaced by v2 (below) |
+
+- The old names keep working for **one release of grace** as deprecated aliases: config validation, `--style`, and frontmatter `style:` all accept them, resolve them to the canonical pack, and print a one-time stderr warning. `morning-paper styles` lists the alias table under `deprecated_aliases`. The default style is now `broadsheet` (the same look `editorial` configs were already getting)
+- One build template: the broadsheet-native front page (`resources/broadsheet-build.md`, formerly `editorial-build.md`) serves every style. The typewriter build template is retired; builds configured with the `typewriter` alias route to the broadsheet template with the deprecation warning, and staged-item inclusion works identically
+
+### Removed
+- `magazine` and `typewriter` as canonical style packs — `magazine.css` and `typewriter.css` deleted; both names live on only as aliases of their successors for this release
+- The `typewriter.md` build template and the typewriter front-page visual baseline (the broadsheet baseline carries the front-page regression surface)
+- Zine v1's `.zn-*` vocabulary (replaced wholesale by v2's `.z2-*` — v1 was a default-sans Word doc with a marker title; nothing worth carrying)
+
+### Added
+- **Zine v2** — the photocopier field zine, built from named inspirations (Sniffin' Glue paste-up, risograph one-ink discipline, Field Notes cover furniture, Ray Gun rotation-as-tension, Iffy Books how-to vocabulary): cover ink plate with rotated cut-paper title strips, halftone dot bands (pure CSS radial-gradient grids, sized in exact dot-grid multiples for WeasyPrint), tilted rubber stamp, dotted-leader spec rows, paste-up quote scraps with hard offset shadows (two-wrapper plate trick — WeasyPrint has no `box-shadow`), CSS-drawn tilted checkbox steps, inverted-xerox command bars with `$` prompts, accent stickers, marginal marker scrawl, "cut here" reference cards, and a back-cover colophon. Both faces are vendored (Courier Prime OFL, Permanent Marker Apache-2.0); mono palette renders pure photocopier, color palette adds the riso-red second ink via the existing `--mp-accent` token — no new palette tokens. Full vocabulary + reference sample in docs/composing.md
+- Style-family test coverage: alias resolution + one-time deprecation warning, config validation across canonical names and aliases, all four packs render-smoked on both palettes, zine v2 render-smoked on its reference sample, build exercised through the alias path
+
 ## [0.4.4] - 2026-06-11
 
 ### Added

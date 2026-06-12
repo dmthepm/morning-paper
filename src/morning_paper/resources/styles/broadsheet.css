@@ -1,4 +1,7 @@
-/* Style pack: editorial — THE unified Morning Paper system.
+/* Style pack: broadsheet — THE unified Morning Paper system.
+ * (Canonical name since 0.5.0; `editorial` and `magazine` resolve here as
+ * deprecated aliases — magazine's long-read layer was always this sheet's
+ * article vocabulary, and its fenced-code treatment is merged below.)
  * One stylesheet for the whole edition: operator front + reading edition,
  * per docs/design-consolidation-spec (2026-06-11). Black-ink-first; color is
  * annotation, never decoration. No forced page breaks — separators flow.
@@ -59,6 +62,16 @@ body {
 }
 p { margin-bottom: 0.11in; orphans: 3; widows: 3; }
 code { font-family: var(--ed-mono); font-size: 0.92em; }
+/* fenced code blocks: bordered, smaller mono, pre-wrap — merged from the
+ * retired magazine pack (0.4.3) so a how-to's most instructional moment
+ * doesn't bleed into the next paragraph */
+pre {
+  font-family: var(--ed-mono); font-size: 8.5pt; line-height: 1.45;
+  background: var(--mp-card-bg); border: 1px solid var(--mp-track);
+  padding: 0.07in 0.1in; margin: 0.1in 0;
+  white-space: pre-wrap; word-break: break-word; break-inside: avoid;
+}
+pre code { font-size: inherit; }
 a { color: var(--mp-chart-ink); text-decoration: none; }
 table.data a, .dept-list a { color: var(--mp-ink); }
 em { font-style: italic; }

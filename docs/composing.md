@@ -5,8 +5,8 @@ The render seam is the contract between *judgment* and *typesetting*: an agent
 PDF through a style pack and a palette. The composer never writes CSS.
 
 ```bash
-morning-paper render brief.md --style flow --palette mono
-morning-paper render call-card.md --style ops-card --palette color
+morning-paper render brief.md --style brief --palette mono
+morning-paper render call-card.md --style field-card --palette color
 morning-paper render brief.md --output ~/Desktop/brief.pdf   # copy the PDF where you want it
 morning-paper styles   # list available styles + palettes
 ```
@@ -21,14 +21,21 @@ size multiplies by it.
 
 ## Styles
 
-| Style | Genre |
-|---|---|
-| `typewriter` | The newspaper: Courier Prime masthead, card sections, two-column HN-style cards. |
-| `flow` | The continuous operator brief: dense, sections run together, no forced page breaks. |
-| `ops-card` | The boxed reference one-pager: scripts, checklists, do/don't splits, dense tables. |
-| `magazine` | The long-read essay page: serif body, kicker/dek/byline, pull quotes, wide margins. |
-| `zine` | The pocket how-to guide: half-letter, marker display type, checkbox steps, command blocks. |
-| `editorial` | The unified paper: one serif system for operator front + reading edition; duplex-mirrored folios, running section heads, ref-codes, desk-sheet writing furniture. |
+The family is four packs, each a print genre with one job:
+
+| Style | Genre | The job |
+|---|---|---|
+| `broadsheet` | The newspaper: one serif system for operator front + reading edition; duplex-mirrored folios, running section heads, ref-codes, desk-sheet writing furniture. | the morning paper you **read** |
+| `brief` | The continuous operator brief: dense Courier, sections run together, queue rows, status cards, two-column link cards, no forced page breaks. | the page you **work through with a pen** |
+| `field-card` | The boxed reference one-pager: scripts, checklists, do/don't splits, dense tables. | the card you **tape next to the phone** |
+| `zine` | The pocket photocopier zine (v2): half-letter paste-up — marker title strips on an ink plate, halftone bands, checkbox steps, command blocks. | the guide you **hand to someone** |
+
+The 0.4.x pack names still resolve for one release as deprecated aliases
+(with a stderr warning): `editorial` and `magazine` → `broadsheet`, `flow`
+and `typewriter` → `brief`, `ops-card` → `field-card`. Magazine was
+broadsheet's article layer wearing a different kicker; typewriter's one
+asset — the two-column boxed link-card grid — lives on as brief's
+`.cards`/`.card` family.
 
 ## Palettes
 
@@ -45,7 +52,7 @@ Render the same document twice for both printers; the source never changes.
 ```markdown
 ---
 title: My Brief
-style: flow        # overrides --style
+style: brief       # overrides --style
 palette: color     # overrides --palette
 css: |             # bring-your-own stylesheet; replaces the style pack entirely
   body { … }
@@ -102,27 +109,89 @@ Raw HTML is allowed in the markdown (the renderer runs markdown-it with
 `html: true`). Each style pack documents its classes at the top of its CSS
 file (`src/morning_paper/resources/styles/`). The most portable ones:
 
-- `flow`: `.masthead`, `.strip`/`.strip-item`, `.read`, `.sig`/`.sig-pair`,
-  `.q-row` (queue items), `.bet` (deadline/momentum rows), `.cards2`/`.card`,
-  `.ops`/`.ops-line`, `.action-required`, `.not-configured`, `.refs`
-- `ops-card`: `.oc-title`, `.oc-banner`, `.oc-panel`, `.oc-table`,
-  `.oc-split`/`.oc-col` (do/don't), `.oc-foot`
-- `typewriter`: `.page-1-header`, `.info-row`, `.tweet`/`.tweet-pair`,
-  `.hn-cards`/`.hn-card`, `.featured-reads`/`.full-read`, `.action-required`
-- `magazine`: `.mg-kicker`, `.mg-title`, `.mg-dek`, `.mg-byline`, `.mg-lede`,
-  `.mg-pull`/`.mg-pull-attr`, `.mg-note`, `.mg-end`
-- `zine`: `.zn-cover`/`.zn-cover-title`/`.zn-cover-sub`/`.zn-cover-meta`,
-  `.zn-step` (checkbox lines), `.zn-cmd`, `.zn-url`, `.zn-img`, `.zn-warn`
-- `editorial`: `.masthead` (with `.masthead-title` for the nameplate,
+- `broadsheet`: `.masthead` (with `.masthead-title` for the nameplate,
   `.dateline` for the issue line, and an `.oxford` double rule),
   `.strip`/`.strip-item`, `.mg-kicker`/`.dept-kicker`
   (article heads; either may end with a `.ref-code`), `.mg-title`/`.dept-title`,
   `.mg-dek`, `.mg-byline`, `.q-row` (queue items), `.flag`, `.mp-stats`,
   `.mg-pull`, `.move`/`.dictation`, `.action-required`, `.not-configured`,
   `.trunc-notice` (the honesty box for clipped copy), `.page-break`,
+  fenced code blocks (`pre`, merged from the retired magazine pack),
   plus the `.ds-*` desk-sheet family below
+- `brief`: `.masthead`, `.strip`/`.strip-item`, `.read`, `.sig`/`.sig-pair`,
+  `.q-row` (queue items), `.bet` (deadline/momentum rows), `.cards`/`.card`
+  (the two-column boxed link-card grid; `.cards2` is the deprecated 0.4.x
+  name), `.ops`/`.ops-line`, `.action-required`, `.not-configured`, `.refs`
+- `field-card`: `.oc-title`, `.oc-banner`, `.oc-panel`, `.oc-table`,
+  `.oc-split`/`.oc-col` (do/don't), `.oc-foot`
+- `zine` (v2): see the dedicated section below
 
-### Ref-codes (`editorial`)
+### Zine v2 vocabulary
+
+The zine is a half-letter photocopier paste-up: typewriter body
+(Courier Prime), felt-marker display (Permanent Marker), max two inks per
+page (`--mp-ink` + `--mp-accent` — the mono palette is pure photocopier, the
+color palette adds a riso-red second ink). Display elements tilt 1–3°; body
+text and command blocks stay dead straight. Prints 2-up on Letter
+(`pdfbook2` / `lp -o number-up=2`).
+
+| Class | Furniture |
+|---|---|
+| `.z2-masthead` | letterspaced mono series line at the very top |
+| `.z2-plate` + `.z2-strip` (`.alt`, `.accent`) + `.z2-plate-sub` | cover ink plate with rotated cut-paper title strips |
+| `.z2-plate-dots`, `.z2-dots-exit`, `.z2-dots` | halftone dot bands (cover exit fade; section divider) |
+| `.z2-stamp` (in a `.z2-stamp-row`) | tilted double-border rubber stamp — riso-red on the color palette |
+| `.z2-specs` (`.row` > `.k` + `.v`) | Field Notes dotted-leader spec rows |
+| `.z2-toc-title`, `.z2-toc-row` (with `.pg`) | cover lines with dot leaders to folios |
+| `.z2-step` | checkbox instruction line — the zine's job |
+| `.z2-cmd` | inverted-xerox command bar with a `$` prompt (`.dim` for muted spans) |
+| `.z2-warn` (`.z2-warn-head` + `.z2-warn-body`) | alert band + bordered body |
+| `.z2-cut`/`.z2-cut-in` (`.say` + `.who`; `.tilt-r`) | pasted-on quote scrap with a hard offset shadow |
+| `.z2-sticker` | accent pill slapped on at an angle |
+| `.z2-note` | marginal marker scrawl |
+| `.z2-cutout` (`.z2-cutout-label`, `.t`, `.r`) | dashed "cut here" reference card |
+| `.z2-colophon`/`.z2-colophon-in` (`.big` + `.small`) | back-cover colophon scrap |
+
+The scraps use a **two-wrapper markup** — WeasyPrint has no `box-shadow`, so
+the hard offset shadow is an ink-plate wrapper with the content box
+translated up-left:
+
+```html
+<div class="z2-cut"><div class="z2-cut-in">
+  <div class="say">"The queue remembers everything you ever asked it to do."</div>
+  <div class="who">ops wisdom, June 2026</div>
+</div></div>
+```
+
+A typical cover, straight from the pack's reference sample:
+
+```html
+<div class="z2-masthead">Morning Paper · Pocket Series · Nº 2</div>
+
+<div class="z2-plate">
+  <div><span class="z2-strip">WAKE THE</span></div>
+  <div><span class="z2-strip alt">PRINTER!</span></div>
+  <div class="z2-plate-sub">the thoth LaserJet revival guide</div>
+</div>
+<div class="z2-plate-dots"></div>
+<div class="z2-dots-exit"></div>
+
+<div class="z2-stamp-row"><span class="z2-stamp">Free · Fold · Staple · Hand to a friend</span></div>
+
+<div class="z2-specs">
+  <div class="row"><span class="k">Subject</span><span class="v">HP LaserJet M15w, jammed since May</span></div>
+  <div class="row"><span class="k">Time needed</span><span class="v">about five minutes</span></div>
+</div>
+```
+
+…and a step with its command:
+
+```html
+<div class="z2-step"><strong>Cancel everything stale:</strong></div>
+<div class="z2-cmd">cancel -a HP-LaserJet-M15w</div>
+```
+
+### Ref-codes (`broadsheet`)
 
 A kicker may carry a trailing short code:
 
@@ -136,7 +205,7 @@ place in the paper. Both are suppressed on the first page, like the running
 header. Editions that skip codes keep plain folios — the separator only
 prints when a code exists.
 
-### Desk-sheet furniture (`editorial`)
+### Desk-sheet furniture (`broadsheet`)
 
 The `.ds-*` classes set ruled *writing* furniture: dotted rules mean "write
 here", solid rules are the paper talking. They are components, not a page
@@ -158,12 +227,12 @@ mandate — compose whichever zones a document needs. Everything is built on a
 - `.ds-masthead`/`.ds-title`/`.ds-dateline`/`.ds-howto` — a quieter masthead
 
 A full single-sheet layout (no folio, no running heads) must null the
-editorial `@page` furniture in its own `<style>` block, across all three
+broadsheet `@page` furniture in its own `<style>` block, across all three
 page contexts (base, `:left`, `:right`).
 
-### Forced page breaks and single sheets (`editorial`)
+### Forced page breaks and single sheets (`broadsheet`)
 
-The editorial philosophy stands: separators flow, nothing forces a page.
+The broadsheet philosophy stands: separators flow, nothing forces a page.
 The one documented escape hatch is sheet furniture that must land on its own
 page — a desk sheet printed duplex as a tear-off back page, a form that a
 scanner expects alone. Opt in with:
@@ -185,8 +254,8 @@ the style — recompose instead.
 `{slug}.md`.
 
 The daily `build` consumes that queue itself: staged items are appended as a
-**Staged for today** section (in both the editorial and typewriter build
-templates), clipped items carry an on-page `.trunc-notice`, and the build
+**Staged for today** section (the broadsheet-native build template serves
+every style), clipped items carry an on-page `.trunc-notice`, and the build
 JSON reports the included slugs under `staged_included`. If a queue exists
 but cannot be included — unreadable file, or the portable fallback renderer —
 the build warns loudly instead of letting the material vanish.
