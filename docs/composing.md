@@ -126,7 +126,7 @@ file (`src/morning_paper/resources/styles/`). The most portable ones:
   `.oc-split`/`.oc-col` (do/don't), `.oc-foot`
 - `zine` (v2): see the dedicated section below
 
-### Zine v2 vocabulary
+### Zine vocabulary
 
 The zine is a half-letter photocopier paste-up: typewriter body
 (Courier Prime), felt-marker display (Permanent Marker), max two inks per
