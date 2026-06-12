@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-12
+
+### Added
+- **`morning-paper routine` — the paper without the chat.** The editor is an agent, so the scheduled job is just `claude -p` run headless against the user's existing subscription: `routine install` schedules a daily run of the edition skill (default 05:00, `--time HH:MM` to change, `--command CMD` to replace the job; if `claude` is not on PATH the install refuses, warns, and prints the exact command to wire into your own scheduler). Platform ladder: macOS gets a launchd LaunchAgent (`~/Library/LaunchAgents/com.morning-paper.edition.plist`) using `StartCalendarInterval` — chosen because launchd coalesces runs missed during sleep into one run on wake, so the paper is ready when the laptop opens; `RunAtLoad` stays false (install never triggers an immediate run) and the installing user's `PATH` is frozen into the job so launchd's minimal environment can still find `claude`. Linux gets a systemd user timer with `Persistent=true` (the same catch-up behavior), falling back to a crontab line with the honest note that cron has no coalescing. Loading prefers `launchctl bootstrap gui/$UID` with a legacy `launchctl load` fallback
+- `routine status` — JSON: installed?, scheduler, schedule (time + plain-language semantics), the raw command, last run (parsed from timestamped run markers the routine wraps around every invocation in `~/.local/share/morning-paper/routine.log`, plus `launchctl print` state on macOS), computed next fire, and the log path. `routine uninstall` removes the job cleanly and is idempotent — uninstalling an absent routine is a no-op, not an error
+- `doctor` now reports the routine (installed/not, scheduler, time) — in `--json` under `"routine"` and as a human line; absence is informational, never an error
+- The scheduling ladder documented in the README ("The morning routine"): Tier 0 say-"paper"-each-morning, Tier 1 `routine install` laptop-wake magic, Tier 2 always-on (+ the `pmset repeat wakeorpoweron` note for self-waking Macs), Tier 3 cloud-compose split. docs/composing.md points at the seam; the setup skill's routine section now offers the real command and the ladder
+- 27 new tests: plist/systemd/cron unit generation (content, quoting, `%`-escaping per scheduler), install flows with subprocess mocked (no real launchctl/systemctl/crontab in CI), the bootstrap→load fallback, run-marker log parsing, status JSON, uninstall idempotence, the no-claude-binary warning path, and doctor's routine report
+
 ## [0.5.0] - 2026-06-11
 
 ### Changed

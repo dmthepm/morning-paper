@@ -297,3 +297,13 @@ local` or `article_extractor: jina` in config.
 Both paths feed the same validation gate (shell pages and too-short
 extractions are rejected, never printed) and the same truncation reporting
 (`truncated`, `words_extracted`, plain-language `warning`).
+
+## Scheduling the daily compose
+
+The composition pass itself can run unattended: `morning-paper routine
+install` schedules a daily headless `claude -p` run of the edition skill
+(launchd on macOS with missed-run coalescing, systemd user timer with
+`Persistent=true` on Linux, cron fallback). `morning-paper routine status`
+reports schedule, last run, and next fire as JSON — the seam for "did my
+paper build this morning?". The full scheduling ladder (Tier 0 manual through
+Tier 3 cloud-compose) is in the README's "The morning routine" section.
