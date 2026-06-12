@@ -34,13 +34,13 @@ paper.
      typeset; not summaries.
    - Every claim traceable to collected data. A missing source prints
      "not configured". NEVER fabricate a number.
-4. **The defluff pass (mandatory when `preferences/voice.md` exists, recommended always).**
-   Re-read your draft as an editor cutting for a paper where every word
-   costs the reader time: omit needless words (Strunk), kill decoration and
-   restatement, keep every fact that enables action. Aim: same information,
-   markedly fewer words — then spend the reclaimed space on MORE useful
-   context, not whitespace. The reader's voice preferences in
-   `preferences/voice.md` override these defaults; honor them exactly.
+4. **The revision pass (mandatory when `preferences/voice.md` exists, recommended always).**
+   Load `skills/writing` and run its discipline over the draft: the Strunk
+   per-sentence checks, the AI-tells kill list, the craft that makes a page
+   worth reading. Aim: same information, markedly fewer words — then spend
+   the reclaimed space on MORE useful context, not whitespace. The reader's
+   voice preferences in `preferences/voice.md` override every default in
+   that skill; honor them exactly.
 
 5. **Budget.** `morning-paper estimate draft.md` — fit `page_budget` ±2 by
    cutting the weakest material, never by shrinking type.

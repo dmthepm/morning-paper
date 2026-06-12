@@ -4,6 +4,10 @@ The render seam is the contract between *judgment* and *typesetting*: an agent
 (or a human) writes plain markdown; the engine typesets it into a print-ready
 PDF through a style pack and a palette. The composer never writes CSS.
 
+Prose quality has its own contract: `skills/writing/SKILL.md` carries the
+revision discipline (Strunk per-sentence checks, the AI-tells kill list)
+that every composed document should pass before it reaches `render`.
+
 ```bash
 morning-paper render brief.md --style brief --palette mono
 morning-paper render call-card.md --style field-card --palette color
