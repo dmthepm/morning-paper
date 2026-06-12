@@ -91,7 +91,11 @@ newsroom repo, first edition, daily loop). Otherwise:
    - `morning-paper queue` -> what's staged vs the page budget
    - `morning-paper estimate <file.md>` -> page count, nothing written
    - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
-   - `morning-paper doctor --json` -> machine-readable install status
+   - `morning-paper routine install|status|uninstall` -> schedule the daily
+     edition as a headless `claude -p` run (the scheduling ladder, below);
+     `status` answers "did the paper build this morning?" in JSON
+   - `morning-paper doctor --json` -> machine-readable install status,
+     including whether the routine is installed
      (add `--strict` to get a nonzero exit when the typewriter renderer
      is unavailable)
 4. Page estimates need the pretty print stack (`[pretty]` + WeasyPrint):
@@ -149,6 +153,41 @@ Artifacts land under:
 
 The plain `morning-paper` install (no `[pretty]`) falls back to a simpler
 renderer — it works, but it is not the output you should judge the product by.
+
+## The morning routine (the scheduling ladder)
+
+The paper is best when it is simply *there*. Four tiers, in order of effort —
+climb only as far as you want.
+
+**Tier 0 — say "paper" each morning.** The default. Open Claude Code and ask
+for your paper (the `edition` skill). Zero setup, full control, and you watch
+the editor work. Most readers should start — and many should stay — here.
+
+**Tier 1 — `morning-paper routine install`.** One command schedules a daily
+headless run: `claude -p` invokes the edition skill through your existing
+Claude subscription — no extra API key, no daemon. Default time is 05:00
+(`--time HH:MM` to change it, `--command CMD` to replace the job entirely).
+On macOS this is a launchd LaunchAgent using `StartCalendarInterval`, chosen
+deliberately because launchd *coalesces* runs missed during sleep into one
+run on the next wake: a closed laptop at 5am means the paper builds the
+moment you open it, instead of being skipped. On Linux it is a systemd user
+timer with `Persistent=true` (same catch-up behavior), falling back to a
+crontab line where systemd is absent — with the honest note that cron has no
+coalescing. `morning-paper routine status` reports schedule, last run, and
+next fire as JSON; `routine uninstall` removes it cleanly; the job logs to
+`~/.local/share/morning-paper/routine.log`.
+
+**Tier 2 — always-on.** A Mac mini, desktop, or home server that never
+sleeps runs the same routine at exactly 05:00 every day — pair it with a
+printer and the paper is on the tray before you wake. A Mac that should wake
+itself instead of staying on: `sudo pmset repeat wakeorpoweron MTWRFSU
+04:55:00` wakes it five minutes before the routine fires.
+
+**Tier 3 — the cloud-compose split.** Compose in the cloud, print at home: a
+scheduled cloud agent (or CI job) runs the edition skill on its own clock and
+commits the composed markdown to your newsroom repo; any local machine that
+comes online runs `morning-paper render` and the print command. The judgment
+can run anywhere — the paper still lands on your desk.
 
 ## Sources
 

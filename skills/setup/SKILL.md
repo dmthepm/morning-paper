@@ -87,11 +87,34 @@ collectors/   # any custom source scripts
 Explain the point in one line: *your feed has an algorithm you can't see;
 your paper's algorithm is files you can read and edit.*
 
-## 6. The morning routine
+## 6. The morning routine (offer the ladder)
 
-Offer to schedule it (Claude scheduled tasks / cron): every morning run the
-`edition` skill of this plugin. If they prefer manual, the command is just
-invoking `/morning-paper:edition`.
+Tier 0 is the default and needs nothing: each morning they say "paper" (or
+invoke `/morning-paper:edition`) and watch the editor work. Offer the next
+rung — one command:
+
+```bash
+morning-paper routine install                  # daily at 05:00
+morning-paper routine install --time 06:30     # their wake time beats the default
+morning-paper routine status                   # schedule, last run, next fire (JSON)
+```
+
+This schedules a headless `claude -p` run of the edition skill through their
+existing subscription (`--permission-mode acceptEdits`) — no extra API key.
+On macOS it is a launchd agent that coalesces runs missed during sleep into
+one run on wake: the paper builds the moment the laptop opens. On Linux it is
+a systemd user timer with `Persistent=true`, falling back to cron (say
+plainly: cron skips runs missed while asleep). The job logs to
+`~/.local/share/morning-paper/routine.log`; `--command CMD` swaps in their
+own job. If `claude` is not on PATH the install refuses, warns, and prints
+the exact command to wire into their own scheduler — relay that honestly.
+
+Mention the higher rungs only if they want more: an always-on machine runs
+the routine at exactly the set time (a Mac that should wake itself instead:
+`sudo pmset repeat wakeorpoweron MTWRFSU 04:55:00`); the cloud-compose split
+(a scheduled cloud agent composes into the newsroom repo, any local machine
+renders and prints) is the top of the ladder — see the README's "The morning
+routine" section.
 
 ## 7. First edition, now
 

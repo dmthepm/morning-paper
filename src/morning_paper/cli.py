@@ -46,6 +46,8 @@ Commands:
   queue             Show what's staged vs the page budget (JSON)
   estimate <file>   Page count for a markdown file, nothing written
   styles            List available styles and palettes
+  routine           Schedule the daily edition (install [--time HH:MM]
+                    [--command CMD] | status | uninstall) — launchd/systemd/cron
   doctor            Check config, dependencies, and renderer status (--json, --strict)
   --version         Show installed version
 
@@ -108,6 +110,16 @@ def _renderer_hint_lines(renderer_error: str | None) -> list[str]:
     return _pretty_install_hint_lines()
 
 
+def _routine_status_line(routine_info: dict) -> str:
+    # Absence is not a problem — the routine is an optional convenience tier.
+    if routine_info.get("installed"):
+        time_str = routine_info.get("time")
+        scheduler = routine_info.get("scheduler")
+        detail = f"daily at {time_str} via {scheduler}" if time_str else f"via {scheduler}"
+        return f"routine: installed ({detail})"
+    return "routine: not installed (optional — `morning-paper routine install` schedules the morning edition)"
+
+
 def doctor(args: list[str] | None = None) -> int:
     usage = "usage: morning-paper doctor [--json] [--strict]"
     as_json = False
@@ -134,6 +146,7 @@ def doctor(args: list[str] | None = None) -> int:
         "morning_paper.image_tools",
         "morning_paper.inbox",
         "morning_paper.renderers",
+        "morning_paper.routine",
         "morning_paper.sources",
     ]
     for module_name in required_modules:
@@ -153,6 +166,10 @@ def doctor(args: list[str] | None = None) -> int:
     _, renderer_error = _load_weasyprint()
     typewriter_ready = renderer_error is None
     hints = [] if typewriter_ready else _renderer_hint_lines(renderer_error)
+    # The routine is optional: report installed/not, never an error when absent.
+    from .routine import routine_doctor_summary
+
+    routine_info = routine_doctor_summary()
     if missing:
         status = "broken"
     elif typewriter_ready:
@@ -170,6 +187,7 @@ def doctor(args: list[str] | None = None) -> int:
                 "error": renderer_error,
                 "hints": hints,
             },
+            "routine": routine_info,
             "status": status,
         }
         print(json.dumps(payload, indent=2))
@@ -182,6 +200,7 @@ def doctor(args: list[str] | None = None) -> int:
     if not typewriter_ready:
         print("doctor: ok")
         print("renderer: typewriter unavailable")
+        print(_routine_status_line(routine_info))
         print("status: fallback-only install; high-quality print output is not available yet")
         for line in hints:
             print(line)
@@ -189,6 +208,7 @@ def doctor(args: list[str] | None = None) -> int:
         return exit_code
     print("doctor: ok")
     print("renderer: typewriter ready")
+    print(_routine_status_line(routine_info))
     print("status: high-quality print path available")
     _print_update_notice()
     return exit_code
@@ -803,6 +823,10 @@ def main(argv: list[str] | None = None) -> int:
         return estimate_command(extra)
     if command == "styles":
         return styles_command()
+    if command == "routine":
+        from .routine import routine_command
+
+        return routine_command(extra)
     if command == "doctor":
         return doctor(extra)
     if command in ROADMAP_COMMANDS:
