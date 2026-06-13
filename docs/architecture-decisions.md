@@ -15,13 +15,18 @@ Reason:
 - `Morning Paper` is the public engine.
 - Private deployments extend it for specific operators.
 - Public repo owns:
-  - collectors
+  - the built-in HN + RSS build path
+  - the generic stage/inbox/build/render contract
   - normalized models
   - CLI
   - renderer implementations
   - tests
   - example configs
-- Private deployments own their own scheduling, credentials, delivery, and operator-specific configuration.
+- Collectors are NOT in the engine. The engine ships HN + RSS and the
+  stage/inbox contract any script can write to; every other source is a
+  collector the operator authors and runs in their own private newsroom
+  (see [docs/collectors.md](collectors.md)).
+- Private deployments own their own collectors, scheduling, credentials, delivery, and operator-specific configuration.
 
 Reason:
 - The OSS package must stand on its own and remain portable.
@@ -350,7 +355,7 @@ Path:
 
 Purpose:
 - make the CLI discoverable in Claude Code style runtimes
-- provide a stable command contract for Hermes/OpenClaw-style agent environments
+- provide a stable command contract for always-on agent runtimes
 - keep runtime integration thin: skills call the CLI, they do not reimplement the pipeline
 
 ## 17. Visual Snapshot Testing

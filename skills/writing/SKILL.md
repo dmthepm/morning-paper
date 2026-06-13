@@ -68,9 +68,10 @@ filler; *one of the most* as an opener; *worth while* as vague approval;
 
 What readers now flag as machine prose, deadliest first. Vocabulary tells
 ("delve," "tapestry," "testament") have largely faded from current models;
-the structural habits below survive every generation so far, Fable 5
-included — its launch reviews describe the default voice as fluent, tidy,
-editorially polished, and generic. This pass exists to cut exactly that.
+the structural habits below survive every model generation so far — current
+frontier models (Claude Opus 4.8, Codex 5.5) included still default to a voice
+reviewers describe as fluent, tidy, editorially polished, and generic. This
+pass exists to cut exactly that.
 
 1. **Uniform cadence.** Sentences of 18–24 words, one after another, page
    after page — the single most durable tell. Fix with sentence music
@@ -106,7 +107,7 @@ editorially polished, and generic. This pass exists to cut exactly that.
    Ration to roughly one dash construction per paragraph. Commas, colons,
    and periods do the rest.
 10. **Abstraction where a detail exists.** *Before:* "a strong signal from
-    the funnel." *After:* "brian@lakeerieroof.com, a roofing-company
+    the funnel." *After:* "dispatch@havenroof.example, a roofing-company
     domain." The concrete noun is the credibility.
 11. **Symmetry everywhere.** Every list item the same length, every
     paragraph the same three-sentence arc, every section the same close.

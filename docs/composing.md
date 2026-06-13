@@ -175,7 +175,7 @@ A typical cover, straight from the pack's reference sample:
 <div class="z2-plate">
   <div><span class="z2-strip">WAKE THE</span></div>
   <div><span class="z2-strip alt">PRINTER!</span></div>
-  <div class="z2-plate-sub">the thoth LaserJet revival guide</div>
+  <div class="z2-plate-sub">the neighborhood press revival guide</div>
 </div>
 <div class="z2-plate-dots"></div>
 <div class="z2-dots-exit"></div>

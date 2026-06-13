@@ -13,7 +13,7 @@
 
 ## Set up with AI (recommended)
 
-Open your strongest model — Claude Fable with the 1M context works great — and paste this:
+Open your strongest model — Claude Opus 4.8 with the 1M context works great — and paste this:
 
 ```text
 I want a Morning Paper: an open-source personal newspaper my agent composes
@@ -197,6 +197,11 @@ can run anywhere — the paper still lands on your desk.
 | RSS feeds | No | Included |
 | Article URLs | No | Included via `print` / `stage` |
 
+Everything else — a subreddit digest, your GitHub activity, an X radar, a
+weekly research roundup — is a *collector*: a small script you run before
+composing that stages markdown into the queue. See
+[docs/collectors.md](docs/collectors.md) for the contract.
+
 ## Four styles, two palettes
 
 `morning-paper styles` lists them all — a family of four, each named for the
@@ -261,6 +266,8 @@ shipping something worse. The paper never lies to you about what it knows.
 
 - [docs/composing.md](docs/composing.md) — the composition contract for agents:
   document structure, class vocabulary, chart directives
+- [docs/collectors.md](docs/collectors.md) — bring your own sources: how to add
+  anything beyond the built-in HN + RSS by staging into the queue
 - [docs/inbox.md](docs/inbox.md) — the contributor inbox: let people you
   trust email articles into tomorrow's paper (Gmail/iCloud app-password setup)
 - [ROADMAP.md](ROADMAP.md) — what shipped, what's next

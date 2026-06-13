@@ -44,14 +44,23 @@ Ask in 2-3 messages, not twenty. Capture:
 
 Write their answers into `~/.config/morning-paper/config.yaml`.
 
-## 3. Optional unlocks (state the leverage, let them skip)
+## 3. Optional unlocks (collector recipes they write, not engine features)
 
-- **Apify key** (`APIFY_TOKEN`): X/Twitter radar via tweet-scraper actors,
-  about $0.02/day at 40 tweets. Worth it if their work has a market lane.
-- **last30days plugin**: Reddit/HN/Polymarket deep research for a weekly
-  trends page.
-- **gh CLI**: a "shipped while you slept" section from their repos.
-Each missing unlock = a section that prints "not configured", never fake data.
+The engine ships exactly two built-in sources — Hacker News and RSS — plus the
+generic stage/inbox contract any script can write to. Everything below is a
+**collector**: a small script the operator (or their agent) authors and runs at
+compose time, dropping markdown into the staging queue. None of these ship in
+the engine; they are recipes to build in the newsroom's `collectors/`. See
+[docs/collectors.md](../../docs/collectors.md) for the contract.
+
+- **Apify** (`APIFY_TOKEN`): a collector that pulls an X/Twitter radar via
+  tweet-scraper actors, about $0.02/day at 40 tweets. Worth it if their work
+  has a market lane.
+- **last30days**: a collector wrapping the Reddit/HN/Polymarket research plugin
+  for a weekly trends page.
+- **gh CLI**: a collector that builds a "shipped while you slept" section from
+  their repos.
+Each collector they skip = a section that prints "not configured", never fake data.
 
 ## 4. The masthead (the contributor inbox)
 

@@ -171,7 +171,7 @@ _ZINE_V2_SAMPLE = """\
 
 <div class="z2-step"><strong>SSH in</strong> from any machine on the tailnet:</div>
 
-<div class="z2-cmd">ssh thoth</div>
+<div class="z2-cmd">ssh homelab</div>
 
 <div class="z2-step"><strong>Cancel everything stale:</strong></div>
 
