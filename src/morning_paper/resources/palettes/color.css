@@ -1,0 +1,17 @@
+/* Palette: color — designed for an inkjet, not a recolor of mono.
+ * Warm near-black ink, one working red for alerts, cool blue for data,
+ * green reserved for genuinely positive states. */
+:root {
+  --mp-ink: #1a1612;
+  --mp-paper: #ffffff;
+  --mp-muted: #6b6258;
+  --mp-rule: #1a1612;
+  --mp-alert: #a4231b;
+  --mp-alert-bg: #fdf3e7;
+  --mp-accent: #a4231b;
+  --mp-card-bg: #faf6ef;
+  --mp-card-bg-soft: #fcf9f4;
+  --mp-track: #e7dfd2;
+  --mp-chart-ink: #2b5d8c;
+  --mp-positive: #1e6b40;
+}

@@ -1,0 +1,54 @@
+# Morning Paper example configuration
+
+name: Morning Paper
+timezone: America/Los_Angeles
+profile: |
+  Add a short note about who this paper is for and what should matter most.
+  Example: early-stage AI tools, operator software, media, and founder signal.
+# local parses pages on this machine (URLs never leave your computer);
+# jina sends each URL to the third-party r.jina.ai reader service
+article_extractor: local
+
+sources:
+  hacker_news:
+    enabled: true
+    limit: 20
+  rss:
+    - name: Simon Willison
+      url: https://simonwillison.net/atom/everything/
+      limit: 5
+    - name: Lenny's Newsletter
+      url: https://www.lennysnewsletter.com/feed
+      limit: 5
+
+outputs:
+  directory: ~/.local/share/morning-paper
+  renderer: typewriter
+  # style: broadsheet | brief | field-card | zine    palette: mono | color
+  # broadsheet/color is what the demo prints — the default recommendation
+  style: broadsheet
+  palette: color
+  pdf: true
+  html: true
+  markdown: true
+  json: true
+
+# the contributor inbox ("the masthead"): people you trust email you articles
+# and they land in tomorrow's staging queue. `contributors` is an allowlist —
+# mail from anyone else is never staged. Your mail password NEVER goes in this
+# file: set the MORNING_PAPER_IMAP_PASSWORD environment variable to an app
+# password (Gmail/iCloud walkthrough: docs/inbox.md).
+inbox:
+  enabled: false
+  imap_host: imap.example.com
+  imap_user: you@example.com
+  mailbox: INBOX
+  # only mail whose subject contains this word is staged; set "" to take all
+  subject_tag: paper
+  # the masthead — who is allowed to feed your paper
+  contributors:
+    - email: someone-you-trust@example.com
+      name: Sam
+  # send a warm confirmation back from your own address when something stages
+  reply: true
+  # smtp_host/smtp_user default to the imap values (imap.* host becomes smtp.*)

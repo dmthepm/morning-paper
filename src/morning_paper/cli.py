@@ -1,0 +1,843 @@
+from __future__ import annotations
+
+import json
+import re
+import sys
+from datetime import datetime
+from importlib import import_module, resources
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import requests
+
+from .article_print import (
+    ArticleExtractionError,
+    article_truncation_warning,
+    fetch_article,
+    render_article_markdown,
+)
+from .builder import build_paper
+from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_config, render_default_config
+from .renderers import (
+    TypewriterRendererUnavailable,
+    _load_weasyprint,
+    _safe_filename,
+    document_uses_custom_css,
+    write_custom_markdown,
+)
+from .styles import PALETTES, STYLES, StyleError
+
+
+DOCS_URL = "https://github.com/dmthepm/morning-paper"
+ROADMAP_URL = f"{DOCS_URL}/blob/main/ROADMAP.md"
+PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
+ROADMAP_COMMANDS = {"remove", "list"}
+HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own sources.
+
+Commands:
+  demo              Print a sample edition right now — no config, no network
+  init              Create a starter config
+  build             Build today's paper from configured sources
+  print <url>       Print a single article right now
+  render <file.md>  Typeset any markdown file through a style pack
+  stage <url|file>  Queue material for tomorrow's paper (returns a page estimate)
+  inbox             Poll the contributor inbox: mail from your masthead becomes
+                    staged pages, the sender gets a confirmation (--dry-run)
+  queue             Show what's staged vs the page budget (JSON)
+  estimate <file>   Page count for a markdown file, nothing written
+  styles            List available styles and palettes
+  routine           Schedule the daily edition (install [--time HH:MM]
+                    [--command CMD] [--workdir PATH] | status | uninstall) —
+                    launchd/systemd/cron; the run starts in the directory you
+                    install from (your newsroom)
+  doctor            Check config, dependencies, and renderer status (--json, --strict)
+  --version         Show installed version
+
+Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
+the bare version). `stage` + `queue` are the seam for "add this to
+tomorrow's brief" workflows. See docs/composing.md.
+
+Config: {DEFAULT_CONFIG_PATH}
+Docs:   {DOCS_URL}
+"""
+
+
+def _version_key(value: str) -> tuple[int, ...]:
+    parts = re.findall(r"\d+", value or "")
+    return tuple(int(part) for part in parts) or (0,)
+
+
+def _fetch_latest_pypi_version() -> str | None:
+    try:
+        response = requests.get(PYPI_JSON_URL, timeout=2)
+        response.raise_for_status()
+        payload = response.json()
+    except Exception:
+        return None
+    info = payload.get("info") if isinstance(payload, dict) else None
+    version = info.get("version") if isinstance(info, dict) else None
+    return str(version).strip() if version else None
+
+
+def _print_update_notice() -> None:
+    from . import __version__
+
+    latest = _fetch_latest_pypi_version()
+    if not latest or _version_key(latest) <= _version_key(__version__):
+        return
+    print(f"update available: {latest} (you have {__version__})")
+    print("run: pip install --upgrade morning-paper")
+
+
+def _pretty_install_hint_lines() -> list[str]:
+    lines = ['recommended install: pip install "morning-paper[pretty]"']
+    if sys.platform == "darwin":
+        lines.append("macOS may also need: brew install pango gdk-pixbuf")
+    elif sys.platform.startswith("linux"):
+        lines.append("Linux may also need system libraries for WeasyPrint (for example pango/cairo packages)")
+    elif sys.platform.startswith("win"):
+        lines.append("Windows typewriter support is best-effort today; portable mode is more reliable")
+    return lines
+
+
+def _renderer_hint_lines(renderer_error: str | None) -> list[str]:
+    if renderer_error and sys.platform == "darwin" and "pango" in renderer_error.lower():
+        # WeasyPrint imported but could not load the Pango system library:
+        # this is the one macOS failure with an exact known fix.
+        return [
+            "detected: WeasyPrint cannot load Pango (the text layout library)",
+            "fix: brew install pango gdk-pixbuf",
+            'if it still fails: export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH"',
+        ]
+    return _pretty_install_hint_lines()
+
+
+def _routine_status_line(routine_info: dict) -> str:
+    # Absence is not a problem — the routine is an optional convenience tier.
+    if routine_info.get("installed"):
+        time_str = routine_info.get("time")
+        scheduler = routine_info.get("scheduler")
+        detail = f"daily at {time_str} via {scheduler}" if time_str else f"via {scheduler}"
+        return f"routine: installed ({detail})"
+    return "routine: not installed (optional — `morning-paper routine install` schedules the morning edition)"
+
+
+def doctor(args: list[str] | None = None) -> int:
+    usage = "usage: morning-paper doctor [--json] [--strict]"
+    as_json = False
+    strict = False
+    for arg in args or []:
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--json":
+            as_json = True
+            continue
+        if arg == "--strict":
+            strict = True
+            continue
+        print(f"unknown doctor argument: {arg}", file=sys.stderr)
+        return 2
+    checks: list[dict[str, object]] = []
+    required_modules = [
+        "morning_paper.cli",
+        "morning_paper.article_print",
+        "morning_paper.builder",
+        "morning_paper.config",
+        "morning_paper.extractors",
+        "morning_paper.image_tools",
+        "morning_paper.inbox",
+        "morning_paper.renderers",
+        "morning_paper.routine",
+        "morning_paper.sources",
+    ]
+    for module_name in required_modules:
+        try:
+            import_module(module_name)
+            checks.append({"name": module_name, "ok": True})
+        except Exception:
+            checks.append({"name": module_name, "ok": False})
+    for template_name in ("broadsheet-build.md",):
+        resource_check = f"morning_paper/resources/{template_name}"
+        try:
+            resource = resources.files("morning_paper").joinpath("resources", template_name)
+            checks.append({"name": resource_check, "ok": bool(resource.is_file())})
+        except Exception:
+            checks.append({"name": resource_check, "ok": False})
+    missing = [str(check["name"]) for check in checks if not check["ok"]]
+    _, renderer_error = _load_weasyprint()
+    typewriter_ready = renderer_error is None
+    hints = [] if typewriter_ready else _renderer_hint_lines(renderer_error)
+    # The routine is optional: report installed/not, never an error when absent.
+    from .routine import routine_doctor_summary
+
+    routine_info = routine_doctor_summary()
+    if missing:
+        status = "broken"
+    elif typewriter_ready:
+        status = "ok"
+    else:
+        status = "fallback-only"
+    exit_code = 0
+    if missing or (strict and not typewriter_ready):
+        exit_code = 1
+    if as_json:
+        payload: dict[str, object] = {
+            "checks": checks,
+            "renderer": {
+                "typewriter": typewriter_ready,
+                "error": renderer_error,
+                "hints": hints,
+            },
+            "routine": routine_info,
+            "status": status,
+        }
+        print(json.dumps(payload, indent=2))
+        return exit_code
+    if missing:
+        print("doctor: missing required files:", file=sys.stderr)
+        for item in missing:
+            print(f"- {item}", file=sys.stderr)
+        return exit_code
+    if not typewriter_ready:
+        print("doctor: ok")
+        print("renderer: typewriter unavailable")
+        print(_routine_status_line(routine_info))
+        print("status: fallback-only install; high-quality print output is not available yet")
+        for line in hints:
+            print(line)
+        _print_update_notice()
+        return exit_code
+    print("doctor: ok")
+    print("renderer: typewriter ready")
+    print(_routine_status_line(routine_info))
+    print("status: high-quality print path available")
+    _print_update_notice()
+    return exit_code
+
+
+def _deliver_pdf(outputs: dict[str, object], output_arg: str | None) -> tuple[str | None, int]:
+    """Copy the rendered PDF to the user's --output path; returns (final path, exit code).
+
+    A trailing slash or an existing directory means "put it in there under its
+    own name"; anything else is the destination file.
+    """
+    if not output_arg:
+        return None, 0
+    import shutil
+
+    pdf_path = Path(str(outputs.get("pdf", "")))
+    if not pdf_path.is_file():
+        print("--output requires a produced PDF, but no PDF was written", file=sys.stderr)
+        return None, 1
+    target = Path(output_arg).expanduser()
+    if output_arg.endswith(("/", "\\")) or target.is_dir():
+        target = target / pdf_path.name
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(pdf_path, target)
+    except OSError as exc:
+        print(f"could not write --output path {target}: {exc}", file=sys.stderr)
+        return None, 1
+    return str(target), 0
+
+
+def demo_command(args: list[str]) -> int:
+    usage = "usage: morning-paper demo [--output PATH]"
+    output_arg: str | None = None
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--output" and index + 1 < len(args):
+            output_arg = args[index + 1]
+            index += 2
+            continue
+        print(f"unknown demo argument: {arg}", file=sys.stderr)
+        return 2
+    _, renderer_error = _load_weasyprint()
+    if renderer_error:
+        print("demo needs the pretty print stack (WeasyPrint) to typeset the sample edition", file=sys.stderr)
+        for line in _renderer_hint_lines(renderer_error):
+            print(line, file=sys.stderr)
+        print("then run `morning-paper doctor` to confirm the renderer is ready", file=sys.stderr)
+        return 1
+    markdown_text = resources.files("morning_paper").joinpath("resources", "demo.md").read_text(encoding="utf-8")
+    config = MorningPaperConfig()
+    config.outputs.style = "broadsheet"
+    config.outputs.palette = "color"
+    config.outputs.html = True
+    config.outputs.pdf = True
+    target_date = datetime.now(ZoneInfo(config.timezone)).date().isoformat()
+    try:
+        outputs, warnings, pages = write_custom_markdown(
+            config,
+            markdown_text,
+            date_str=target_date,
+            slug="demo",
+            metadata={"mode": "demo", "style": "broadsheet", "palette": "color"},
+        )
+    except TypewriterRendererUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    delivered, rc = _deliver_pdf(outputs, output_arg)
+    if rc:
+        return rc
+    output_paths = {key: str(value) for key, value in outputs.items() if key != "dir"}
+    if delivered:
+        output_paths["pdf"] = delivered
+    print(
+        json.dumps(
+            {
+                "date": target_date,
+                "mode": "demo",
+                "style": "broadsheet",
+                "palette": "color",
+                "pages": pages,
+                "warnings": warnings,
+                "outputs": output_paths,
+                "output_dir": str(outputs["dir"]),
+            },
+            indent=2,
+        )
+    )
+    print(f"Print it: lp {delivered or outputs['pdf']}")
+    print('Make it yours: uv tool install "morning-paper[pretty]" && morning-paper init (or run the setup skill in Claude Code)')
+    print("Post your paper: https://github.com/dmthepm/morning-paper/discussions")
+    return 0
+
+
+def init_command(args: list[str]) -> int:
+    config_path = DEFAULT_CONFIG_PATH
+    force = False
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print("usage: morning-paper init [--config PATH] [--force]")
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--force":
+            force = True
+            index += 1
+            continue
+        print(f"unknown init argument: {arg}", file=sys.stderr)
+        return 2
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    if config_path.exists() and not force:
+        print(f"config already exists: {config_path}", file=sys.stderr)
+        print("use --force to overwrite", file=sys.stderr)
+        return 1
+    config_path.write_text(render_default_config(), encoding="utf-8")
+    print(json.dumps({"config": str(config_path), "created": True}, indent=2))
+    return 0
+
+
+def build_command(args: list[str]) -> int:
+    config_path = DEFAULT_CONFIG_PATH
+    date = None
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print("usage: morning-paper build [--config PATH] [--date YYYY-MM-DD]")
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        print(f"unknown build argument: {arg}", file=sys.stderr)
+        return 2
+    if not config_path.exists():
+        print(f"missing config: {config_path}", file=sys.stderr)
+        print("run `morning-paper init` first or pass --config", file=sys.stderr)
+        return 1
+    try:
+        config = load_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    try:
+        result = build_paper(config, date_str=date)
+    except TypewriterRendererUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in result.get("warnings", []):
+        print(f"warning: {warning}", file=sys.stderr)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _load_print_config(config_path: Path) -> tuple[MorningPaperConfig, bool]:
+    if config_path.exists():
+        return load_config(config_path), True
+    return MorningPaperConfig(), False
+
+
+def print_command(args: list[str]) -> int:
+    config_path = DEFAULT_CONFIG_PATH
+    date = None
+    title = None
+    urls: list[str] = []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print("usage: morning-paper print <url> [<url> ...] [--config PATH] [--date YYYY-MM-DD] [--title TITLE]")
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        if arg == "--title" and index + 1 < len(args):
+            title = args[index + 1]
+            index += 2
+            continue
+        urls.append(arg)
+        index += 1
+    if not urls:
+        print("print requires at least one URL", file=sys.stderr)
+        return 2
+    try:
+        config, has_user_config = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    if not has_user_config:
+        print("using built-in defaults for one-off print", file=sys.stderr)
+        print("run `morning-paper init` to customize feeds, timezone, and output paths", file=sys.stderr)
+    try:
+        articles = [fetch_article(url, extractor_name=config.article_extractor) for url in urls]
+    except ArticleExtractionError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
+    bundle_title = title or articles[0].title
+    slug = _safe_filename(bundle_title)[:48] or "article-print"
+    # Honesty rule: never silently clip — flag any article that will print incomplete.
+    truncation_warnings = [
+        f"{article.url} {message}"
+        for article in articles
+        if (message := article_truncation_warning(article))
+    ]
+    # Honesty rule: if the local extractor fell back to the remote jina reader,
+    # say so — the reader should know this URL left the machine.
+    truncation_warnings.extend(
+        f"{article.url} {article.extraction_note}" for article in articles if article.extraction_note
+    )
+    try:
+        outputs, warnings, pages = write_custom_markdown(
+            config,
+            render_article_markdown(
+                config,
+                articles,
+                date_str=target_date,
+                images_dir=config.outputs.directory / target_date / slug / "_article_images",
+            ),
+            date_str=target_date,
+            slug=slug,
+            metadata={"mode": "print", "urls": urls, "article_count": len(articles)},
+        )
+    except TypewriterRendererUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    warnings = truncation_warnings + warnings
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    print(
+        json.dumps(
+            {
+                "date": target_date,
+                "mode": "print",
+                "article_count": len(articles),
+                "pages": pages,
+                "warnings": warnings,
+                "outputs": {key: str(value) for key, value in outputs.items() if key != "dir"},
+                "output_dir": str(outputs["dir"]),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def styles_command() -> int:
+    from .styles import STYLE_ALIASES
+
+    listing = {
+        "styles": {name: pack.description for name, pack in sorted(STYLES.items())},
+        # 0.4.x names, accepted for one release with a deprecation warning
+        "deprecated_aliases": dict(sorted(STYLE_ALIASES.items())),
+        "palettes": {name: pal.description for name, pal in sorted(PALETTES.items())},
+    }
+    print(json.dumps(listing, indent=2))
+    return 0
+
+
+def render_command(args: list[str]) -> int:
+    config_path = DEFAULT_CONFIG_PATH
+    date = None
+    slug = None
+    style = None
+    palette = None
+    output_arg: str | None = None
+    source: Path | None = None
+    index = 0
+    usage = "usage: morning-paper render <file.md> [--style NAME] [--palette NAME] [--output PATH] [--date YYYY-MM-DD] [--slug NAME] [--config PATH]"
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        if arg == "--slug" and index + 1 < len(args):
+            slug = args[index + 1]
+            index += 2
+            continue
+        if arg == "--style" and index + 1 < len(args):
+            style = args[index + 1]
+            index += 2
+            continue
+        if arg == "--palette" and index + 1 < len(args):
+            palette = args[index + 1]
+            index += 2
+            continue
+        if arg == "--output" and index + 1 < len(args):
+            output_arg = args[index + 1]
+            index += 2
+            continue
+        if arg.startswith("-"):
+            print(f"unknown render argument: {arg}", file=sys.stderr)
+            return 2
+        if source is not None:
+            print("render takes exactly one markdown file", file=sys.stderr)
+            return 2
+        source = Path(arg).expanduser()
+        index += 1
+    if source is None:
+        print(usage, file=sys.stderr)
+        return 2
+    if not source.is_file():
+        print(f"no such file: {source}", file=sys.stderr)
+        return 1
+    try:
+        config, has_user_config = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    if not has_user_config:
+        print("using built-in defaults (run `morning-paper init` to customize)", file=sys.stderr)
+    if style:
+        config.outputs.style = style
+    if palette:
+        config.outputs.palette = palette
+    # render exists to typeset: always produce html+pdf regardless of the
+    # build-pipeline output toggles in config
+    config.outputs.html = True
+    config.outputs.pdf = True
+    markdown_text = source.read_text(encoding="utf-8")
+    target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
+    target_slug = _safe_filename(slug or source.stem)[:48] or "render"
+    # Honesty rule: a frontmatter `css:` block replaces the style pack
+    # entirely — never report a style the page is not actually wearing.
+    reported_style = config.outputs.style
+    if document_uses_custom_css(markdown_text):
+        reported_style = "custom-css"
+        print(
+            "warning: frontmatter `css:` overrides the configured style pack; "
+            "rendering with the document's own stylesheet",
+            file=sys.stderr,
+        )
+    try:
+        outputs, warnings, pages = write_custom_markdown(
+            config,
+            markdown_text,
+            date_str=target_date,
+            slug=target_slug,
+            metadata={
+                "mode": "render",
+                "source": str(source),
+                "style": reported_style,
+                "palette": config.outputs.palette,
+            },
+        )
+    except StyleError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except TypewriterRendererUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    delivered, rc = _deliver_pdf(outputs, output_arg)
+    if rc:
+        return rc
+    output_paths = {key: str(value) for key, value in outputs.items() if key != "dir"}
+    if delivered:
+        output_paths["pdf"] = delivered
+    print(
+        json.dumps(
+            {
+                "date": target_date,
+                "mode": "render",
+                "style": reported_style,
+                "palette": config.outputs.palette,
+                "pages": pages,
+                "warnings": warnings,
+                "outputs": output_paths,
+                "output_dir": str(outputs["dir"]),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def _parse_common(args: list[str], usage: str) -> tuple[Path, str | None, list[str]] | int:
+    config_path = DEFAULT_CONFIG_PATH
+    date = None
+    rest: list[str] = []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        rest.append(arg)
+        index += 1
+    return config_path, date, rest
+
+
+def stage_command(args: list[str]) -> int:
+    from .staging import default_edition_date, stage_markdown, stage_url
+
+    usage = "usage: morning-paper stage <url|file.md> [--title T] [--date YYYY-MM-DD] [--config PATH]"
+    title_override = None
+    if "--title" in args:
+        i = args.index("--title")
+        if i + 1 < len(args):
+            title_override = args[i + 1]
+            args = args[:i] + args[i + 2 :]
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if len(rest) != 1:
+        print(usage, file=sys.stderr)
+        return 2
+    target = rest[0]
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    date_str = date or default_edition_date(config)
+    if target.startswith("http://") or target.startswith("https://"):
+        # the one URL-staging path, shared with the contributor inbox — the
+        # honesty flags (truncation, extractor fallback) ride along in the JSON
+        try:
+            item = stage_url(config, target, date_str=date_str, title=title_override)
+        except ArticleExtractionError as exc:
+            print(json.dumps({"staged": False, "error": str(exc)}, indent=2))
+            return 1
+    else:
+        source = Path(target).expanduser()
+        if not source.is_file():
+            print(f"no such file: {source}", file=sys.stderr)
+            return 1
+        item = stage_markdown(
+            config, source.read_text(encoding="utf-8"), date_str=date_str,
+            kind="file", source=str(source), title=title_override or source.stem,
+        )
+    from dataclasses import asdict
+
+    payload = {"staged": True, "edition_date": date_str, **asdict(item)}
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def inbox_command(args: list[str]) -> int:
+    from .inbox import InboxError, poll_inbox
+
+    usage = "usage: morning-paper inbox [poll] [--dry-run] [--date YYYY-MM-DD] [--config PATH]"
+    dry_run = False
+    if "--dry-run" in args:
+        dry_run = True
+        args = [arg for arg in args if arg != "--dry-run"]
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if rest == ["poll"]:
+        rest = []
+    if rest:
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    try:
+        result = poll_inbox(config, dry_run=dry_run, date_str=date)
+    except InboxError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for warning in result.get("warnings", []):
+        print(f"warning: {warning}", file=sys.stderr)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def queue_command(args: list[str]) -> int:
+    from .staging import default_edition_date, queue_status
+
+    usage = "usage: morning-paper queue [--date YYYY-MM-DD] [--config PATH]"
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if rest:
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(queue_status(config, date or default_edition_date(config)), indent=2))
+    return 0
+
+
+def estimate_command(args: list[str]) -> int:
+    from .renderers import count_pages
+
+    usage = "usage: morning-paper estimate <file.md> [--style NAME] [--palette NAME] [--config PATH]"
+    style = palette = None
+    for flag in ("--style", "--palette"):
+        if flag in args:
+            i = args.index(flag)
+            if i + 1 < len(args):
+                value = args[i + 1]
+                args = args[:i] + args[i + 2 :]
+                if flag == "--style":
+                    style = value
+                else:
+                    palette = value
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, _date, rest = parsed
+    if len(rest) != 1:
+        print(usage, file=sys.stderr)
+        return 2
+    source = Path(rest[0]).expanduser()
+    if not source.is_file():
+        print(f"no such file: {source}", file=sys.stderr)
+        return 1
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    markdown = source.read_text(encoding="utf-8")
+    try:
+        pages = count_pages(
+            markdown,
+            style=style or config.outputs.style,
+            palette=palette or config.outputs.palette,
+            font_scale=config.outputs.font_scale,
+        )
+    except StyleError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"estimate requires the pretty print stack: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"file": str(source), "words": len(markdown.split()), "est_pages": pages}, indent=2))
+    return 0
+
+
+def print_help() -> int:
+    print(HELP_TEXT.rstrip())
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in {"-V", "--version", "version"}:
+        from . import __version__
+
+        print(__version__)
+        return 0
+    if not argv or argv[0] in {"-h", "--help", "help"}:
+        return print_help()
+
+    command, extra = argv[0], argv[1:]
+
+    if command == "demo":
+        return demo_command(extra)
+    if command == "init":
+        return init_command(extra)
+    if command == "build":
+        return build_command(extra)
+    if command == "print":
+        return print_command(extra)
+    if command == "render":
+        return render_command(extra)
+    if command in {"stage", "add"}:
+        return stage_command(extra)
+    if command == "inbox":
+        return inbox_command(extra)
+    if command in {"queue", "status"}:
+        return queue_command(extra)
+    if command == "estimate":
+        return estimate_command(extra)
+    if command == "styles":
+        return styles_command()
+    if command == "routine":
+        from .routine import routine_command
+
+        return routine_command(extra)
+    if command == "doctor":
+        return doctor(extra)
+    if command in ROADMAP_COMMANDS:
+        print(f'"{command}" is not implemented yet. It is on the roadmap: {ROADMAP_URL}', file=sys.stderr)
+        return 2
+    print(f"unknown command: {command}", file=sys.stderr)
+    print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

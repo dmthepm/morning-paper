@@ -1,0 +1,14 @@
+{
+  "name": "morning-paper",
+  "description": "Your personal newsroom: a daily printed paper composed by your agent from your sources, with preferences you own as files.",
+  "owner": { "name": "dmthepm" },
+  "plugins": [
+    {
+      "name": "morning-paper",
+      "source": "./",
+      "description": "Setup interviews the reader and creates their private newsroom repo; edition composes and prints each day's paper.",
+      "license": "MIT",
+      "homepage": "https://github.com/dmthepm/morning-paper"
+    }
+  ]
+}

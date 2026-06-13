@@ -1,0 +1,248 @@
+# Changelog
+
+All notable changes to Morning Paper will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [Unreleased]
+
+## [0.5.2] - 2026-06-12
+
+### Fixed
+- **The scheduled edition now runs IN your newsroom directory.** `routine install` wrote scheduler jobs with no working directory, so the headless `claude -p` edition run started in `$HOME` and could not find the newsroom — `specs/`, `collectors/`, `editions/` were simply not there, and every scheduled paper composed blind. Install now captures the directory you install from (the contract: you install from your newsroom) and pins the job to it: launchd gets a `WorkingDirectory` plist key, the systemd service a `WorkingDirectory=` line, and the cron job a quote-safe `cd` into the newsroom inside its `sh -c` wrapper. `--workdir PATH` overrides the default (validated: must be an existing directory); the install JSON reports the resolved `workdir`, and `routine status` / `doctor` surface it where the artifact makes it cheap (the launchd plist). **Upgrading from 0.5.1: re-run `morning-paper routine install` from your newsroom** (or pass `--workdir`) — existing installs keep the old directory-less job until reinstalled
+
+### Changed
+- Edition skill, "Read the newsroom": the editor now also reads, when present, `memory/reads-ledger.md` (the cumulative record of everything already printed — repeating a read the owner already got is a hard fail; today's reads are appended when the paper ships), the most recent `editions/<date>/operator-answers.md` (triaged owner ink: deep-read picks, queue answers, steers — honored exactly), and checks an `inbox/scans/` directory for untriaged captures before composing
+
+## [0.5.1] - 2026-06-12
+
+### Added
+- **`morning-paper routine` — the paper without the chat.** The editor is an agent, so the scheduled job is just `claude -p` run headless against the user's existing subscription: `routine install` schedules a daily run of the edition skill (default 05:00, `--time HH:MM` to change, `--command CMD` to replace the job; if `claude` is not on PATH the install refuses, warns, and prints the exact command to wire into your own scheduler). Platform ladder: macOS gets a launchd LaunchAgent (`~/Library/LaunchAgents/com.morning-paper.edition.plist`) using `StartCalendarInterval` — chosen because launchd coalesces runs missed during sleep into one run on wake, so the paper is ready when the laptop opens; `RunAtLoad` stays false (install never triggers an immediate run) and the installing user's `PATH` is frozen into the job so launchd's minimal environment can still find `claude`. Linux gets a systemd user timer with `Persistent=true` (the same catch-up behavior), falling back to a crontab line with the honest note that cron has no coalescing. Loading prefers `launchctl bootstrap gui/$UID` with a legacy `launchctl load` fallback
+- `routine status` — JSON: installed?, scheduler, schedule (time + plain-language semantics), the raw command, last run (parsed from timestamped run markers the routine wraps around every invocation in `~/.local/share/morning-paper/routine.log`, plus `launchctl print` state on macOS), computed next fire, and the log path. `routine uninstall` removes the job cleanly and is idempotent — uninstalling an absent routine is a no-op, not an error
+- `doctor` now reports the routine (installed/not, scheduler, time) — in `--json` under `"routine"` and as a human line; absence is informational, never an error
+- The scheduling ladder documented in the README ("The morning routine"): Tier 0 say-"paper"-each-morning, Tier 1 `routine install` laptop-wake magic, Tier 2 always-on (+ the `pmset repeat wakeorpoweron` note for self-waking Macs), Tier 3 cloud-compose split. docs/composing.md points at the seam; the setup skill's routine section now offers the real command and the ladder
+- 27 new tests: plist/systemd/cron unit generation (content, quoting, `%`-escaping per scheduler), install flows with subprocess mocked (no real launchctl/systemctl/crontab in CI), the bootstrap→load fallback, run-marker log parsing, status JSON, uninstall idempotence, the no-claude-binary warning path, and doctor's routine report
+
+## [0.5.0] - 2026-06-11
+
+### Changed
+- **The style family** (per the 2026-06-11 style-system audit): six packs become four, each named for the print genre it is — a name a stranger could sketch, never a font or a CSS property:
+
+  | 0.4.x name | 0.5.0 name | What happened |
+  | --- | --- | --- |
+  | `editorial` | `broadsheet` | renamed — it is the paper itself, not a column genre |
+  | `flow` | `brief` | renamed — it literally renders the operator brief; name the artifact |
+  | `ops-card` | `field-card` | renamed — keeps the card job, loses the jargon |
+  | `magazine` | `broadsheet` | merged — it was broadsheet's article layer in a different kicker; its one real asset (the fenced-code-block `pre` treatment from 0.4.3) is folded into broadsheet |
+  | `typewriter` | `brief` | retired — its newspaper job went to broadsheet, its Courier voice was already brief's; its one asset, the two-column boxed link-card grid, is now brief's canonical `.cards`/`.card` family (`.cards2` stays as a deprecated alias selector) |
+  | `zine` | `zine` | right name, wrong execution — replaced by v2 (below) |
+
+- The old names keep working for **one release of grace** as deprecated aliases: config validation, `--style`, and frontmatter `style:` all accept them, resolve them to the canonical pack, and print a one-time stderr warning. `morning-paper styles` lists the alias table under `deprecated_aliases`. The default style is now `broadsheet` (the same look `editorial` configs were already getting)
+- One build template: the broadsheet-native front page (`resources/broadsheet-build.md`, formerly `editorial-build.md`) serves every style. The typewriter build template is retired; builds configured with the `typewriter` alias route to the broadsheet template with the deprecation warning, and staged-item inclusion works identically
+
+### Removed
+- `magazine` and `typewriter` as canonical style packs — `magazine.css` and `typewriter.css` deleted; both names live on only as aliases of their successors for this release
+- The `typewriter.md` build template and the typewriter front-page visual baseline (the broadsheet baseline carries the front-page regression surface)
+- Zine v1's `.zn-*` vocabulary (replaced wholesale by v2's `.z2-*` — v1 was a default-sans Word doc with a marker title; nothing worth carrying)
+
+### Added
+- **Zine** (rebuilt) — the photocopier field zine, built from named inspirations (Sniffin' Glue paste-up, risograph one-ink discipline, Field Notes cover furniture, Ray Gun rotation-as-tension, Iffy Books how-to vocabulary): cover ink plate with rotated cut-paper title strips, halftone dot bands (pure CSS radial-gradient grids, sized in exact dot-grid multiples for WeasyPrint), tilted rubber stamp, dotted-leader spec rows, paste-up quote scraps with hard offset shadows (two-wrapper plate trick — WeasyPrint has no `box-shadow`), CSS-drawn tilted checkbox steps, inverted-xerox command bars with `$` prompts, accent stickers, marginal marker scrawl, "cut here" reference cards, and a back-cover colophon. Both faces are vendored (Courier Prime OFL, Permanent Marker Apache-2.0); mono palette renders pure photocopier, color palette adds the riso-red second ink via the existing `--mp-accent` token — no new palette tokens. Full vocabulary + reference sample in docs/composing.md
+- Style-family test coverage: alias resolution + one-time deprecation warning, config validation across canonical names and aliases, all four packs render-smoked on both palettes, zine render-smoked on its reference sample, build exercised through the alias path
+
+## [0.4.4] - 2026-06-11
+
+### Added
+- **The contributor inbox ("the masthead")**: people the reader trusts email articles in and they land in tomorrow's staging queue — `morning-paper inbox` (alias `inbox poll`) polls a mailbox over IMAP, stdlib only. New top-level `inbox:` config block: `enabled` (default false), `imap_host`/`imap_user`, `mailbox`, optional `subject_tag` filter (default `paper`), `reply`, optional `smtp_host`/`smtp_user` (derived from the IMAP values when omitted), and `contributors:` — the masthead, a strict `{email, name}` allowlist that is required non-empty when enabled and is THE gate: mail from anyone else is skipped and reported, never staged
+- Passwords never go in config: the credential comes from `MORNING_PAPER_IMAP_PASSWORD` (and `MORNING_PAPER_SMTP_PASSWORD` when distinct), and the config loader rejects any `password` key in the inbox block with the fix in the error. Gmail/iCloud app-password walkthrough in the new [docs/inbox.md](docs/inbox.md), including the plus-addressing tip and the one-sentence contributor onboarding
+- A link in the mail body stages through the same path as `stage <url>` (new shared `staging.stage_url` helper — same extractor, same honest truncation flags); a mail with no link stages as kind `note`. The staged item records `contributor: <name>`, and build editions render contributor items with a FROM <NAME> kicker
+- Warm confirmation reply from the reader's own address when something stages ("Got it — this is in Morning Paper tomorrow morning (about N pages). ☕" — with the real page estimate); `reply: false` turns it off
+- `inbox --dry-run` reports what WOULD stage without staging, replying, or marking mail read. Safety rules either way: messages are fetched with BODY.PEEK and marked Seen only after a successful stage; one bad message never crashes the poll (it lands in `skipped` with a reason); HTML-only payloads are stripped of script/style and tags — all mail content is treated as untrusted text
+- `setup` skill now interviews for the masthead (who can feed the paper, app-password setup, the sentence to send contributors); `edition` skill polls the inbox before composing
+
+## [0.4.3] - 2026-06-11
+
+### Fixed
+- **The first-edition cliff**: `init` defaults to `style: editorial` but `build` always rendered the typewriter template, whose classes do not exist in editorial.css — a new user's first paper printed unstyled while every signal said success. `build` now dispatches on `outputs.style`: a new editorial-native template (`resources/editorial-build.md` — masthead/dateline/oxford, front strip with run counts, dept-kicker sections with Signals and Hacker News as `table.data` rows, references) serves `editorial` and every non-typewriter style; `typewriter` keeps its original template. The front-page visual snapshot test now covers both
+- **Staged items vanished from the edition**: `build` never read `staging/{date}/queue.json`, so everything queued with `stage` silently missed the paper it was queued for. Build now appends a "Staged for today" section (both templates) with each staged item's markdown, puts an on-page `.trunc-notice` on items staged incomplete, reports the included slugs as `staged_included` in the build JSON, and warns loudly when a queue exists but cannot be included (unreadable queue, missing staged file, or the portable fallback renderer — which cannot typeset staged markdown)
+- Zine style advertised fonts it could never load: the Google Fonts `@import` for Permanent Marker and Open Sans is stripped at compose time (by design — no network at render). Permanent Marker, the zine's identity face, is now vendored (Apache 2.0, `resources/fonts/`) and injected as `@font-face` like Courier Prime; the body stack is now honestly `Helvetica/Arial` — Open Sans was never actually printing, and vendoring its variable-font files was not worth >1MB. Decision documented in zine.css
+- `magazine` style now has a real treatment for fenced code blocks (bordered, smaller mono, `pre-wrap`) instead of browser-default mono bleeding into the page
+
+### Added
+- A truncated article now says so **on the page itself** — "Truncated at extraction; N of M words shown." in a dashed `.trunc-notice` box at the end of the clipped body — not only in the JSON and stderr
+- `render` is honest about bring-your-own CSS: a frontmatter `css:` block replaces the style pack entirely, so it now warns on stderr and reports `"style": "custom-css"` in the JSON instead of naming a pack the page is not wearing
+- `--output PATH` on `render` and `demo` — copy the produced PDF where you actually want it (a directory keeps the PDF's name); the JSON reflects the delivered path
+- `outputs.font_scale` (0.8-1.5, default 1.0) — scales every style's base body size via a `:root` override appended in `compose_css`; applies to build, render, demo, and the `stage`/`estimate` page counts
+- `.page-break` in the editorial pack — the documented escape hatch for single-sheet furniture that must land on its own page (docs/composing.md has the guidance)
+- docs/composing.md: editorial masthead vocabulary (`.masthead-title`, `.dateline`, `.oxford`), page-break guidance, and the staged-copy flow into composed editions (queue seam, frontmatter stripping, carrying truncation honesty onto the page)
+
+## [0.4.2] - 2026-06-11
+
+### Added
+- `local` article extractor — fetches the page directly from your machine and parses it with trafilatura (now a core dependency). It is the **default** for `print`/`stage`: the URLs you read never leave your computer. Headings, blockquotes, and inline images carry through to print; the validation gate and truncation reporting work identically to the jina path
+- "Set up with AI (recommended)" section at the top of the README — a copy-paste prompt that walks any strong model through the full onboarding arc (read, explore, interview, install, doctor, demo, private newsroom repo, first printed edition, daily loop), mirrored in the For Agents section
+- Stage JSON now carries `extractor_note`; `print` output adds a warning line when the extractor fell back
+
+### Changed
+- `jina` (`r.jina.ai`) is demoted from default to explicit option + automatic fallback. Privacy note, stated plainly in README and docs: jina sends each URL you read to a third-party service. When local extraction recovers too little content the engine chains `local -> jina` and flags the result with an honest note — never a silent fallback
+- Default config (`init`) now writes `article_extractor: local` with the privacy trade documented in a comment
+
+## [0.4.1] - 2026-06-11
+
+### Fixed
+- `stage <url>` (and `print <url>`) no longer truncate long articles silently. The article renderer keeps the first 80 extracted blocks; an ~11k-word essay was being staged at ~4.5k words with `staged: true` and a page estimate computed on the clipped text. The stage JSON now carries `truncated`, `words_extracted`, and a plain-language `warning` (exit stays 0), `print` surfaces the same warning, and a mid-sentence-cut check also flags extractions clipped upstream
+- README install guidance now leads with `uv tool install "morning-paper[pretty]"` (pipx as the alternative), documents the PEP 668 `externally-managed-environment` failure on brew/system Pythons, and keeps `pip` for venv users — the literal `pip install` line stranded non-venv users
+- Demo's "Make it yours" line now bridges the uvx try-it path to a persistent install (`uv tool install "morning-paper[pretty]" && morning-paper init`) — `morning-paper` was not on PATH for uvx users who typed the old suggestion verbatim
+- `.claude-plugin/plugin.json` version no longer lags the package (0.3.0 -> 0.4.1)
+- Starter config comment now lists all six styles instead of three
+
+### Changed
+- Default `outputs.style`/`outputs.palette` are now `editorial`/`color` — the first personal edition now matches the look the demo sold (renderer stays `typewriter`)
+
+### Added
+- `build`, `demo`, `print`, and `render` JSON output now report `"pages"` — the page count of the produced PDF (null when no PDF is written)
+
+## [0.4.0] - 2026-06-11
+
+### Added
+- `morning-paper demo` — zero-config, zero-network, zero-key sample edition ("Port Anselm", fully fictional and labeled as such) rendered through the editorial style; ends with the print/make-it-yours/post-it share loop
+- Vendored Courier Prime (OFL) with runtime @font-face injection — offline-deterministic rendering, Google Fonts @import stripped at compose time
+- Ref-codes: kickers may carry a short code (`<span class="ref-code">R2</span>`) that runs in the page footer next to the folio — cite an article from anywhere in the paper
+- Desk-sheet component family (`ds-*`) in the editorial pack: ruled writing lines, zone heads, registration marks, pen-scale checkboxes
+- `.claude-plugin/marketplace.json` + hero README storefront (sample render above the fold, uvx try-it path, plugin install)
+- `doctor --json` and `doctor --strict`, with specific macOS pango failure detection and the exact fix printed
+
+### Changed
+- Honesty sweep: roadmap-command message tells the truth; unwired extras removed; Funding entry removed; defaults de-personalized (system timezone auto-detected, generic profile, sample feeds labeled)
+- docs/composing.md documents editorial, ref-codes, and desk-sheet vocabulary
+
+
+### Added
+- `morning-paper demo` — typeset the bundled fully synthetic sample edition (editorial style, color palette) with zero config, network, or keys; fails honestly with install hints when WeasyPrint is unavailable
+- Vendored Courier Prime Regular/Bold/Italic (SIL OFL 1.1, license shipped alongside) so typewriter typesetting is offline-deterministic — no Google Fonts fetch at render time
+- `.claude-plugin/marketplace.json` — the repo is now a one-plugin Claude Code marketplace: `/plugin marketplace add dmthepm/morning-paper`, then `/plugin install morning-paper@morning-paper`
+- `doctor --json` — machine-readable `{checks, renderer, status}` output for agents
+- `doctor --strict` — nonzero exit when the typewriter renderer is unavailable
+- `doctor` and `demo` now detect the macOS Pango load failure specifically and print the exact fix (`brew install pango gdk-pixbuf` plus the `DYLD_FALLBACK_LIBRARY_PATH` hint)
+- `init` now detects the machine's timezone from `/etc/localtime` instead of assuming the author's
+
+### Changed
+- README rebuilt as the storefront: hero edition image, try-it demo block (`uvx`), plugin install instructions, and a styles table
+- Reserved-command message (`remove`, `list`) now says plainly the verb is not implemented yet and links the roadmap, instead of citing a stale version
+- README documents the `jina` extractor's limits (anonymous tier, 40-second timeout, unsupported domains) and the pretty-stack requirement behind `stage`/`estimate` page numbers
+- ROADMAP marks `stage`/`add`, `queue`/`status`, `estimate`, vendored Courier Prime, and `doctor --json` as shipped
+
+### Removed
+- Unwired `[twitter]` and `[local]` extras from packaging (nothing imported them)
+- Funding URL from package metadata
+
+## [0.3.0] - 2026-06-11
+
+### Added
+- Agent-facing staging verbs: `stage <url|file>` (queues material for tomorrow's paper, answers with a page estimate), `queue` (staged items vs `page_budget`), `estimate <file.md>` (page count, nothing written) — all JSON; `add`/`status` are aliases
+- `editorial` style pack — the unified paper system (one document, continuous folios on the outside duplex corner, running section heads, separators instead of forced page breaks, CSS-drawn marks instead of fallback glyphs, one-red-moment color discipline)
+- Claude Code plugin: `setup` (cold-start interview -> config + private newsroom repo + morning routine) and `edition` (the daily editor pass) skills
+- `page_budget` config key; README "For Agents" quickstart
+
+
+## [0.2.1] - 2026-06-11
+
+### Added
+- `magazine` style pack — long-read essay page (serif body on the Palatino/Georgia chain, kicker/dek/byline header, pull quotes, raised-cap lede, end mark)
+- `zine` style pack — pocket how-to guide (half-letter page, marker display type, checkbox steps, command blocks, warning boxes; print 2-up on Letter for folding)
+
+### Fixed
+- Avoided a WeasyPrint crash on floated `::first-letter` (drop caps render as raised caps instead)
+
+## [0.2.0] - 2026-06-11
+
+### Added
+- `morning-paper render <file.md>` — typeset any markdown file through a style pack (`--style`, `--palette`, `--date`, `--slug`); the seam for agent-composed documents (see `docs/composing.md`)
+- `morning-paper styles` — list available styles and palettes as JSON
+- Style packs: `typewriter` (the newspaper), `flow` (continuous operator brief, no forced page breaks), `ops-card` (boxed reference one-pager)
+- Palettes: `mono` (laser, weight carries emphasis) and `color` (inkjet: warm ink, working red, data blue) — designed separately, selectable per render
+- Chart directives: `mp-bars`, `mp-spark`, `mp-stats` fenced blocks render to print-quality inline SVG / stat blocks (stdlib only); malformed data degrades to an honest placeholder
+- `outputs.style` and `outputs.palette` config keys
+- Real page footers (date, paper name, `Page N of M`) via CSS paged-media margin boxes on every style, including article print
+
+### Changed
+- Typewriter CSS moved out of template frontmatter into `resources/styles/typewriter.css`, re-tokenized onto shared palette variables
+- Masthead no longer hardcodes `AT HOME`; HN section heading now reflects the configured item count
+- Frontmatter `css:` is now an override; documents without it get the configured style pack instead of rendering unstyled
+
+### Removed
+- Private operator harness leftovers: `scripts/`, private fixtures/golden files, private runtime docs, stale `templates/` copies, and the internal script-map CLI commands (`pass1`–`digest`, `smoke`)
+- Dead Chromium-style `pdf_options` header/footer blocks (they never applied under WeasyPrint)
+- Article-specific extraction filters that could silently corrupt future articles
+
+## [0.1.4] - 2026-04-15
+
+### Changed
+- `doctor` now states plainly whether you are on the real typewriter print path or a fallback-only install
+- README install guidance now recommends `morning-paper[pretty]` as the primary product path
+- Platform messaging is now explicit: macOS/Linux are the main pretty-renderer targets, Windows is best-effort
+
+## [0.1.3] - 2026-04-15
+
+### Added
+- Real top-level CLI help with command descriptions, examples, config path, and docs link
+- PyPI version check in `morning-paper doctor`
+- Friendly roadmap guidance for planned commands like `add` and `status`
+
+### Changed
+- `morning-paper doctor` now surfaces upgrade guidance when a newer PyPI release exists
+- Unknown roadmap commands now point to `ROADMAP.md` instead of failing with a bare usage line
+
+## [0.1.2] - 2026-04-14
+
+### Added
+- Visual snapshot tests for the article page and newspaper front page
+- Explicit extractor registry and `article_extractor` config surface
+- `ROADMAP.md` and architecture notes for research-tool boundaries
+
+### Changed
+- Article print layout now preserves continuous reading order while keeping the approved page-one composition
+- X article metadata now comes from FxTwitter with avatar fallbacks
+- Jina article parsing now uses extractor-scoped helpers instead of mixing X-specific parsing into the generic render path
+- Print/image constants are grouped in `article_print.py` for easier tuning
+- Newspaper `typewriter` template now uses CSS custom properties instead of scattered magic values
+
+### Fixed
+- Silent bad-output fallback for the `typewriter` renderer
+- Broken or shell-like X article extracts now fail cleanly instead of producing garbage PDFs
+- Inline X/media images are trimmed and embedded more reliably in printed articles
+
+## [0.1.1] - 2026-04-14
+
+### Added
+- Content validation gate: rejects shell/timeout/short/fetch-error content before rendering
+- Clean error messages for failed article extraction
+- Python 3.10 compatibility fix (datetime.UTC → timezone.utc)
+- GitHub Actions CI and PyPI trusted publishing workflows
+
+### Fixed
+- Typewriter renderer now requires the pretty stack; no silent bad PDF fallback
+- Legacy private commands show clear guidance instead of crashing on public installs
+
+## [0.1.0] - 2026-04-14
+
+Initial public release.
+
+### Added
+- `morning-paper init` to create a starter config
+- `morning-paper build` to produce JSON, Markdown, HTML, and PDF outputs
+- `morning-paper print <url>` for one-off article printing
+- `morning-paper doctor` for install validation
+- `morning-paper --version`
+- `typewriter` renderer with optional `WeasyPrint` support
+- `portable` PDF fallback using `fpdf2`
+- Config validation for timezone, source limits, and output directory
+- Guard messages for internal-only commands when installed as a public package
+
+### Sources
+- Hacker News (no auth required)
+- RSS feeds (via `feedparser`)
+- Article URLs for one-off printing
+
+### Notes
+- The public package remains file-first and local-friendly
+- Richer print output is available through `morning-paper[pretty]`
