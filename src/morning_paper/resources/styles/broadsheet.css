@@ -60,7 +60,9 @@ body {
   color: var(--mp-ink);
   background: var(--mp-paper);
 }
-p { margin-bottom: 0.11in; orphans: 3; widows: 3; }
+/* orphans/widows now come from _base.css (the shared taste layer), promoted
+ * there so all four packs get them; this pack keeps only its margin. */
+p { margin-bottom: 0.11in; }
 code { font-family: var(--ed-mono); font-size: 0.92em; }
 /* fenced code blocks: bordered, smaller mono, pre-wrap — merged from the
  * retired magazine pack (0.4.3) so a how-to's most instructional moment
@@ -92,8 +94,9 @@ li { line-height: 1.5; margin-bottom: 0.03in; }
 .strip-value { font-family: var(--ed-serif); font-size: 8.5pt; line-height: 1.35; margin-top: 0.02in; }
 .strip-value.alert { font-weight: 700; color: var(--mp-alert); }
 
-/* ---- article header family ---- */
-.article-head { break-inside: avoid; }
+/* ---- article header family ----
+ * .article-head { break-inside: avoid } and the head-chain break-after now
+ * live in _base.css (the shared taste layer), so every pack glues its heads. */
 .mg-kicker, .dept-kicker {
   font-family: var(--ed-sans); font-size: 8pt; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.16em; color: var(--mp-ink);

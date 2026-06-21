@@ -45,6 +45,8 @@ Commands:
                     staged pages, the sender gets a confirmation (--dry-run)
   queue             Show what's staged vs the page budget (JSON)
   estimate <file>   Page count for a markdown file, nothing written
+  review <edition>  Editorial QC on a finished edition — warnings, never fails
+                    (--json, --strict, --verbose, --explain CHECK)
   styles            List available styles and palettes
   routine           Schedule the daily edition (install [--time HH:MM]
                     [--command CMD] [--workdir PATH] | status | uninstall) —
@@ -788,6 +790,123 @@ def estimate_command(args: list[str]) -> int:
     return 0
 
 
+def _latest_edition_path(config: MorningPaperConfig) -> Path | None:
+    """The most recent edition directory under outputs.directory (by date name).
+
+    Editions live at outputs.directory/<YYYY-MM-DD>/ (and per-slug subdirs for
+    render/print). Pick the newest date dir that holds a markdown file.
+    """
+    base = config.outputs.directory
+    if not base.is_dir():
+        return None
+    date_dirs = sorted(
+        (d for d in base.iterdir() if d.is_dir() and re.match(r"\d{4}-\d{2}-\d{2}$", d.name)),
+        reverse=True,
+    )
+    for d in date_dirs:
+        if any(d.glob("*.md")):
+            return d
+        # render/print write into a per-slug subdir
+        for sub in sorted(d.iterdir()):
+            if sub.is_dir() and any(sub.glob("*.md")):
+                return sub
+    return None
+
+
+def review_command(args: list[str]) -> int:
+    from .reviewers import explain, load_preferences, render_human, run_review
+
+    usage = (
+        "usage: morning-paper review [<edition-dir|file|date>] "
+        "[--json] [--strict] [--verbose] [--explain CHECK] [--config PATH]"
+    )
+    config_path = DEFAULT_CONFIG_PATH
+    as_json = False
+    strict = False
+    verbose = False
+    explain_check: str | None = None
+    target: str | None = None
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--json":
+            as_json = True
+            index += 1
+            continue
+        if arg == "--strict":
+            strict = True
+            index += 1
+            continue
+        if arg == "--verbose":
+            verbose = True
+            index += 1
+            continue
+        if arg == "--explain" and index + 1 < len(args):
+            explain_check = args[index + 1]
+            index += 2
+            continue
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg.startswith("-"):
+            print(f"unknown review argument: {arg}", file=sys.stderr)
+            return 2
+        if target is not None:
+            print("review takes at most one edition path or date", file=sys.stderr)
+            return 2
+        target = arg
+        index += 1
+
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+
+    # resolve the edition: an explicit path, a date (→ outputs.directory/date),
+    # or the latest edition when nothing is given
+    edition_path: Path | None = None
+    if target:
+        candidate = Path(target).expanduser()
+        if candidate.exists():
+            edition_path = candidate
+        elif re.match(r"\d{4}-\d{2}-\d{2}$", target):
+            edition_path = config.outputs.directory / target
+        else:
+            print(f"no such edition: {target}", file=sys.stderr)
+            return 1
+    else:
+        edition_path = _latest_edition_path(config)
+        if edition_path is None:
+            print(
+                "no edition found to review — pass an edition path or date, "
+                f"or build one first (looked under {config.outputs.directory})",
+                file=sys.stderr,
+            )
+            return 1
+
+    prefs = load_preferences(edition_path)
+    report = run_review(edition_path, prefs=prefs)
+
+    # exit 0 by default ALWAYS; --strict makes a flag (and only a flag) exit 1
+    exit_code = 0
+    if strict and report["summary"].get("flag", 0):
+        exit_code = 1
+
+    if explain_check:
+        print(explain(report, explain_check))
+        return exit_code
+    if as_json:
+        print(json.dumps(report, indent=2))
+        return exit_code
+    print(render_human(report, verbose=verbose).rstrip())
+    return exit_code
+
+
 def print_help() -> int:
     print(HELP_TEXT.rstrip())
     return 0
@@ -823,6 +942,8 @@ def main(argv: list[str] | None = None) -> int:
         return queue_command(extra)
     if command == "estimate":
         return estimate_command(extra)
+    if command == "review":
+        return review_command(extra)
     if command == "styles":
         return styles_command()
     if command == "routine":

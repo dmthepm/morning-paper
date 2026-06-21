@@ -83,6 +83,105 @@ class StyleFamilyTest(unittest.TestCase):
                 self.assertEqual(compose_css(alias, "mono"), compose_css(canonical, "mono"), alias)
 
 
+class BaseTasteLayerTest(unittest.TestCase):
+    """0.6.0 layout-primitives spec Phase 1: the shared keep-together base sheet.
+
+    The base supplies orphans/widows, head-glue, atomic-furniture keeps, and
+    tasteful split seams to ALL four packs; it is composed FIRST so each pack's
+    own rules still win on source order (broadsheet's look is unchanged).
+    """
+
+    def test_base_sheet_resource_exists(self) -> None:
+        from importlib import resources
+
+        base = resources.files("morning_paper").joinpath("resources", "styles", "_base.css")
+        self.assertTrue(base.is_file())
+
+    def test_base_is_composed_first_then_palette_then_pack(self) -> None:
+        # the three sheets in cascade order: _base + palette + pack
+        css = compose_css("broadsheet", "color")
+        i_base = css.find("the shared taste layer")  # _base.css header phrase
+        i_palette = css.find("--mp-")  # palette tokens declare --mp-* first
+        i_pack = css.find("THE unified Morning Paper system")  # broadsheet.css header
+        self.assertGreaterEqual(i_base, 0)
+        self.assertGreaterEqual(i_palette, 0)
+        self.assertGreaterEqual(i_pack, 0)
+        self.assertLess(i_base, i_palette, "base must precede palette")
+        self.assertLess(i_palette, i_pack, "palette must precede the pack")
+        # @font-face still leads (vendored fonts before any selector)
+        i_font = css.find("@font-face")
+        self.assertTrue(0 <= i_font < i_base, "font-face must precede the base sheet")
+
+    def test_all_four_packs_carry_the_keep_together_contract(self) -> None:
+        # the regression Phase 1 closes: brief/field-card/zine had NO
+        # orphans/widows and no head-glue; now every pack does.
+        for style in STYLES:
+            css = compose_css(style, "mono")
+            self.assertIn("orphans: 3; widows: 3", css, style)
+            self.assertIn("break-after: avoid; page-break-after: avoid", css, style)
+            self.assertIn(
+                ".article-head { break-inside: avoid; page-break-inside: avoid; }", css, style
+            )
+            self.assertIn("box-decoration-break: clone", css, style)
+
+    def test_base_uses_only_soft_breaks_no_forced_page_break(self) -> None:
+        # doctrine guardrail: the default tier never forces a page; forced
+        # breaks stay each pack's own documented .page-break escape hatch.
+        from importlib import resources
+
+        import re
+
+        base = resources.files("morning_paper").joinpath(
+            "resources", "styles", "_base.css"
+        ).read_text(encoding="utf-8")
+        # strip /* … */ comments so we test the actual CSS, not the prose that
+        # names the quirks it avoids
+        rules = re.sub(r"/\*.*?\*/", "", base, flags=re.DOTALL)
+        self.assertNotIn("break-before: page", rules)
+        self.assertNotIn("page-break-before: always", rules)
+        # never the banked crash/no-op CSS
+        self.assertNotIn("box-shadow", rules)
+        self.assertNotIn("float", rules)
+
+    def test_base_keeps_furniture_atomic(self) -> None:
+        css = compose_css("brief", "color")
+        for selector in (".mp-chart", ".mp-stat", ".move", ".action-required", "table.data tr", "blockquote"):
+            self.assertIn(selector, css, selector)
+
+    @unittest.skipUnless(_pretty_stack_ready(), "render requires the pretty print stack (weasyprint)")
+    def test_broadsheet_default_look_unchanged_by_base(self) -> None:
+        # The base is composed first, so equal-specificity pack rules win by
+        # source order. The demo edition (broadsheet/color) must lay out
+        # identically: same page count and same content placement per page.
+        from importlib import resources
+
+        from morning_paper.renderers import _load_weasyprint, _render_html_from_markdown
+
+        md = resources.files("morning_paper").joinpath("resources", "demo.md").read_text(encoding="utf-8")
+        html_cls, _ = _load_weasyprint()
+        doc = html_cls(string=_render_html_from_markdown(md, style="broadsheet", palette="color")).render()
+        # the broadsheet demo is a stable 2-page edition; the base must not
+        # reflow it (the keep rules only newly affect the OTHER three packs).
+        self.assertEqual(len(doc.pages), 2)
+
+    @unittest.skipUnless(_pretty_stack_ready(), "render requires the pretty print stack (weasyprint)")
+    def test_over_tall_kept_block_fails_soft(self) -> None:
+        # fail-soft contract: a kept block taller than a page must flow, not
+        # produce blank/infinite pages. A huge atomic table degrades cleanly.
+        rows = "\n".join(
+            f'<tr><td>row {n} with enough text to take real vertical space on the page</td></tr>'
+            for n in range(400)
+        )
+        markdown = (
+            '<span class="mp-footer-name">Soft</span>\n\n'
+            '<table class="data">' + rows + "</table>\n"
+        )
+        pages = count_pages(markdown, style="broadsheet", palette="mono")
+        # finite and plural — it flowed across pages rather than hanging
+        self.assertGreater(pages, 1)
+        self.assertLess(pages, 50)
+
+
 class ConfigStyleValidationTest(unittest.TestCase):
     def _load_style(self, style: str) -> str:
         with tempfile.TemporaryDirectory() as tmp:
