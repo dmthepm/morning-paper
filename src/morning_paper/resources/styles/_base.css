@@ -1,0 +1,66 @@
+/* Style pack: _base — the shared taste layer, composed BEFORE every pack.
+ *
+ * This is the layout-primitives spec's Phase 1 (the default tier): the ~85%
+ * of "good layout" that ships as CSS the composer never touches. It gives ALL
+ * FOUR packs (broadsheet, brief, field-card, zine) the keep-together craft
+ * that, until 0.6.0, lived only — and only partially — in broadsheet.
+ *
+ * Composition order is the whole trick. `compose_css` lays this sheet down
+ * FIRST, so any pack rule wins on equal specificity by source order. The four
+ * packs therefore keep their exact current look; the base only supplies
+ * (a) defaults a pack already happened to set, now centralized, and
+ * (b) the keep-together behavior the other three packs lacked.
+ *
+ * Everything here is CSS the shipped WeasyPrint 68.1 path already supports
+ * (break-*, orphans, widows, box-decoration-break). The banked WeasyPrint
+ * quirks are respected: no box-shadow, no floated ::first-letter, CSS is
+ * ignored on inline-SVG so keep-together reaches the chart WRAPPER never the
+ * SVG, and there are no forced page breaks (break-before: page) here — the
+ * default tier uses only SOFT avoids. The single sanctioned forced break stays
+ * each pack's own documented `.page-break` escape hatch.
+ *
+ * FAIL-SOFT CONTRACT: every keep here is a PREFERENCE, not an impossible
+ * guarantee. WeasyPrint gracefully drops a `break-inside: avoid` on a block
+ * taller than one page — content flows normally, no clip, no overflow, no
+ * blank pages. We lean on that default: an over-tall kept unit degrades to a
+ * clean break at the least-bad internal seam rather than shoving a chain to
+ * the next page and stranding a half-empty one.
+ */
+
+/* 1. Heads never strand at a page foot — bind the head to what follows.
+ *    break-after must chain through EVERY element of the head, or the break
+ *    falls one element later (a head-only break-after strands head+byline).
+ *    These classes are already emitted by the renderer (.article-head wraps
+ *    .dept-title/.mg-byline etc.), so every head the engine generates
+ *    auto-glues with no renderer change. */
+.article-head,
+.mg-title, .dept-title,
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+.mg-kicker, .dept-kicker,
+.mg-dek, .mg-byline { break-after: avoid; page-break-after: avoid; }
+
+/* 2. The head box itself stays whole (already true in broadsheet; promoted
+ *    here so every pack gets it). */
+.article-head { break-inside: avoid; page-break-inside: avoid; }
+
+/* 3. Min lines at a seam — promoted from broadsheet-only to ALL packs.
+ *    orphans/widows: 3 means at least three lines ride together across any
+ *    page break, so the head carries its first sentences onto the new page and
+ *    no single line dangles at a page top. (Verified :3, not :2.) */
+p { orphans: 3; widows: 3; }
+
+/* 4. Atomic furniture never tears: charts, stats, cards, callouts, quotes,
+ *    table rows, and the honesty/truncation box all stay whole. Reaches the
+ *    chart WRAPPER (.mp-chart), never the inline SVG inside it. */
+.mp-chart, .mp-stat, .move, .action-required,
+table.data tr, .trunc-notice,
+blockquote { break-inside: avoid; page-break-inside: avoid; }
+
+/* 5. Split blocks look finished: when a ruled callout / card / pull-quote is
+ *    genuinely too tall to keep whole and must split, redraw its border and
+ *    padding on both fragments instead of amputating one edge. WeasyPrint 68.1
+ *    supports box-decoration-break (backgrounds excepted). */
+.move, .action-required, .mg-pull, blockquote {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

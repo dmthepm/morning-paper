@@ -54,7 +54,21 @@ paper.
    <their palette> --date <today> --slug edition`.
 7. **QA.** Rasterize page 1 + one inner page (`pdftoppm -png -r 60`) and look:
    no overflow, no missing glyphs (tofu), footers present.
-8. **Deliver.** Their saved print command (duplex flag and all), or just hand
+8. **Editorial review.** Run the copy desk over the finished edition before it
+   ships: `morning-paper review <edition-dir> --json`. It reads the composed
+   artifacts and returns editorial findings (long/label headlines, lopsided or
+   dead sections, duplicate stories, stale leads) with `location` + `hint`. It
+   never fails the build — exit is always 0; the JSON `status` is the signal:
+   - `clean` → ship.
+   - `notes` (only info/nudge) → ship; you may fold the one-line nudge summary
+     into the delivery note.
+   - `review` (≥1 `flag`) → revise the flagged headline/section using the
+     finding's `hint`, then re-render and re-review. This is guidance, not a
+     gate; if a flag is wrong for this paper, accept it and ship — or mute it
+     in `preferences/checks.yaml` so tomorrow's review stays quiet. The newsroom
+     `preferences/checks.yaml`, when present, already tunes thresholds and
+     mutes; `review` reads it automatically.
+9. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. Archive markdown + html into `editions/<date>/`.
 
 ## Voice

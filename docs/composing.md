@@ -23,6 +23,101 @@ Body type for the whole paper scales with `outputs.font_scale` in config
 (0.8 compact to 1.5 large print, default 1.0); every style pack's base body
 size multiplies by it.
 
+## The taste layer (free, every pack, zero markup)
+
+A well-composed document — headline, byline, prose, a chart — typesets cleanly
+in any of the four packs with **no layout markup**. A shared base stylesheet
+(`resources/styles/_base.css`), composed before each pack, gives all four the
+same keep-together craft:
+
+- **Heads never strand at a page foot.** The kicker → title → deck → byline
+  chain glues to the body that follows (`break-after: avoid`), and the head box
+  stays whole (`break-inside: avoid`). These attach to the classes the renderer
+  already emits (`.article-head`, `.mg-title`/`.dept-title`, `h1`–`h3`), so you
+  get it for free — there is nothing to turn on.
+- **No single dangling line.** `orphans: 3; widows: 3` keeps at least three
+  lines together across any break, so a headline carries its first sentences
+  onto the new page and no lone line sits at a page top.
+- **Atomic furniture never tears.** Charts, stat blocks, callouts, pull-quotes,
+  and table rows stay whole (`break-inside: avoid`).
+- **Split blocks look finished.** When a bordered callout or quote is genuinely
+  too tall to keep whole, both fragments redraw their border and padding
+  (`box-decoration-break: clone`) instead of one edge being amputated.
+
+**Fail-soft is the contract.** Every keep is a *preference*, not an impossible
+guarantee. If honoring a keep would be worse than breaking — a block taller
+than the text column — WeasyPrint flows it normally rather than shoving a chain
+to the next page and stranding a half-empty one. You never get a clipped or
+blank page from the taste layer; over-tall content degrades to a clean break at
+the least-bad internal seam.
+
+Because the base is composed first, each pack's own rules still win by source
+order — the four packs keep their exact look. The base only adds the
+keep-together behavior brief/field-card/zine previously lacked; broadsheet's
+default look is unchanged.
+
+## Reviewing a finished edition
+
+`morning-paper review <edition>` reads a composed edition and emits **editorial
+warnings, never hard fails** — the copy desk's last read before it prints. It
+is the editorial twin of `doctor`: `doctor` answers "does it render", `review`
+answers "is it good enough to run".
+
+```bash
+morning-paper review ~/.local/share/morning-paper/2026-06-21   # a date dir
+morning-paper review draft-edition.md --json                   # one file
+morning-paper review --strict                                  # latest edition, CI gate
+morning-paper review 2026-06-21 --explain headline-line-count  # the threshold math
+```
+
+- Pass an edition directory, the composed markdown (or JSON) file, or a date;
+  with no argument it reviews the latest edition under `outputs.directory`.
+- Exit code is **0 by default, always.** `--strict` makes a `flag` (and only a
+  `flag`) exit 1 — for CI. `info`/`nudge` never affect exit.
+- `--json` prints the full report; the default human output leads with flags
+  and is one quiet line when clean. `--verbose` shows info; `--explain CHECK`
+  prints the numbers and their provenance.
+
+The eight checks, all text-only (they run even on a fallback-only install):
+
+| Check | Severity | Flags |
+|---|---|---|
+| `headline-line-count` | flag | a head estimated to wrap 3+ lines at the pack's measure |
+| `headline-length` | nudge | a head over ~60 characters |
+| `headline-verb-presence` | flag | a label head with no finite verb |
+| `hed-dek-redundancy` | nudge | a deck that echoes ≥50% of the head's words |
+| `section-balance` | nudge | a section >2.5× the median, or one lonely item next to fat ones |
+| `empty-or-sparse-section` | nudge | a heading over no real content |
+| `duplicate-headline` | nudge | the same story twice (URL or near-identical title) |
+| `stale-dateline` | info | a lead item materially older than the edition date |
+
+`review` complements the taste layer — it never re-checks what the CSS already
+prevents (orphan/widow *lines*, stranded heads). It catches the residue CSS
+cannot fix: a head that still wraps because the *words* are long, a starved or
+dead section, a stale or duplicate story.
+
+A newsroom's `preferences/checks.yaml` (when present) tunes the checks — the
+file is read automatically, never written by `review`:
+
+```yaml
+version: 1
+thresholds:
+  headline-line-count:
+    warn_at_lines: 2            # run tighter than the default 3
+    per_pack: { zine: 3 }       # a zine tolerates a louder, longer head
+  headline-length:
+    nudge_at: 50
+mute:
+  - check: headline-length
+    when: { section: "Field Notes" }   # field notes run long on purpose
+  - check: stale-dateline
+    scope: global                       # I read evergreens; age is fine
+```
+
+Every finding reports `threshold.source` (`default` or `user`) so a tuned rule
+is transparent in origin. The learned-feedback loop (`--learn`) and the
+geometry checks (a render pass) are deferred to later phases.
+
 ## Styles
 
 The family is four packs, each a print genre with one job:

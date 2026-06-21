@@ -170,8 +170,23 @@ def get_palette(name: str) -> Palette:
         raise StyleError(f"unknown palette: {name} (available: {', '.join(sorted(PALETTES))})") from None
 
 
+# The shared taste layer (layout-primitives spec Phase 1): keep-together,
+# orphans/widows, atomic furniture, tasteful split seams. Composed FIRST so
+# every pack's own rules win on equal specificity by source order — the four
+# packs keep their exact look; the three that lacked keep-together gain it.
+_BASE_CSS_RESOURCE = "styles/_base.css"
+
+
 def compose_css(style: str = "broadsheet", palette: str = "mono", *, font_scale: float = 1.0) -> str:
-    """Palette tokens first, then the style sheet that consumes them.
+    """Base taste layer, then palette tokens, then the style sheet.
+
+    The composition is three sheets in cascade order:
+        _base.css  +  palette sheet  +  style pack  [ + trailing :root scale ]
+    `_base.css` is the shared keep-together / orphans-widows / atomic-furniture
+    layer; because it is laid down first, any pack rule overrides it by source
+    order, so the packs keep their exact current look and the only behavioral
+    change is brief/field-card/zine gaining the widow/keep control broadsheet
+    already had.
 
     Google Fonts @import lines in the shipped sheets are stripped and replaced
     with @font-face rules over the vendored files: no network at render time.
@@ -186,7 +201,13 @@ def compose_css(style: str = "broadsheet", palette: str = "mono", *, font_scale:
         )
     style_pack = get_style(style)
     palette_pack = get_palette(palette)
-    css = _resource_text(palette_pack.css_resource) + "\n" + _resource_text(style_pack.css_resource)
+    css = (
+        _resource_text(_BASE_CSS_RESOURCE)
+        + "\n"
+        + _resource_text(palette_pack.css_resource)
+        + "\n"
+        + _resource_text(style_pack.css_resource)
+    )
     css = _GOOGLE_FONTS_IMPORT.sub("", css)
     composed = _font_face_css() + css
     if font_scale != 1.0:

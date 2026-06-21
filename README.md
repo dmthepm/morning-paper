@@ -91,6 +91,10 @@ newsroom repo, first edition, daily loop). Otherwise:
    - `morning-paper queue` -> what's staged vs the page budget
    - `morning-paper estimate <file.md>` -> page count, nothing written
    - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
+   - `morning-paper review <edition>` -> editorial QC on a finished edition
+     (long/label headlines, lopsided or dead sections, duplicate stories,
+     stale leads) as JSON warnings — never fails the build; `--strict` makes a
+     flag exit nonzero for CI. Run it after `render`, before delivery
    - `morning-paper routine install|status|uninstall` -> schedule the daily
      edition as a headless `claude -p` run (the scheduling ladder, below);
      `status` answers "did the paper build this morning?" in JSON
@@ -119,7 +123,10 @@ newsroom repo, first edition, daily loop). Otherwise:
 - Stages material for tomorrow's edition against a page budget
   (`stage`, `queue`, `estimate`)
 - Typesets any markdown file through four print style packs with
-  `morning-paper render`
+  `morning-paper render` — with a shared taste layer (keep-together heads,
+  orphan/widow control, atomic furniture) free in every pack
+- Reviews a finished edition for editorial problems CSS can't fix with
+  `morning-paper review` — warnings, never a hard fail
 - Renders charts from plain-text directives (`mp-bars`, `mp-spark`,
   `mp-stats`) as inline SVG — stdlib only, no plotting library
 - Works without an LLM key
