@@ -1,14 +1,17 @@
 # Collectors — bring your own sources
 
-Morning Paper ships small starter inputs, including **RSS feeds** and optional
-**Hacker News**. They are there so the engine can prove the paper path without
-asking for credentials. They are not the product identity.
+Morning Paper works best when it starts from the reader's existing source
+stack: email, newsletters, Slack or Discord, GitHub, Linear, Main Branch,
+RSS/Substack feeds, local folders, Obsidian vaults, social exports, YouTube or
+podcast history, browser/API scrape outputs, and files agents already produce.
+The built-in demo proves the paper path without credentials; the product is the
+reader's own newsroom.
 
-A **collector** is how you add anything else — a subreddit digest, your GitHub
-activity, a local social export, a weekly research roundup, a folder of notes,
-whatever earns a place on your desk. This page is the contract a collector has
-to honor. Write to it and your source flows into the same edition queue, through
-the same renderer, under the same page budget.
+A **collector** is how any of that enters the paper — a work digest, a saved
+thread, a local social export, a weekly research roundup, a folder of notes, or
+whatever else earns a place on your desk. This page is the contract a collector
+has to honor. Write to it and your source flows into the same edition queue,
+through the same renderer, under the same page budget.
 
 ## What a collector is
 

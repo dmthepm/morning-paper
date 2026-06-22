@@ -238,11 +238,11 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
 def _source_next_actions(sources: list[dict[str, object]], newsroom_info: dict[str, object] | None) -> list[str]:
     actions: list[str] = []
     enabled_rss = [item for item in sources if item.get("type") == "rss" and item.get("enabled")]
-    hacker_news = next((item for item in sources if item.get("id") == "hacker_news"), None)
     if not enabled_rss:
-        actions.append("Add one RSS or newsletter feed if the reader already has one.")
-    if hacker_news and not hacker_news.get("enabled"):
-        actions.append("Leave Hacker News disabled unless the reader asks for a technical radar.")
+        actions.append(
+            "Name one source the reader already uses: email/newsletter, Slack, GitHub, Linear, "
+            "local folder, social export, video feed, RSS feed, or saved file."
+        )
     if newsroom_info is None:
         actions.append("Pass --newsroom <path> to inventory private collectors and the local drop folder.")
         return actions
@@ -332,8 +332,16 @@ def source_inventory(
         "count": len(sources),
         "source_model": {
             "posture": "reader_stack_first",
-            "starter_inputs": ["rss", "hacker_news"],
-            "reader_owned_inputs": ["local_drop", "collectors", "stage", "inbox"],
+            "starter_inputs": ["local_drop", "stage", "rss_or_feed_url", "inbox"],
+            "reader_owned_inputs": [
+                "local_drop",
+                "collectors",
+                "stage",
+                "inbox",
+                "exports",
+                "work_systems",
+                "social_and_video_feeds",
+            ],
             "rule": "meet sources where they already live; do not force the reader into a new system",
         },
         "collector_contract": {

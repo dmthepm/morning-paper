@@ -8,8 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 - Thinned the README and source/routine docs around the real product contract:
-  Hacker News is an optional starter, extractor backends are replaceable
-  plumbing, and recurring runs should prefer host-native primitives (Codex
+  sources should start from the reader's work streams, personal feeds, local
+  knowledge, exports, folders, and tools; extractor backends are replaceable
+  plumbing; and recurring runs should prefer host-native primitives (Codex
   Automations, Claude Code routines, ChatGPT scheduled tasks) with the CLI
   routine kept as an explicit local fallback.
 
@@ -92,9 +93,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `morning-paper doctor --strict`, run `morning-paper demo --open`, then install
   the Claude Code or Codex plugin and let the `setup` skill create the private
   newsroom.
-- **Hacker News is an optional starter source, not the product identity.**
-  Source docs and scaffolded `SOURCES.md` frame HN as a starter technical radar
-  only; the real source model is local-folder-first and collector-backed.
+- **Sources are reader-stack-first.** Source docs and scaffolded `SOURCES.md`
+  now frame the paper around work streams, personal feeds, local knowledge,
+  exports, folders, and collector-backed tools the reader already uses.
 - **Date semantics are explicit.** Edition collectors target the edition date;
   ad hoc `stage` remains "read this later" and defaults to tomorrow.
 - **Visuals gained print guardrails.** Built-in `mp-bars`, `mp-spark`, and

@@ -63,6 +63,8 @@ class EditionWorkspaceTest(unittest.TestCase):
                 self.assertTrue((edition_dir / filename).exists(), filename)
 
             source_inventory = json.loads((edition_dir / "source-inventory.json").read_text(encoding="utf-8"))
+            self.assertEqual(source_inventory["source_model"]["posture"], "reader_stack_first")
+            self.assertIn("work_systems", source_inventory["source_model"]["reader_owned_inputs"])
             self.assertEqual(source_inventory["sources"][0]["id"], "hacker_news")
             self.assertEqual(source_inventory["sources"][0]["status"], "disabled")
             self.assertEqual(source_inventory["newsroom"]["status"], "configured")

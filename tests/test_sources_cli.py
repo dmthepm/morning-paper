@@ -73,7 +73,10 @@ class SourcesCliTest(unittest.TestCase):
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["count"], 4)
         self.assertEqual(payload["source_model"]["posture"], "reader_stack_first")
+        self.assertIn("rss_or_feed_url", payload["source_model"]["starter_inputs"])
         self.assertIn("local_drop", payload["source_model"]["reader_owned_inputs"])
+        self.assertIn("work_systems", payload["source_model"]["reader_owned_inputs"])
+        self.assertIn("social_and_video_feeds", payload["source_model"]["reader_owned_inputs"])
         self.assertEqual(payload["sources"][0]["id"], "hacker_news")
         self.assertEqual(payload["sources"][0]["role"], "optional_starter")
         self.assertEqual(payload["sources"][0]["status"], "disabled")
@@ -81,6 +84,23 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(payload["sources"][1]["status"], "configured")
         self.assertIn("morning-paper stage", payload["collector_contract"]["command"])
         self.assertIn("Pass --newsroom", " ".join(payload["next_actions"]))
+
+    def test_sources_list_suggests_whole_source_stack_when_no_feeds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            self.assertEqual(cli.main(["init", "--config", str(config_path)]), 0)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["sources", "list", "--config", str(config_path)])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        next_actions = " ".join(payload["next_actions"])
+        self.assertIn("Slack", next_actions)
+        self.assertIn("GitHub", next_actions)
+        self.assertIn("Linear", next_actions)
+        self.assertIn("video feed", next_actions)
+        self.assertNotIn("Hacker News", next_actions)
 
     def test_sources_list_can_include_newsroom_collectors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

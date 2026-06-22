@@ -39,9 +39,10 @@ The product promise stays narrow:
   or rejected over time.
 - The edition skill has the editor model, source collection, review, return
   path, and durable intermediate files for interruption recovery.
-- The source model is reader-stack-first: RSS and Hacker News are optional
-  starter inputs, and everything else can arrive through collectors or host
-  agent workflows that stage markdown for a specific edition date.
+- The source model is reader-stack-first: work streams, personal feeds, local
+  knowledge, exports, folders, and agent/tool outputs can all arrive through
+  feeds, collectors, host-agent workflows, or staged markdown for a specific
+  edition date.
 - `doctor --strict` proves actual layout for the production print path.
 - The chart furniture now has renderer-level guardrails: built-in `mp-bars`,
   `mp-spark`, and `mp-stats` align with the available measure, cap print
@@ -97,7 +98,8 @@ Acceptance:
 - the agent validates feeds when possible and labels full-text versus summary;
 - source inventory includes local newsroom collectors when a newsroom path is
   provided;
-- HN is presented as an optional starter source, not the product identity;
+- source guidance covers work streams, personal feeds, local folders, exports,
+  and tools the reader already uses;
 - skipped or credentialed sources have a clear next action;
 - local folder/drop-folder ingestion is available as a collector recipe.
 
@@ -183,13 +185,15 @@ Morning Paper owns:
 
 ## Source Model
 
-Starter inputs:
+Entry points:
 
-- RSS feeds, including full-text feeds when `content:encoded` is present;
-- optional Hacker News starter source;
+- local drop folder for files the reader or an agent already has;
 - `stage` for one URL or file;
+- RSS/feed URLs, including full-text feeds when `content:encoded` is present;
 - contributor inbox;
-- queue/status.
+- queue/status for budget-aware inspection;
+- private collectors for work tools, personal feeds, local exports, and
+  reader-owned data stores.
 
 Private newsroom collectors and host-agent workflows:
 

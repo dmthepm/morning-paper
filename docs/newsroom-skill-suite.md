@@ -112,7 +112,7 @@ It should record source purpose and trust before volume. A source is not
 Before shipping new skills, create realistic eval prompts:
 
 - "Install this for my nontechnical friend and stop when the demo PDF is open."
-- "My paper feels too long and too Hacker News heavy; tune tomorrow's edition."
+- "My paper feels too long and too tilted toward one source; tune tomorrow's edition."
 - "Add my Obsidian project folder and a local Twitter export as sources."
 - "The chart on page one wasted space; make visuals fit the surrounding copy."
 - "I marked up today's desk sheet; update my paper's taste without overfitting."

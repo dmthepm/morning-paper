@@ -51,8 +51,9 @@ def _state(root: Path, *, name: str) -> dict[str, object]:
             "codex": "unknown",
         },
         "source_choices": {
-            "hacker_news": "ask",
-            "rss": [],
+            "work_streams": [],
+            "personal_feeds": [],
+            "local_folders": [],
             "collectors": ["local-drop"],
             "inbox": "ask",
         },
@@ -94,8 +95,9 @@ def _setup_status_markdown(state: dict[str, object]) -> str:
 - Codex: {plugin.get("codex", "unknown")}
 
 ## Source Choices
-- Hacker News: {sources.get("hacker_news", "")}
-- RSS: {", ".join(str(item) for item in sources.get("rss", []) or [])}
+- Work streams: {", ".join(str(item) for item in sources.get("work_streams", []) or [])}
+- Personal feeds: {", ".join(str(item) for item in sources.get("personal_feeds", []) or [])}
+- Local folders / exports: {", ".join(str(item) for item in sources.get("local_folders", []) or [])}
 - Collectors: {", ".join(str(item) for item in sources.get("collectors", []) or [])}
 - Inbox: {sources.get("inbox", "")}
 
@@ -351,22 +353,21 @@ place, how often it should be checked, and what to do when it fails.
 | Source | Type | Purpose | Cadence | Trust | Section | Status |
 |---|---|---|---|---|---|---|
 | Local drop | folder | Anything the reader or an agent saves | daily | reader-owned | Reading / The Read | configured |
-| RSS | feed | Full-text reads and newsletters | daily | source-specific | Reading | ask |
-| Hacker News | starter | Optional technical radar | ask | mixed | optional | ask |
+| Work streams | tools / exports | Email, Slack, GitHub, Linear, Main Branch, or other operating systems | daily | source-specific | Work / Open Loops | ask |
+| Personal feeds | feeds / exports | Newsletters, RSS, Twitter/X, YouTube, podcasts, blogs, or social/video history | daily/weekly | source-specific | Reading / Taste | ask |
+| Local knowledge | folders / vaults | Obsidian, synced notes, reports, PDFs, CSVs, JSON, screenshots, or agent-produced files | daily/as needed | reader-owned | The Read / Reference | ask |
 
 ## Backlog
 
-- YouTube export or watch history.
-- Instagram/TikTok/X export or local scraper output.
-- Email newsletters via feed, IMAP, MCP, or exported files.
-- Slack/Discord/work chat summaries.
-- Main Branch facts, bets, pushes, and open loops.
-- Obsidian vault or synced notes folder.
+- Calendar, unread email, newsletters, and contributor messages.
+- Slack, Discord, GitHub, Linear, Notion, project repos, or Main Branch.
+- YouTube, podcast, Substack/RSS, Twitter/X, Instagram, TikTok, or local social exports.
+- Obsidian vaults, synced folders, PDFs, CSVs, JSON dumps, screenshots, and agent reports.
 
 ## Source Health
 
 Run `morning-paper sources check --newsroom .` during setup and when a source
-changes. It reports starter inputs, reader-owned collectors, the local drop
+changes. It reports configured inputs, reader-owned collectors, the local drop
 folder, and suggested next actions. If a source fails, record the next action
 here instead of hiding the failure in chat.
 
@@ -436,7 +437,7 @@ YYYY-MM-DD - accepted/rejected - feedback - file changed - why
 ## Entries
 
 <!-- Example:
-2026-06-22 - accepted - "less Hacker News" - SOURCES.md + algorithm-prior.yaml - HN is a starter source, not the paper identity.
+2026-06-22 - accepted - "source mix should feel like my whole life, not one feed" - SOURCES.md + algorithm-prior.yaml - Balance work streams, personal feeds, local knowledge, and intentional reading.
 -->
 """,
         "specs/_template.md": """# Section: <name>

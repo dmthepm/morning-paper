@@ -295,7 +295,7 @@ page_budget: 20
 
 sources:
   hacker_news:
-    # Optional starter technical radar. Leave off unless the reader asks for it.
+    # Legacy built-in public feed. Leave off unless the reader explicitly asks.
     enabled: false
     limit: 20
   # Add feeds the reader already follows. Full-text feeds (those that ship the

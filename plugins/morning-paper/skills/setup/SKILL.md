@@ -61,12 +61,12 @@ Ask in 2-3 messages, not twenty. Capture:
 - **Who they are / what they run** — work, projects, what "useful every morning"
   means to them. This seeds `profile` in config.yaml, the editor's voice, and
   the section specs you scaffold in §5.
-- **Sources** — what they already have: feeds, newsletters, local folders,
-  Obsidian vaults, exports, browser/API scrape outputs, work systems, and
-  agent-produced files. RSS/full-text feeds are useful when available; paid feed
-  URLs are credentials, so store them in `~/.config/morning-paper/env.sh`, never
-  in a repo. Ask about Hacker News only as an optional starter technical radar,
-  not as the center of the paper.
+- **Sources** — what they already have across work and life: email and
+  newsletters, Slack/Discord, GitHub activity, Linear tickets, Main Branch,
+  local folders, Obsidian vaults, exports, browser/API scrape outputs, Twitter/X
+  or other social feeds, YouTube/podcast history, and agent-produced files.
+  RSS/full-text feeds are useful when available; paid feed URLs are credentials,
+  so store them in `~/.config/morning-paper/env.sh`, never in a repo.
 - **Shape** — `page_budget` (suggest 12-20), how many full reads per edition,
   style (`morning-paper styles` lists the family of four — broadsheet,
   brief, field-card, zine; `broadsheet` is the default recommendation),
@@ -222,8 +222,9 @@ Write these first, then keep them current.
     "codex": "unknown"
   },
   "source_choices": {
-    "hacker_news": "ask",
-    "rss": [],
+    "work_streams": [],
+    "personal_feeds": [],
+    "local_folders": [],
     "collectors": [],
     "inbox": "ask"
   },
@@ -250,8 +251,9 @@ Write these first, then keep them current.
 - Next action:
 
 ## Source Choices
-- Hacker News:
-- RSS:
+- Work streams:
+- Personal feeds:
+- Local folders / exports:
 - Collectors:
 - Inbox:
 

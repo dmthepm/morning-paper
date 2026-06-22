@@ -91,10 +91,10 @@ missing source prints "not configured" or "nothing today."
 
 ## Sources
 
-Morning Paper should meet your sources where they already live. RSS and Hacker
-News are starter inputs, not the product identity. Most serious personal papers
-will use private newsroom collectors: small scripts or agent workflows that
-turn a source into staged markdown.
+Morning Paper should meet your sources where they already live: work streams,
+personal feeds, local knowledge, exports, and files your tools already produce.
+Most serious personal papers will use private newsroom collectors: small
+scripts or agent workflows that turn a source into staged markdown.
 
 Examples:
 
