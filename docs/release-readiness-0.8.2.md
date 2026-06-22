@@ -68,7 +68,7 @@ The current local candidate has been checked with:
 
 ```bash
 python -m pytest
-python scripts/setup_scaffold_smoke.py  # run from a clean current [pretty] env when ambient Python is stale
+python scripts/setup_scaffold_smoke.py --isolated
 python scripts/fresh_friend_smoke.py
 python scripts/install_smoke.py
 python scripts/host_plugin_smoke.py
@@ -85,9 +85,10 @@ versions, verifies WeasyPrint 69.0, runs `doctor --strict`, and renders a
 two-page demo PDF.
 
 Local machine note: the ambient system Python currently has stale WeasyPrint
-68.1 and trafilatura 2.0.0, so strict setup smoke fails there by design. A
-clean isolated install of the current project with `[pretty]` resolves
-WeasyPrint 69.0 and trafilatura 2.1.0 and passes setup smoke.
+68.1 and trafilatura 2.0.0, so strict setup smoke fails there by design.
+`setup_scaffold_smoke.py --isolated` creates a temporary install of the current
+project with `[dev,pretty]`, resolves WeasyPrint 69.0 and trafilatura 2.1.0,
+and passes setup smoke without touching real user config.
 
 ## Completion Gate Map
 

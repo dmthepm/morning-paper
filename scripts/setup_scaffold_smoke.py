@@ -18,6 +18,28 @@ SRC = ROOT / "src"
 DATE = "2026-06-22"
 
 
+def _venv_python(venv: Path) -> Path:
+    if sys.platform == "win32":
+        return venv / "Scripts" / "python.exe"
+    return venv / "bin" / "python"
+
+
+def run_isolated(*, keep: bool) -> int:
+    """Run this smoke from a clean editable install with current dev/pretty deps."""
+    with tempfile.TemporaryDirectory(prefix="morning-paper-setup-smoke-env-") as tmp:
+        tmp_path = Path(tmp)
+        venv = tmp_path / "venv"
+        subprocess.run([sys.executable, "-m", "venv", str(venv)], cwd=ROOT, check=True)
+        py = _venv_python(venv)
+        subprocess.run([str(py), "-m", "pip", "install", "-q", "-U", "pip"], cwd=ROOT, check=True)
+        subprocess.run([str(py), "-m", "pip", "install", "-q", "-e", ".[dev,pretty]"], cwd=ROOT, check=True)
+        cmd = [str(py), str(Path(__file__).resolve())]
+        if keep:
+            cmd.append("--keep")
+        result = subprocess.run(cmd, cwd=ROOT, text=True)
+        return result.returncode
+
+
 def run_cli(args: list[str], *, env: dict[str, str], cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-m", "morning_paper.cli", *args],
@@ -285,7 +307,15 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--keep", action="store_true", help="keep the temporary sandbox")
+    parser.add_argument(
+        "--isolated",
+        action="store_true",
+        help="create a temporary venv, install .[dev,pretty], then run the smoke from that clean env",
+    )
     args = parser.parse_args()
+
+    if args.isolated:
+        return run_isolated(keep=args.keep)
 
     if args.keep:
         base = Path(tempfile.mkdtemp(prefix="morning-paper-setup-smoke-"))

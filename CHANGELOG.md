@@ -46,6 +46,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   PDF existence: The Read, source inventory, page budget, feedback route,
   durable feedback file routing, clean review status, and reader-owned next
   source candidates must all be present.
+- `scripts/setup_scaffold_smoke.py --isolated` now creates a temporary
+  `[dev,pretty]` install before running setup smoke, so release verification is
+  not confused by a developer machine with stale WeasyPrint/trafilatura.
 - Remote article fallback is now explicit. `article_extractor: local` keeps URL
   capture on the reader's machine; it no longer escalates to the Jina remote
   reader unless `remote_extractor_fallback: true` is set. Direct

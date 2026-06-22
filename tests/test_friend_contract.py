@@ -87,6 +87,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     skill_suite = _read("docs/newsroom-skill-suite.md")
     install_smoke = _read("scripts/install_smoke.py")
     host_smoke = _read("scripts/host_plugin_smoke.py")
+    setup_smoke = _read("scripts/setup_scaffold_smoke.py")
     codex_validator = _read("scripts/validate_codex_plugin.py")
 
     summary = _pyproject_field("description")
@@ -107,6 +108,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in install_smoke
     assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in host_smoke
     assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in codex_validator
+    assert "--isolated" in setup_smoke
+    assert "setup_scaffold_smoke.py --isolated" in readiness
     assert "edition apply-feedback" in readiness
     for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         assert newsroom_file in skill_suite

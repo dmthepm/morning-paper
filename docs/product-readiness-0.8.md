@@ -267,10 +267,10 @@ Before 0.8 is complete:
   skills from a clean local marketplace copy;
 - `doctor --strict` proves rendering;
 - `demo --open` renders and opens a PDF in the first-run flow;
-- `scripts/setup_scaffold_smoke.py` passes from a temporary `HOME`, proving
-  the CLI scaffold, `setup-state.json`/`SETUP.md` refresh, local-drop
-  collector, edition workspace, render, review, and feedback artifact without
-  touching the user's real config or routine;
+- `scripts/setup_scaffold_smoke.py --isolated` passes from a temporary venv and
+  `HOME`, proving the CLI scaffold, `setup-state.json`/`SETUP.md` refresh,
+  local-drop collector, edition workspace, render, review, and feedback
+  artifact without touching the user's real config or routine;
 - `scripts/fresh_friend_smoke.py` passes the five local persona simulations:
   creator/news reader, business owner/Main Branch, technical agent,
   nontechnical RSS/newsletter, and local-folder/source-dump;
@@ -347,11 +347,11 @@ Independent proof from that run:
 - after updating the deterministic smoke fixture to use real claim headlines,
   `scripts/fresh_friend_smoke.py` now produces five PDFs and five clean
   reviews on the current tree;
-- `scripts/setup_scaffold_smoke.py` passes from a sandboxed home on the current
-  tree: it runs `doctor --strict --json`, renders a demo PDF, scaffolds
-  `Friend-Newsroom`, updates setup state, stages a local source via the
-  scaffolded `collectors/local-drop.sh`, runs `edition prepare`, renders a PDF,
-  saves all durable edition artifacts, and gets a clean review;
+- `scripts/setup_scaffold_smoke.py --isolated` passes from a temporary venv and
+  sandboxed home on the current tree: it runs `doctor --strict --json`, renders
+  a demo PDF, scaffolds `Friend-Newsroom`, updates setup state, stages a local
+  source via the scaffolded `collectors/local-drop.sh`, runs `edition prepare`,
+  renders a PDF, saves all durable edition artifacts, and gets a clean review;
 - the edition workspace contained source inventory, collector report,
   queue snapshot, draft, render result, review JSON, operator answers, and
   rendered PDF/HTML/Markdown/JSON artifacts.
@@ -376,5 +376,5 @@ The session ran the live 0.7.1 demo, produced a real two-page PDF, and opened it
 on screen. The deliberately unforced piece is full interactive setup against
 the user's real home/config because it can install a routine and write
 `~/.config`; deterministic sandbox setup is now covered by
-`scripts/setup_scaffold_smoke.py`, while a true live-agent setup-skill run
+`scripts/setup_scaffold_smoke.py --isolated`, while a true live-agent setup-skill run
 should still use a temp home/config or explicit user approval.
