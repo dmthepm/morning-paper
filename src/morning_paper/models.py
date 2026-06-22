@@ -10,6 +10,10 @@ class SourceItem:
     title: str
     url: str
     summary: str = ""
+    # Full article text when a full-text feed carries it (content:encoded /
+    # entry.content). Empty for summary-only feeds. `summary` stays the short
+    # blurb either way; `body`, when present, is the real read — never clipped.
+    body: str = ""
     author: str = ""
     published_at: str = ""
     score: float = 0.0

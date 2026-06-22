@@ -19,6 +19,43 @@ def _clean_summary(value: str, *, max_chars: int = 280) -> str:
     return text[:max_chars]
 
 
+def _clean_body(value: str) -> str:
+    """Strip a full-text feed body to readable plain text — never truncated.
+
+    Full-text feeds (Substack/Atom full, paid full-text feeds) carry the whole
+    article in `content:encoded`. We unescape entities and drop tags so the
+    text flows into the print pipeline, but unlike `_clean_summary` we keep the
+    entire body: a full read must print as a full read, not a blurb.
+    """
+    text = html.unescape(value or "")
+    text = re.sub(r"(?i)</(p|div|br|li|h[1-6])\s*>", "\n", text)
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    lines = [" ".join(line.split()) for line in text.split("\n")]
+    return "\n".join(line for line in lines if line).strip()
+
+
+def _entry_body(entry: feedparser.FeedParserDict) -> str:
+    """Full article text from a feed entry, if the feed ships it.
+
+    feedparser exposes `content:encoded` (and Atom `content`) as
+    `entry.content`, a list of dicts with a `value`. Summary-only feeds have
+    no `content`, so this returns "" and the caller keeps the short summary.
+    """
+    content = entry.get("content")
+    if not content:
+        return ""
+    if isinstance(content, (list, tuple)):
+        raw = ""
+        for part in content:
+            value = part.get("value") if isinstance(part, dict) else getattr(part, "value", "")
+            if value and len(str(value)) > len(raw):
+                raw = str(value)
+    else:
+        raw = str(getattr(content, "value", "") or content)
+    return _clean_body(raw)
+
+
 def _hn_score(item: dict) -> float:
     points = int(item.get("points") or 0)
     comments = int(item.get("num_comments") or 0)
@@ -83,6 +120,7 @@ def fetch_rss_feeds(config: MorningPaperConfig) -> tuple[list[SourceItem], dict[
             if not title or not link:
                 continue
             summary = _clean_summary(str(entry.get("summary") or entry.get("description") or ""))
+            body = _entry_body(entry)
             items.append(
                 SourceItem(
                     source_type="rss",
@@ -90,6 +128,7 @@ def fetch_rss_feeds(config: MorningPaperConfig) -> tuple[list[SourceItem], dict[
                     title=title,
                     url=link,
                     summary=summary,
+                    body=body,
                     author=str(entry.get("author") or ""),
                     published_at=_entry_published(entry),
                     score=1.0,

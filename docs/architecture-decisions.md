@@ -115,16 +115,23 @@ Reason:
 ## 8. CLI Product Surface
 
 Stable public commands:
+- `morning-paper demo` — zero-config sample edition
 - `morning-paper init`
 - `morning-paper build`
 - `morning-paper print <url...>`
+- `morning-paper render <file.md>` — typeset any markdown through a style pack
+- `morning-paper stage <url|file>` (alias `add`) — queue material for tomorrow
+- `morning-paper queue` (alias `status`) — staged items vs the page budget
+- `morning-paper estimate <file.md>` — page count, nothing written
+- `morning-paper inbox` — poll the contributor inbox
+- `morning-paper review <edition>` — editorial QC on a finished edition
+- `morning-paper routine` — schedule the daily edition (install/status/uninstall)
+- `morning-paper styles` — list styles + palettes
 - `morning-paper doctor`
 
-Planned public commands:
-- queue/add commands for agents to stage tomorrow's paper
-- page-budget estimation
-
-Internal-only commands remain compatibility-only and should not define the public API.
+Every command prints JSON (`doctor` via `--json`). `remove`/`list` (queue
+management) remain on the roadmap and report so honestly when invoked. Any
+internal-only commands remain compatibility-only and do not define the public API.
 
 ## 9. Printed Output Standard
 
@@ -170,38 +177,34 @@ X.com is actively hostile to content extraction. There is no free, open source, 
 | Manual paste / local markdown | None | 100% | Perfect universal fallback |
 | Headless browser (Playwright) | None | Medium | Poor — 200MB+ Chromium dep |
 
-### Decision
+### Decision (current, since 0.4.2)
 
 - X is an **optional plugin**, never core. Core stays zero-auth.
-- General article extraction uses Jina Reader (`r.jina.ai`) as the default — free, zero dependency (just an HTTP call), returns clean markdown with inline images. Works well for news articles, blogs, Substack, and even many X threads.
-- trafilatura is available as an optional local fallback via `morning-paper[local]` for offline/privacy use.
+- General article extraction is **local-first**: trafilatura ships as a core
+  dependency and `article_extractor: local` is the default — the URLs the
+  reader cares about never leave their machine. Local parsing returns clean
+  blocks for news articles, blogs, and Substack.
+- Jina Reader (`r.jina.ai`) is an explicit option and an automatic fallback:
+  when local extraction recovers too little content, the engine retries
+  through Jina and flags the result with an honest `extraction_note` (the URL
+  was sent to a third-party service) — never a silent fallback. The privacy
+  concern (every read URL sent to a third-party SaaS) is why local, not Jina,
+  is the default; the original 0.1–0.4.1 default was Jina, flipped in 0.4.2.
 - X/Twitter uses optional backends configured by the user:
   1. `apify` — user supplies their own Apify token (recommended for reliability)
   2. `twscrape` — pure Python, user adds their own X session (open source, no API cost)
   3. `manual` — user pastes thread content as markdown (always works)
 - If no X backend is configured and user tries an X URL: clear message with options, never a broken/garbage PDF.
 
-> **Amended 2026-06-11 (0.4.2):** the default flipped. General article
-> extraction is now **local-first**: trafilatura ships as a core dependency
-> and `article_extractor: local` is the default — URLs stay on the reader's
-> machine. Jina Reader is demoted to an explicit option and an automatic
-> fallback when local extraction recovers too little content; the fallback
-> is always flagged with an honest note in the result, never silent. The
-> privacy concern (every read URL sent to a third-party SaaS) outweighed
-> the zero-dependency appeal of the original default. The `[local]` extra
-> described below no longer exists — trafilatura is core.
-
 ### pyproject.toml extras
 
 ```toml
 [project.optional-dependencies]
 pretty = ["weasyprint>=62.0"]
-twitter = ["twscrape"]
-local = ["trafilatura"]
 ```
 
-(As of 0.4.2: `twitter` and `local` extras were never wired and are gone;
-trafilatura moved into core `dependencies`.)
+trafilatura is a core dependency (not an extra); the never-wired `twitter`
+and `local` extras were removed in 0.4.2.
 
 ### Content validation gate
 
@@ -216,21 +219,23 @@ The February 2026 Pay-Per-Use pricing ($0.005/post, no free tier) makes it unsui
 
 ## 12. Article Extraction Architecture
 
-Decision date: 2026-04-14
-Amended: 2026-06-11 (0.4.2) — default is now the **local** trafilatura
-extractor; Jina Reader is the documented fallback in the `local -> jina`
-chain below and remains selectable via `article_extractor: jina`.
+Decision date: 2026-04-14 (revised 0.4.2)
 
-Original default extractor: **Jina Reader** (`https://r.jina.ai/{url}`)
+Default extractor: **local trafilatura** (the page is fetched and parsed on
+this machine; URLs stay local). **Jina Reader** (`https://r.jina.ai/{url}`) is
+the explicit option and the automatic fallback in the `local -> jina` chain
+below, selectable via `article_extractor: jina`. Jina requests include
+`X-With-Images: true` for better heading and image preservation on the pages it
+handles (notably X Articles).
 
-Request headers include `X-With-Images: true` which returns 33-90% more content on X Articles with better heading and image preservation.
-
-Why Jina over trafilatura as the default:
+Jina's strengths (why it remains the fallback, and was the original default):
 - Zero pip dependency (just a `requests.get` call)
 - Returns clean markdown with inline image URLs (tested: X articles return 8+ images as direct `pbs.twimg.com` URLs)
-- Successfully extracts X Articles and long threads (2 out of 3 tested URLs worked, including full long-form content)
+- Successfully extracts X Articles and long threads where local sees only a noscript shell
 - Images come in print-friendly sizes (`small` variant, perfect for newspaper columns)
-- trafilatura drops images and requires extra parsing for the same content
+
+Local trafilatura is the default anyway: keeping every read URL off third-party
+infrastructure outweighs Jina's zero-dependency convenience.
 
 Fallback chain in `fetch_article()` (as of 0.4.2):
 1. Local trafilatura extraction → if it recovers enough content → return Article
@@ -346,12 +351,20 @@ Rule:
 
 ## 16. Skill Distribution for Agent Runtimes
 
-Decision date: 2026-04-14
+Decision date: 2026-04-14 (revised 0.7.0)
 
-Morning Paper should ship a simple skill file for agent runtimes that discover tools from repo-local instructions.
+Morning Paper ships its skills as a Claude Code plugin. The loader reads
+`<root>/skills/<name>/SKILL.md`, so the registered surface is the three real
+skills:
 
-Path:
-- `.claude/skills/morning-paper/SKILL.md`
+- `skills/setup/SKILL.md` — cold-start: install, interview, scaffold the
+  newsroom contracts, wire the routine
+- `skills/edition/SKILL.md` — the daily editor pass
+- `skills/writing/SKILL.md` — the prose revision discipline
+
+A thin `.claude/skills/morning-paper/SKILL.md` cheat-sheet stub existed through
+0.6.1 and was removed in 0.7.0: it had no frontmatter, never shipped through the
+plugin loader, and shadowed the real skills during local dev.
 
 Purpose:
 - make the CLI discoverable in Claude Code style runtimes

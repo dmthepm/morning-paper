@@ -297,7 +297,10 @@ sources:
   hacker_news:
     enabled: true
     limit: 20
-  # sample feeds — replace with yours
+  # sample feeds — replace with yours. Full-text feeds (those that ship the
+  # whole article in `content:encoded`) print as real reads; the build JSON
+  # carries the full article in each item's `body` field, with `summary` kept
+  # as the short blurb. Summary-only feeds stay summary-only.
   rss:
     - name: Simon Willison
       url: https://simonwillison.net/atom/everything/

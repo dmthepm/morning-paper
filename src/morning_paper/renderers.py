@@ -129,9 +129,11 @@ def _load_weasyprint() -> tuple[object | None, str | None]:
     return HTML, None
 
 
-def _html_paragraphs(text: str) -> str:
+def _html_paragraphs(text: str, *, limit: int | None = 4) -> str:
     parts = [segment.strip() for segment in (text or "").split("\n") if segment.strip()]
-    return "\n".join(f"<p>{html.escape(part)}</p>" for part in parts[:4])
+    if limit is not None:
+        parts = parts[:limit]
+    return "\n".join(f"<p>{html.escape(part)}</p>" for part in parts)
 
 
 def _render_broadsheet_strip(banner: SourceItem | None, rss_count: int, hn_count: int, renderer: str) -> str:
@@ -179,12 +181,20 @@ def _render_broadsheet_reads(items: list[SourceItem], *, limit: int = 2) -> str:
         if item.published_at:
             meta_parts.append(item.published_at[:10])
         byline = html.escape(" · ".join(part for part in meta_parts if part))
+        # A full-text feed carries the whole article in `body`; print it as a
+        # real read (no paragraph cap). Summary-only feeds fall back to the
+        # short blurb, still capped — a blurb that pretends to be a read is the
+        # thing this avoids.
+        if item.body:
+            body_html = _html_paragraphs(item.body, limit=None)
+        else:
+            body_html = _html_paragraphs(item.summary or item.url)
         reads.append(
             '<div class="article-head">'
             f'<div class="dept-title">{html.escape(item.title)}</div>'
             f'<div class="mg-byline">From <strong>{byline}</strong></div>'
             "</div>\n"
-            + _html_paragraphs(item.summary or item.url)
+            + body_html
         )
     return "\n".join(reads)
 
@@ -286,12 +296,14 @@ def render_markdown(config: MorningPaperConfig, collected: dict[str, list[Source
     if collected.get("rss"):
         lines.extend(["## RSS", ""])
         for index, item in enumerate(collected["rss"], 1):
-            summary = item.summary or item.source_name
+            # Full-text feeds carry the whole article in `body`; print it.
+            # Summary-only feeds keep the short blurb.
+            read = item.body or item.summary or item.source_name
             lines.extend(
                 [
                     f"{index}. **{item.title}**",
                     f"   - {item.source_name}",
-                    f"   - {summary}",
+                    f"   - {read}",
                     f"   - {item.url}",
                 ]
             )
