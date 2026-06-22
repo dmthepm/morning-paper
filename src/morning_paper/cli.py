@@ -159,12 +159,18 @@ def _renderer_hint_lines(renderer_error: str | None) -> list[str]:
 
 def _dependency_report() -> dict[str, object]:
     packages = [
+        "feedparser",
+        "fpdf2",
+        "markdown-it-py",
+        "Pillow",
+        "PyYAML",
+        "requests",
+        "trafilatura",
         "weasyprint",
         "tinycss2",
         "cssselect2",
         "pydyf",
         "cffi",
-        "Pillow",
         "fontTools",
     ]
     versions: dict[str, str | None] = {}

@@ -50,6 +50,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   inventory JSON, setup guidance, roadmap, and demo copy now say source stack,
   entry points, and reader-owned sources instead of teaching a feed-first
   mental model.
+- **Dependency visibility for maintenance.** `doctor --json` now reports the
+  core source/parser dependency versions (`feedparser`, `trafilatura`,
+  `requests`) and markdown/PDF dependency versions alongside the WeasyPrint
+  print stack, `trafilatura` is bounded to the current supported major line
+  (`>=2.1,<3`), and the release-candidate checker fails if a clean install does
+  not expose those versions.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when

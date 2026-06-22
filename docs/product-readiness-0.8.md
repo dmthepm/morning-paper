@@ -182,12 +182,22 @@ Morning Paper owns:
 - the `[pretty]` extra stays on the current supported WeasyPrint major line
   and is advanced deliberately after a clean install/render smoke;
 - `doctor --strict` performs a real layout pass, not just import checks;
-- `doctor --json` reports Python, WeasyPrint, tinycss2, cssselect2, pydyf,
-  cffi, Pillow, the enforced WeasyPrint support range, and native dependency
-  status where detectable;
+- `doctor --json` reports Python, core source/parser dependencies
+  (`feedparser`, `trafilatura`, `requests`), markdown/PDF dependencies
+  (`markdown-it-py`, `fpdf2`, `Pillow`, `PyYAML`), WeasyPrint and its print
+  stack (`tinycss2`, `cssselect2`, `pydyf`, `cffi`, `fontTools`), the enforced
+  WeasyPrint support range, and native dependency status where detectable;
 - CI exercises the pretty renderer path on supported platforms;
 - docs and skills agree on Python, uv/pipx, native libraries, and fail-loud
   behavior.
+
+The maintenance stance is deliberate: readers should not need to know what
+WeasyPrint or trafilatura are, but Morning Paper does. WeasyPrint is bounded by
+major version because it owns the print layout. Trafilatura is currently the
+local article parser behind `article_extractor: local`; it is also bounded to
+the current major line (`>=2.1,<3`). It stays an internal implementation
+detail, but every release candidate must prove the installed artifact reports
+and exercises it.
 
 ## Source Model
 

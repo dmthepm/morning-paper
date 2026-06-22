@@ -31,6 +31,11 @@ surfaces again.
   optional built-in source in the engine and tests.
 - Remote URL extraction is explicit. `article_extractor: local` stays local
   unless `remote_extractor_fallback: true` is set.
+- Dependency visibility is part of the release proof. `doctor --json` reports
+  the core source/parser dependencies as well as the print stack, and the clean
+  release-candidate install fails if those versions are absent.
+- Trafilatura is bounded to the current supported major line (`>=2.1,<3`) so
+  local extraction does not silently absorb a future major parser change.
 - Durable feedback is executable: `morning-paper edition apply-feedback`
   writes stable notes into the selected newsroom file, `TASTELOG.md`, and that
   edition's `feedback-plan.md`.
@@ -58,8 +63,9 @@ python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --
 Last full local result: `209 passed`.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
-both with `[pretty]`, verifies WeasyPrint 69.0, runs `doctor --strict`, and
-renders a two-page demo PDF.
+both with `[pretty]`, verifies the reported core dependency and print-stack
+versions, verifies WeasyPrint 69.0, runs `doctor --strict`, and renders a
+two-page demo PDF.
 
 ## Completion Gate Map
 
@@ -68,7 +74,7 @@ renders a two-page demo PDF.
 | Docs and skills agree | README, `AGENTS.md`, setup/edition skills, changelog, and product-readiness docs use the same setup/source/feedback model. |
 | README stays concise and true | README now keeps details to setup, sources, daily routine, styles, agents, and development. |
 | No stale HN identity | Friend-facing docs describe the whole source stack; HN remains only as an optional legacy built-in source and historical changelog/test fixture. |
-| No stale scraper assumption | Local extraction is default; remote fallback is explicit and tested. Jina/trafilatura are implementation details, not the product promise. |
+| No stale scraper assumption | Local extraction is default; remote fallback is explicit and tested. Jina/trafilatura are implementation details, not the product promise; dependency versions are visible in `doctor --json` and release checks. |
 | Native recurrence prompts | README carries Claude Code routine, Codex automation, and ChatGPT scheduled-task prompts. |
 | Source onboarding durable path | `sources check --newsroom`, collector recipes, staging, queue inspection, and fresh-friend smoke all exercise reader-owned sources. |
 | Compaction-safe edition loop | `edition prepare` writes durable edition files; `edition apply-feedback` records accepted/rejected feedback into durable newsroom files. |

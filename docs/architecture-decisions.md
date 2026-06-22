@@ -54,12 +54,27 @@ Reason:
 Required dependencies stay pure Python:
 - `feedparser`
 - `fpdf2`
+- `markdown-it-py`
 - `Pillow`
 - `PyYAML`
 - `requests`
+- `trafilatura>=2.1,<3`
 
 Reason:
 - `pip install morning-paper && morning-paper init && morning-paper build` must work without system packages.
+- URL staging needs a local parser so the default path can keep article capture
+  on the reader's machine. Today that parser is `trafilatura`; it is a
+  maintained implementation detail behind the extractor registry, not product
+  identity.
+
+Maintenance rule:
+- `doctor --json` reports every core source/parser/render dependency version,
+  including `trafilatura`.
+- The release-candidate check installs clean wheel and sdist artifacts and
+  fails if those dependency versions are missing from `doctor --json`.
+- Keep the parser on the current supported major line and advance it
+  deliberately after a clean local extraction smoke, not as invisible README
+  churn.
 
 ## 5. Renderer Contract
 

@@ -754,6 +754,10 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("dependencies", payload)
         self.assertIn("python", payload["dependencies"])
         self.assertIn("weasyprint", payload["dependencies"]["packages"])
+        self.assertIn("trafilatura", payload["dependencies"]["packages"])
+        self.assertIn("feedparser", payload["dependencies"]["packages"])
+        self.assertIn("requests", payload["dependencies"]["packages"])
+        self.assertIn("fpdf2", payload["dependencies"]["packages"])
         self.assertEqual(
             payload["dependencies"]["weasyprint"],
             {"version": "69.0", "supported": True, "requires": ">=69.0,<70", "error": ""},

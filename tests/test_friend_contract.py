@@ -191,8 +191,11 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     readme = _read("README.md")
     config = _read("src/morning_paper/config.py")
     article_print = _read("src/morning_paper/article_print.py")
+    pyproject = _read("pyproject.toml")
     release_check = _read("scripts/release_candidate_check.py")
     changelog = _read("CHANGELOG.md")
+    architecture = _read("docs/architecture-decisions.md")
+    readiness = _read("docs/product-readiness-0.8.md")
 
     assert "Local extraction" in readme
     assert "keeps URL capture on your machine" in readme
@@ -201,6 +204,14 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     assert "remote_extractor_fallback: false" in config
     assert "allow_remote_fallback: bool = False" in article_print
     assert "Remote fallback is opt-in" in article_print
+    assert '"trafilatura>=2.1,<3"' in pyproject
     assert "remote_extractor_fallback" in release_check
+    assert "EXPECTED_DOCTOR_PACKAGES" in release_check
+    assert '"trafilatura"' in release_check
+    assert '"feedparser"' in release_check
+    assert "`doctor --json` reports every core source/parser/render dependency version" in architecture
+    assert "Trafilatura is currently the" in readiness
+    assert "local article parser behind `article_extractor: local`" in readiness
+    assert "`>=2.1,<3`" in readiness
     assert "no longer escalates" in changelog
     assert "Jina remote" in changelog

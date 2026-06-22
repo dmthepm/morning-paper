@@ -59,6 +59,21 @@ EXPECTED_SNIPPETS = {
     "morning_paper/article_print.py": ("allow_remote_fallback", "Remote fallback is opt-in"),
 }
 STALE_RESOURCE_MARKERS = ("typewriter.md", "typewriter-v5.md")
+EXPECTED_DOCTOR_PACKAGES = (
+    "feedparser",
+    "fpdf2",
+    "markdown-it-py",
+    "Pillow",
+    "PyYAML",
+    "requests",
+    "trafilatura",
+    "weasyprint",
+    "tinycss2",
+    "cssselect2",
+    "pydyf",
+    "cffi",
+    "fontTools",
+)
 
 
 def _ignore(_dir: str, names: list[str]) -> set[str]:
@@ -254,6 +269,10 @@ def _install_and_print(artifact: Path, version: str, temp_root: Path) -> dict[st
     doctor = json.loads(doctor_result.stdout)
     if doctor.get("status") != "ok":
         raise RuntimeError(f"{artifact.name}: doctor status was {doctor.get('status')}")
+    packages = doctor.get("dependencies", {}).get("packages", {})
+    missing_packages = [name for name in EXPECTED_DOCTOR_PACKAGES if not packages.get(name)]
+    if missing_packages:
+        raise RuntimeError(f"{artifact.name}: doctor did not report dependency versions for {missing_packages}")
     render_self_test = doctor.get("renderer", {}).get("render_self_test", {})
     if not render_self_test.get("ok"):
         raise RuntimeError(f"{artifact.name}: render self-test failed: {render_self_test}")
@@ -272,7 +291,8 @@ def _install_and_print(artifact: Path, version: str, temp_root: Path) -> dict[st
         "artifact": artifact.name,
         "version": actual_version,
         "doctor_status": doctor.get("status"),
-        "weasyprint": doctor.get("dependencies", {}).get("packages", {}).get("weasyprint"),
+        "dependencies": {name: packages.get(name) for name in EXPECTED_DOCTOR_PACKAGES},
+        "weasyprint": packages.get("weasyprint"),
         "render_self_test": render_self_test,
         "demo_pages": demo.get("pages"),
         "demo_pdf": str(output_pdf),
