@@ -332,7 +332,7 @@ def source_inventory(
         "count": len(sources),
         "source_model": {
             "posture": "reader_stack_first",
-            "starter_inputs": ["local_drop", "stage", "rss_or_feed_url", "inbox"],
+            "entry_points": ["local_drop", "stage", "rss_or_feed_url", "inbox"],
             "reader_owned_inputs": [
                 "local_drop",
                 "collectors",

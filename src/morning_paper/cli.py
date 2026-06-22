@@ -44,7 +44,7 @@ HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own so
 
 Commands:
   demo              Print a sample edition right now — no config, no network
-  init              Create a starter config
+  init              Create a local config
   newsroom          Scaffold/update a private newsroom repo (init|state)
   build             Build today's paper from configured sources
   sources           List or check configured sources and collector contract
@@ -69,8 +69,9 @@ Commands:
 Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
 the bare version). `newsroom init` creates the private file contract; `edition
 prepare` creates compaction-safe edition files; `edition apply-feedback`
-records reader notes into durable taste; `sources` inventories feeds; `stage`
-and `queue` are the seam for "add this to tomorrow's brief" workflows.
+records reader notes into durable taste; `sources` inventories the source
+stack; `stage` and `queue` are the seam for "add this to tomorrow's brief"
+workflows.
 See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
@@ -669,7 +670,7 @@ def print_command(args: list[str]) -> int:
         return 1
     if not has_user_config:
         print("using built-in defaults for one-off print", file=sys.stderr)
-        print("run `morning-paper init` to customize feeds, timezone, and output paths", file=sys.stderr)
+        print("run `morning-paper init` to customize sources, timezone, and output paths", file=sys.stderr)
     try:
         articles = [
             fetch_article(

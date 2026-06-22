@@ -76,7 +76,7 @@ Required durable artifacts:
    lead with The Read:
    - A front synthesis: the single thing that matters today, as a judgment.
    - The operator/work sections their specs define.
-   - Full reads from the staged queue and configured feeds — entire articles,
+   - Full reads from the staged queue and configured sources — entire articles,
      typeset; not summaries.
    - Every claim traceable to collected data. A missing source prints
      "not configured". NEVER fabricate a number.

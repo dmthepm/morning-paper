@@ -178,7 +178,7 @@ class BuildFlowTest(unittest.TestCase):
             self.assertTrue(config_path.exists())
 
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-            # the starter config matches the visual identity the demo sells
+            # the default config matches the visual identity the demo sells
             self.assertEqual(config["outputs"]["style"], "broadsheet")
             self.assertEqual(config["outputs"]["palette"], "color")
             self.assertEqual(config["outputs"]["renderer"], "typewriter")

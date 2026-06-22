@@ -77,7 +77,7 @@ morning-paper demo --open
 - Renders a demo paper with no config or network.
 - Scaffolds a private newsroom repo with durable preferences and setup state.
 - Stages URLs or local files into a dated queue with page estimates.
-- Builds daily editions from configured feeds and staged material.
+- Builds daily editions from configured sources and staged material.
 - Lets local collector scripts bring in anything else: folders, exports,
   Obsidian vaults, GitHub activity, business systems, research reports, or
   agent-produced files.

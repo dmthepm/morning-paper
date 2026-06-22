@@ -36,7 +36,7 @@ morning-paper newsroom state /path/to/newsroom \
   --set demo.pdf_path="/absolute/path/demo.pdf" \
   --set demo.opened_on_screen=true \
   --set doctor.strict_passed=true \
-  --pending "Which RSS feeds should I add?"
+  --pending "Which source should I add first?"
 ```
 
 ## 1. Engine
@@ -155,7 +155,7 @@ After each personalization step, run `morning-paper newsroom state . --set ...`
 so `SETUP.md` and `setup-state.json` stay true.
 Use `morning-paper sources list --newsroom .` after scaffolding, and
 `morning-paper sources check --newsroom .` when the reader is ready to verify
-feeds and collector syntax. Read its `source_model`, `newsroom.local_drop`, and
+source entries and collector syntax. Read its `source_model`, `newsroom.local_drop`, and
 `next_actions` before asking more source questions.
 
 ```

@@ -6,8 +6,8 @@
 - early built-in web/feed sources
 - `typewriter` renderer with `WeasyPrint`
 - `portable` PDF fallback with `fpdf2`
-- Article extraction with inline image handling (Jina Reader; local trafilatura
-  became the default in 0.4.2)
+- Article extraction with inline image handling; local extraction later became
+  the default path
 - X/Twitter metadata via FxTwitter
 - Content validation gate so bad extractions do not print garbage
 - Pluggable extractor architecture
@@ -34,8 +34,8 @@
 
 ## Shipped (`v0.4.2`)
 
-- `local` article extractor as the default — URLs stay on your machine; `jina`
-  demoted from the default path into an explicit remote-reader choice
+- `local` article extractor as the default — URLs stay on your machine; remote
+  readers are explicit choices, not the default path
 - "Set up with AI" onboarding prompt at the top of the README
 
 ## Shipped (`v0.4.4`)

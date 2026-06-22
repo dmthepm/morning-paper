@@ -46,6 +46,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   stable reader notes into the selected durable newsroom file, appends
   `TASTELOG.md`, and updates the edition's `feedback-plan.md` so feedback
   survives compaction as an auditable change.
+- **Source vocabulary cleanup.** CLI help, generated config comments, source
+  inventory JSON, setup guidance, roadmap, and demo copy now say source stack,
+  entry points, and reader-owned sources instead of teaching a feed-first
+  mental model.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when

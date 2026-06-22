@@ -315,9 +315,9 @@ sources:
     # Legacy built-in public feed. Leave off unless the reader explicitly asks.
     enabled: false
     limit: 20
-  # Add feeds the reader already follows. Full-text feeds (those that ship the
-  # whole article in `content:encoded`) print as real reads. Summary-only feeds
-  # stay summary-only. Example:
+  # Add feed URLs the reader already follows, when they have them. Full-text
+  # feeds (those that ship the whole article in `content:encoded`) print as
+  # real reads. Summary-only feeds stay summary-only. Example:
   # rss:
   #   - name: Example Feed
   #     url: https://example.com/feed.xml
