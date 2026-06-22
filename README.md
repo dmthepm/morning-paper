@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/hero.jpg" alt="A printed Morning Paper edition" width="720">
+  <img src="docs/assets/hero.jpg" alt="Morning Paper wordmark with a terminal composing a printed edition" width="720">
 
   <h1>Morning Paper</h1>
 
