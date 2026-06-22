@@ -1,6 +1,6 @@
 # Morning Paper 0.8 Product Readiness
 
-Status: draft source of truth for the 0.8 hardening pass.
+Status: release-candidate source of truth for the 0.8 hardening pass.
 
 ## Mission
 
@@ -20,19 +20,21 @@ The product promise stays narrow:
 
 ## Current Truth
 
-- `morning-paper` 0.7.1 is live and the repo carries one skill tree for Claude
-  Code and Codex.
+- `morning-paper` 0.7.1 is live on PyPI; the current repo is prepared as the
+  0.8.0 release candidate and carries one skill tree for Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
-  validation, install-smoke, and isolated host install checks exist.
+  validation, install-smoke, and isolated host install checks exist, and both
+  host manifests carry the same 0.8.0 semver.
 - The public README now has the owned-algorithm mission and a copyable agent
   install prompt.
-- The setup skill writes a real newsroom scaffold instead of empty folders.
-- The edition skill has the editor model, source collection, review, and return
-  path, but not enough durable intermediate state for interruption recovery.
-- The source model is powerful but under-specified for normal users: HN and RSS
-  are built in, everything else is a collector that stages markdown.
-- `doctor` proves imports today; it must prove actual layout for the production
-  print path.
+- The setup skill writes a real newsroom scaffold instead of empty folders and
+  records setup state in `setup-state.json` plus `SETUP.md`.
+- The edition skill has the editor model, source collection, review, return
+  path, and durable intermediate files for interruption recovery.
+- The source model is local-folder-first: HN and RSS are optional starter
+  sources, and everything else can arrive through collectors that stage
+  markdown for a specific edition date.
+- `doctor --strict` proves actual layout for the production print path.
 - The demo's chart furniture now has a renderer-level guardrail: built-in
   `mp-bars` and `mp-spark` visuals use the full available measure instead of
   floating as narrow inserts.
@@ -214,6 +216,16 @@ rendered `morning-paper demo --output <tmp>/demo.pdf`. This is the maintenance
 contract: readers should not need to know WeasyPrint exists, but Morning Paper
 must track its releases, constrain the supported major line, and prove the
 print path in CI before shipping.
+
+2026-06-22 release-candidate artifact proof: build `0.8.0` from a clean source
+copy, not an in-place tree with ignored `build/` residue. A dirty in-place
+build can copy stale generated files into the wheel because setuptools reuses
+`build/lib`; the clean-source build produced `morning_paper-0.8.0.tar.gz` and
+`morning_paper-0.8.0-py3-none-any.whl` with no stale `typewriter` resources.
+Both the wheel and sdist installed in fresh virtualenvs with `[pretty]`, printed
+`morning-paper --version` as `0.8.0`, resolved WeasyPrint `69.0`, passed
+`doctor --strict --json`, and rendered `demo --output <tmp>/demo.pdf` as a
+real two-page PDF with JSON-only stdout.
 
 ## Live Acceptance Notes
 
