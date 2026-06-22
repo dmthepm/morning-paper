@@ -93,6 +93,55 @@ class ReportModelTest(unittest.TestCase):
         skipped = {c["check"] for c in report["checks_skipped"]}
         self.assertIn("stale-dateline", skipped)
 
+    def test_resolve_artifacts_prefers_render_result_outputs(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        ed = tmp / "2026-06-22"
+        rendered = ed / "edition"
+        rendered.mkdir(parents=True)
+        (ed / "collector-report.md").write_text("# Collector Report\n", encoding="utf-8")
+        (ed / "queue-snapshot.json").write_text("{}", encoding="utf-8")
+        (rendered / "edition.md").write_text(_CLEAN_EDITION, encoding="utf-8")
+        (rendered / "edition.json").write_text(
+            json.dumps({"date": "2026-06-22", "metadata": {"style": "broadsheet", "palette": "color"}}),
+            encoding="utf-8",
+        )
+        (ed / "render-result.json").write_text(
+            json.dumps(
+                {
+                    "outputs": {
+                        "markdown": str(rendered / "edition.md"),
+                        "json": str(rendered / "edition.json"),
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        artifacts = resolve_artifacts(ed)
+
+        self.assertEqual(artifacts["markdown"], rendered / "edition.md")
+        self.assertEqual(artifacts["json"], rendered / "edition.json")
+
+    def test_resolve_artifacts_ignores_prepared_workspace_metadata(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        ed = tmp / "2026-06-22"
+        rendered = ed / "edition"
+        rendered.mkdir(parents=True)
+        (ed / "collector-report.md").write_text("# Collector Report\n", encoding="utf-8")
+        (ed / "operator-answers.md").write_text("# Operator Answers\n", encoding="utf-8")
+        (ed / "queue-snapshot.json").write_text("{}", encoding="utf-8")
+        (rendered / "edition.md").write_text(_CLEAN_EDITION, encoding="utf-8")
+        (rendered / "edition.json").write_text(
+            json.dumps({"date": "2026-06-22", "metadata": {"style": "broadsheet", "palette": "color"}}),
+            encoding="utf-8",
+        )
+
+        report = run_review(ed)
+
+        self.assertEqual(report["edition"]["artifacts"]["markdown"], str(rendered / "edition.md"))
+        self.assertEqual(report["edition"]["artifacts"]["json"], str(rendered / "edition.json"))
+        self.assertEqual(report["status"], "clean")
+
     def test_registry_runs_every_text_check_when_artifacts_present(self) -> None:
         report = _review(
             _CLEAN_EDITION,

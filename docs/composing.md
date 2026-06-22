@@ -211,6 +211,9 @@ title: Leads, last 14 days
 - `mp-spark`: whitespace/comma-separated numbers → a trend line with first/last labels.
 
 Chart ink follows the palette automatically.
+Charts are guarded print furniture: each directive renders as one atomic block,
+and the built-in bar/spark primitives use the full available measure so visuals
+align with the section above and below instead of floating as narrow inserts.
 
 ## Class vocabulary
 

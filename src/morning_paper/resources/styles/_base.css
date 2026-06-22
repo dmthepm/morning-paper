@@ -11,7 +11,7 @@
  * (a) defaults a pack already happened to set, now centralized, and
  * (b) the keep-together behavior the other three packs lacked.
  *
- * Everything here is CSS the shipped WeasyPrint 68.1 path already supports
+ * Everything here is CSS the shipped WeasyPrint 69.x path already supports
  * (break-*, orphans, widows, box-decoration-break). The banked WeasyPrint
  * quirks are respected: no box-shadow, no floated ::first-letter, CSS is
  * ignored on inline-SVG so keep-together reaches the chart WRAPPER never the
@@ -58,7 +58,7 @@ blockquote { break-inside: avoid; page-break-inside: avoid; }
 
 /* 5. Split blocks look finished: when a ruled callout / card / pull-quote is
  *    genuinely too tall to keep whole and must split, redraw its border and
- *    padding on both fragments instead of amputating one edge. WeasyPrint 68.1
+ *    padding on both fragments instead of amputating one edge. WeasyPrint 69.x
  *    supports box-decoration-break (backgrounds excepted). */
 .move, .action-required, .mg-pull, blockquote {
   box-decoration-break: clone;

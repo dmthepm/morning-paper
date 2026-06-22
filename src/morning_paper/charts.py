@@ -53,35 +53,36 @@ def bar_row_chart(
     track: str = DEFAULT_TRACK,
     text: str = DEFAULT_TEXT,
     width: int = 700,
-    label_width: int = 130,
-    bar_width: int = 400,
+    bar_width: int | None = None,
 ) -> str:
     """Horizontal labelled bars: (label, value, max, annotation) per row."""
-    row_h, gap = 11, 7
-    height = max(len(rows) * (row_h + gap) + 4, row_h + 8)
+    row_h, gap = 17, 6
+    bar_h = 7
+    track_w = bar_width or width
+    height = max(len(rows) * (row_h + gap) + 2, row_h + 8)
     parts = [
         f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" font-family="{_FONT}">'
     ]
-    y = 4
+    y = 2
     for label, value, max_value, note in rows:
-        baseline = y + row_h - 2
+        label_y = y + 7
+        bar_y = y + 10
         safe_max = max_value if max_value > 0 else 1.0
-        fill_w = max(0.0, min(1.0, value / safe_max)) * bar_width
+        fill_w = max(0.0, min(1.0, value / safe_max)) * track_w
         parts.append(
-            f'<text x="{label_width - 4}" y="{baseline}" text-anchor="end" font-size="9" fill="{text}">{_esc(label)}</text>'
+            f'<text x="0" y="{label_y}" font-size="8.5" fill="{text}">{_esc(label)}</text>'
         )
-        parts.append(f'<rect x="{label_width}" y="{y}" width="{bar_width}" height="{row_h}" fill="{track}"/>')
-        if fill_w >= 0.5:
-            parts.append(f'<rect x="{label_width}" y="{y}" width="{fill_w:.1f}" height="{row_h}" fill="{ink}"/>')
         if note:
-            note_x = label_width + (fill_w + 6 if fill_w < bar_width * 0.7 else bar_width + 6)
             parts.append(
-                f'<text x="{note_x:.1f}" y="{baseline}" font-size="9" font-weight="bold" fill="{text}">{_esc(note)}</text>'
+                f'<text x="{width}" y="{label_y}" text-anchor="end" font-size="8.5" font-weight="bold" fill="{text}">{_esc(note)}</text>'
             )
+        parts.append(f'<rect x="0" y="{bar_y}" width="{track_w}" height="{bar_h}" fill="{track}"/>')
+        if fill_w >= 0.5:
+            parts.append(f'<rect x="0" y="{bar_y}" width="{fill_w:.1f}" height="{bar_h}" fill="{ink}"/>')
         y += row_h + gap
     parts.append("</svg>")
     svg = "".join(parts)
-    return _wrap_chart(svg, title)
+    return _wrap_chart(svg, title, "bars")
 
 
 def sparkline(
@@ -100,25 +101,25 @@ def sparkline(
         return _placeholder(title or "sparkline", "needs at least 2 finite values")
     lo, hi = min(clean), max(clean)
     spread = (hi - lo) or 1.0
-    pad_x, pad_y = 60, 8
-    plot_w, plot_h = width - 2 * pad_x, height - 2 * pad_y
+    pad_left, pad_right, pad_y = 28, 34, 8
+    plot_w, plot_h = width - pad_left - pad_right, height - 2 * pad_y
     step = plot_w / (len(clean) - 1)
     points = [
-        (pad_x + i * step, pad_y + plot_h - ((v - lo) / spread) * plot_h)
+        (pad_left + i * step, pad_y + plot_h - ((v - lo) / spread) * plot_h)
         for i, v in enumerate(clean)
     ]
     path = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
     last_x, last_y = points[-1]
     parts = [
         f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" font-family="{_FONT}">',
-        f'<line x1="{pad_x}" y1="{pad_y + plot_h}" x2="{pad_x + plot_w}" y2="{pad_y + plot_h}" stroke="{track}" stroke-width="1"/>',
+        f'<line x1="{pad_left}" y1="{pad_y + plot_h}" x2="{pad_left + plot_w}" y2="{pad_y + plot_h}" stroke="{track}" stroke-width="1"/>',
         f'<polyline points="{path}" fill="none" stroke="{ink}" stroke-width="1.6"/>',
         f'<circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="2.4" fill="{ink}"/>',
-        f'<text x="{pad_x - 6}" y="{points[0][1] + 3:.1f}" text-anchor="end" font-size="9" fill="{text}">{_fmt_num(clean[0])}</text>',
+        f'<text x="{pad_left - 6}" y="{points[0][1] + 3:.1f}" text-anchor="end" font-size="9" fill="{text}">{_fmt_num(clean[0])}</text>',
         f'<text x="{last_x + 8:.1f}" y="{last_y + 3:.1f}" font-size="9" font-weight="bold" fill="{text}">{_fmt_num(clean[-1])}</text>',
         "</svg>",
     ]
-    return _wrap_chart("".join(parts), title)
+    return _wrap_chart("".join(parts), title, "spark")
 
 
 def stat_row(stats: list[tuple[str, str, str]]) -> str:
@@ -138,9 +139,9 @@ def _fmt_num(value: float) -> str:
     return f"{value:g}"
 
 
-def _wrap_chart(svg: str, title: str) -> str:
+def _wrap_chart(svg: str, title: str, kind: str) -> str:
     title_html = f'<div class="mp-chart-title">{_esc(title)}</div>' if title else ""
-    return f'<div class="mp-chart">{title_html}{svg}</div>'
+    return f'<div class="mp-chart mp-chart-{kind}">{title_html}{svg}</div>'
 
 
 def _placeholder(name: str, reason: str) -> str:

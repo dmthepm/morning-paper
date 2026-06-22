@@ -27,6 +27,7 @@ beyond the edition date already in the artifact.
 from __future__ import annotations
 
 import html
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -166,6 +167,14 @@ _ARTICLE_HEAD_RE = re.compile(
 )
 _TAG_RE = re.compile(r"<[^>]+>")
 _REFCODE_RE = re.compile(r'<span[^>]*class="[^"]*\bref-code\b[^"]*"[^>]*>.*?</span>', re.IGNORECASE | re.DOTALL)
+_WORKSPACE_METADATA_STEMS = {
+    "collector-report",
+    "operator-answers",
+    "queue-snapshot",
+    "render-result",
+    "review",
+    "source-inventory",
+}
 
 
 def _strip_tags(value: str) -> str:
@@ -201,13 +210,41 @@ def resolve_artifacts(path: Path) -> dict[str, Path]:
     """
     found: dict[str, Path] = {}
     if path.is_dir():
-        mds = sorted(path.glob("*.md"))
-        jsons = sorted(path.glob("*.json"))
-        # prefer a name shared by both (the edition slug)
-        if mds:
-            found["markdown"] = mds[0]
-        if jsons:
-            found["json"] = jsons[0]
+        render_result = path / "render-result.json"
+        if render_result.is_file():
+            try:
+                payload = json.loads(render_result.read_text(encoding="utf-8"))
+            except Exception:
+                payload = {}
+            outputs = payload.get("outputs") if isinstance(payload, dict) else None
+            if isinstance(outputs, dict):
+                markdown = Path(str(outputs.get("markdown", ""))).expanduser()
+                json_path = Path(str(outputs.get("json", ""))).expanduser()
+                if markdown.is_file():
+                    found["markdown"] = markdown
+                if json_path.is_file():
+                    found["json"] = json_path
+                if found:
+                    return found
+
+        edition_dir = path / "edition"
+        if edition_dir.is_dir():
+            nested = resolve_artifacts(edition_dir)
+            if nested:
+                return nested
+
+        mds = sorted(p for p in path.glob("*.md") if p.stem not in _WORKSPACE_METADATA_STEMS)
+        jsons = sorted(p for p in path.glob("*.json") if p.stem not in _WORKSPACE_METADATA_STEMS)
+        shared = sorted({p.stem for p in mds} & {p.stem for p in jsons})
+        stem = "edition" if "edition" in shared else (shared[0] if shared else "")
+        if stem:
+            found["markdown"] = path / f"{stem}.md"
+            found["json"] = path / f"{stem}.json"
+        else:
+            if mds:
+                found["markdown"] = next((p for p in mds if p.stem == "edition"), mds[0])
+            if jsons:
+                found["json"] = next((p for p in jsons if p.stem == "edition"), jsons[0])
         return found
     if path.suffix == ".md":
         found["markdown"] = path
@@ -266,9 +303,7 @@ def parse_edition(artifacts: dict[str, Path]) -> ParsedEdition:
     # JSON carries structured items + edition date + style/palette metadata
     if "json" in artifacts:
         try:
-            import json as _json
-
-            payload = _json.loads(artifacts["json"].read_text(encoding="utf-8"))
+            payload = json.loads(artifacts["json"].read_text(encoding="utf-8"))
         except Exception:
             payload = {}
         if isinstance(payload, dict):
