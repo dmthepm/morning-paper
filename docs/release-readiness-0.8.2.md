@@ -9,7 +9,7 @@ Date: 2026-06-22
 - Local package version: `0.8.2`
 - Public PyPI version verified on 2026-06-22: `0.8.1`
 - Latest local tag: `v0.8.1`
-- Local branch state at audit time: `main` ahead of `origin/main` by nine
+- Local branch state at latest audit: `main` ahead of `origin/main` by 14
   commits
 
 0.8.2 is ready for release review from the local repo, but it still needs the
@@ -27,6 +27,9 @@ surfaces again.
   streams, messages, repos, tickets, saved tabs, newsletters, feeds, folders,
   exports, Obsidian vaults, local reports, APIs, local scrapes, and
   agent-produced files.
+- `sources list` / `sources check` now auto-detect a scaffolded newsroom when
+  run from its root, so a fresh agent sees the local drop folder and collector
+  scripts even if it forgets `--newsroom .`.
 - Hacker News is no longer a friend-facing identity claim. It remains a legacy
   optional built-in source in the engine and tests.
 - Remote URL extraction is explicit. `article_extractor: local` stays local
@@ -41,6 +44,9 @@ surfaces again.
   edition's `feedback-plan.md`. It can now target the narrower scaffolded
   files for voice, standing interests, review preferences, and section specs
   instead of only the broad desk files.
+- The shipped plugin surface is locked to exactly `setup`, `edition`, and
+  `writing` for 0.8.x. Future newsroom desk skills are documented as design
+  direction and cannot leak into the plugin without validation failures.
 - Native recurrence is framed through the host's own primitive: Codex
   automations, Claude Code routines, or ChatGPT scheduled tasks. The CLI
   `routine` command remains a local fallback.
@@ -54,20 +60,26 @@ The current local candidate has been checked with:
 
 ```bash
 python -m pytest
-python scripts/setup_scaffold_smoke.py
+python scripts/setup_scaffold_smoke.py  # run from a clean current [pretty] env when ambient Python is stale
 python scripts/fresh_friend_smoke.py
+python scripts/install_smoke.py
 python scripts/host_plugin_smoke.py
 python scripts/validate_codex_plugin.py
 claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-paper
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --install-check
 ```
 
-Last full local result: `209 passed`.
+Last full local result: `211 passed`.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack
 versions, verifies WeasyPrint 69.0, runs `doctor --strict`, and renders a
 two-page demo PDF.
+
+Local machine note: the ambient system Python currently has stale WeasyPrint
+68.1 and trafilatura 2.0.0, so strict setup smoke fails there by design. A
+clean isolated install of the current project with `[pretty]` resolves
+WeasyPrint 69.0 and trafilatura 2.1.0 and passes setup smoke.
 
 ## Completion Gate Map
 
@@ -78,10 +90,10 @@ two-page demo PDF.
 | No stale HN identity | Friend-facing docs describe the whole source stack; HN remains only as an optional legacy built-in source and historical changelog/test fixture. |
 | No stale scraper assumption | Local extraction is default; remote fallback is explicit and tested. Jina/trafilatura are implementation details, not the product promise; dependency versions are visible in `doctor --json` and release checks. |
 | Native recurrence prompts | README carries Claude Code routine, Codex automation, and ChatGPT scheduled-task prompts. |
-| Source onboarding durable path | `sources check --newsroom`, collector recipes, staging, queue inspection, and fresh-friend smoke all exercise reader-owned sources. |
-| Compaction-safe edition loop | `edition prepare` writes durable edition files; `edition apply-feedback` records accepted/rejected feedback into durable newsroom files. |
+| Source onboarding durable path | `sources check --newsroom`, scaffolded-newsroom auto-detection, collector recipes, staging, queue inspection, and fresh-friend smoke all exercise reader-owned sources. |
+| Compaction-safe edition loop | `edition prepare` writes durable edition files; `edition apply-feedback` records accepted/rejected feedback into the smallest supported newsroom files, including `preferences/` and `specs/`. |
 | Visual/editor guidance | Composing docs, CSS/style guardrails, tests, and the edition skill require visual QA before delivery. |
-| Plugin surfaces | Codex and Claude plugin validation plus host plugin smoke pass from the shared skill tree. |
+| Plugin surfaces | Codex and Claude plugin validation plus install/host plugin smoke pass from the shared skill tree, locked to exactly `setup`, `edition`, and `writing` for 0.8.x. |
 
 ## Release Checklist
 
