@@ -158,6 +158,10 @@
 - first-edition acceptance test proving a real agent uses the prepared
   workspace, overwrites pending render/review artifacts, and ends by asking
   for natural-language feedback
+- independent final-editor workflow: a separate context window reviews the
+  rendered paper against the reader's editorial, visual, source, and delivery
+  contracts before delivery, then routes stable feedback into the smallest
+  durable newsroom file
 - visual geometry checks for arbitrary agent-created raw HTML/SVG/images
 - style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
@@ -171,6 +175,10 @@
 - a hosted contributor door (Cloudflare Worker email address) for instant
   confirmations — today's path is the IMAP poll
 - preference learning
+- private perspective analysis over reader-owned exports: YouTube, podcasts,
+  music, social downloads, email/newsletters, work tools, local notes, and
+  other private datasets can reveal attention patterns, blind spots, recurring
+  storylines, and cross-domain connections for the paper to consider
 - shared community curation and page exchange
 - agent slot competition against a page budget
 - coverage / breadth analysis for major stories
@@ -178,3 +186,7 @@
 - E Ink / device delivery surfaces
 - additional explicit extractor backends (readability exports, browser session
   capture, paid/private readers, or paywalled-page sessions)
+- sensitive export handling: source analysis over health, genetic, financial,
+  legal, or identity-adjacent data must be explicit opt-in, local-first,
+  minimally copied, and careful about unsupported inferences or essentialist
+  claims

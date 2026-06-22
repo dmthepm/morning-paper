@@ -52,6 +52,12 @@ PERSONAS = [
         "profile": "Reader with local markdown, text dumps, synced folders, and agent-produced files.",
         "source": "# Local folder dump\n\nThis came from a folder the user already owns. Nothing needed to move.\n",
         "next_sources": "Obsidian vault, synced folder, exported notes",
+        "local_drop": {
+            "folder-note.txt": "A source note from a folder the reader already owns.\n",
+            "watch-history.csv": "watched_at,title\n2026-06-21,Example video\n",
+            "saved-report.pdf": b"%PDF-1.4\n% synthetic unsupported fixture\n",
+        },
+        "expected_unsupported_drop": ["saved-report.pdf", "watch-history.csv"],
     },
 ]
 
@@ -127,9 +133,23 @@ changes through `feedback-plan.md` and record accepted/rejected taste in
 """
 
 
+def seed_local_drop(persona: dict[str, object], newsroom: Path) -> None:
+    local_drop = persona.get("local_drop")
+    if not isinstance(local_drop, dict):
+        return
+    inbox = newsroom / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    for name, content in local_drop.items():
+        path = inbox / str(name)
+        if isinstance(content, bytes):
+            path.write_bytes(content)
+        else:
+            path.write_text(str(content), encoding="utf-8")
+
+
 def assert_first_edition_quality(
     *,
-    persona: dict[str, str],
+    persona: dict[str, object],
     edition_dir: Path,
     render_payload: dict[str, object],
     review_payload: dict[str, object],
@@ -164,6 +184,25 @@ def assert_first_edition_quality(
         errors.append(f"{persona['id']}: queue snapshot has no staged source")
     if source_inventory.get("source_model", {}).get("posture") != "reader_stack_first":
         errors.append(f"{persona['id']}: source inventory lost reader-stack-first posture")
+    expected_unsupported = persona.get("expected_unsupported_drop")
+    if isinstance(expected_unsupported, list):
+        newsroom_inventory = source_inventory.get("newsroom")
+        local_drop = newsroom_inventory.get("local_drop") if isinstance(newsroom_inventory, dict) else {}
+        if not isinstance(local_drop, dict):
+            errors.append(f"{persona['id']}: source inventory missing local drop details")
+        else:
+            if int(local_drop.get("candidate_count") or 0) < 1:
+                errors.append(f"{persona['id']}: local drop did not report supported candidates")
+            if int(local_drop.get("unsupported_count") or 0) < len(expected_unsupported):
+                errors.append(f"{persona['id']}: local drop did not report unsupported files")
+            unsupported_sample = set(str(item) for item in local_drop.get("unsupported_sample_files", []))
+            for filename in expected_unsupported:
+                if str(filename) not in unsupported_sample:
+                    errors.append(f"{persona['id']}: unsupported local drop sample missing `{filename}`")
+        next_actions = source_inventory.get("next_actions")
+        action_text = "\n".join(str(item) for item in next_actions) if isinstance(next_actions, list) else ""
+        if "Unsupported local-drop files need a converter collector" not in action_text:
+            errors.append(f"{persona['id']}: source inventory did not request a converter collector")
     for phrase in ("Applied Feedback", "EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         if phrase not in feedback_plan:
             errors.append(f"{persona['id']}: feedback plan missing `{phrase}`")
@@ -179,7 +218,7 @@ def assert_first_edition_quality(
     return errors
 
 
-def simulate(persona: dict[str, str], base: Path, env: dict[str, str]) -> dict[str, object]:
+def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dict[str, object]:
     root = base / persona["id"]
     config_path = root / "config.yaml"
     output_dir = root / "outputs"
@@ -187,15 +226,19 @@ def simulate(persona: dict[str, str], base: Path, env: dict[str, str]) -> dict[s
     root.mkdir(parents=True)
 
     require_ok(run_cli(["init", "--config", str(config_path)], env=env), f"{persona['id']} init")
-    write_config(config_path, output_dir, persona["profile"])
-    require_ok(run_cli(["newsroom", "init", str(newsroom), "--name", persona["paper"]], env=env), f"{persona['id']} newsroom")
+    write_config(config_path, output_dir, str(persona["profile"]))
+    require_ok(
+        run_cli(["newsroom", "init", str(newsroom), "--name", str(persona["paper"])], env=env),
+        f"{persona['id']} newsroom",
+    )
+    seed_local_drop(persona, newsroom)
     require_ok(
         run_cli(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", DATE], env=env),
         f"{persona['id']} edition prepare",
     )
 
     source_file = root / "source.md"
-    source_file.write_text(persona["source"], encoding="utf-8")
+    source_file.write_text(str(persona["source"]), encoding="utf-8")
     stage = run_cli(["stage", str(source_file), "--config", str(config_path), "--date", DATE], env=env)
     require_ok(stage, f"{persona['id']} stage")
     staged = json.loads(stage.stdout)
