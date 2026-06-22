@@ -113,6 +113,9 @@
   Claude Code and Codex plugin hosts using temporary homes, proving clean host
   discovery and the shared setup/edition/writing skills without mutating the
   reader's installed plugin state
+- `scripts/release_candidate_check.py` builds release artifacts from a clean
+  source copy, rejects stale build debris, and can install both wheel and sdist
+  with `[pretty]` to prove `doctor --strict` and `demo` before PyPI publish
 - a live Codex agent, running from temporary `CODEX_HOME`, `HOME`, and
   `XDG_CONFIG_HOME` with the local plugin installed, used the
   setup/edition/writing skill path to create a fresh newsroom, stage a

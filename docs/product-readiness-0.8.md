@@ -226,6 +226,9 @@ Both the wheel and sdist installed in fresh virtualenvs with `[pretty]`, printed
 `morning-paper --version` as `0.8.0`, resolved WeasyPrint `69.0`, passed
 `doctor --strict --json`, and rendered `demo --output <tmp>/demo.pdf` as a
 real two-page PDF with JSON-only stdout.
+This proof is now executable as
+`python3 scripts/release_candidate_check.py --outdir dist --install-check`, and
+the PyPI publish workflow runs that command before upload.
 
 ## Live Acceptance Notes
 

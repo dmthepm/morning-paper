@@ -350,6 +350,7 @@ python -m pytest tests/
 python scripts/setup_scaffold_smoke.py
 python scripts/fresh_friend_smoke.py
 python scripts/host_plugin_smoke.py  # requires local claude + codex CLIs
+python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-dist --install-check
 morning-paper doctor --strict
 ```
 
