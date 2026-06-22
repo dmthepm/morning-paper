@@ -196,10 +196,12 @@ mkdir -p "$DROP_DIR"
 shopt -s nullglob
 
 count=0
+unsupported=()
 for file in "$DROP_DIR"/*; do
   [ -f "$file" ] || continue
   base="$(basename "$file")"
   case "$base" in .* ) continue ;; esac
+  case "$base" in README.md ) continue ;; esac
   case "$file" in
     *.md|*.markdown)
       stage_markdown "${base%.*}" "$file" && count=$((count + 1))
@@ -216,6 +218,9 @@ for file in "$DROP_DIR"/*; do
         stage_url "${base%.*}" "$url" && count=$((count + 1))
       fi
       ;;
+    *)
+      unsupported+=("$base")
+      ;;
   esac
 done
 
@@ -223,6 +228,9 @@ if [ "$count" -gt 0 ]; then
   ok "Local drop ($count)"
 else
   unavailable "Local drop" "put .md, .txt, or .url files in $DROP_DIR"
+fi
+if [ "${#unsupported[@]}" -gt 0 ]; then
+  unavailable "Unsupported local drop" "needs a converter collector: ${unsupported[*]}"
 fi
 ```
 

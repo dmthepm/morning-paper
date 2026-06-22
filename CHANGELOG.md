@@ -35,8 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `sources list` / `sources check` now separate supported local-drop candidates
   from unsupported files. The starter collector stages `.md`, `.markdown`,
   `.txt`, and `.url`; PDFs, CSVs, JSON exports, browser dumps, and other files
-  are reported as needing a converter collector instead of being implied as
-  ready-to-stage.
+  are reported by both source inventory and the scaffolded local-drop collector
+  as needing a converter collector instead of being implied as ready-to-stage.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
 - Active setup, edition, collector, roadmap, and readiness docs now describe a

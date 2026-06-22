@@ -33,6 +33,9 @@ surfaces again.
 - Local-drop inventory now distinguishes supported staging candidates from
   unsupported files, so PDFs/CSVs/exports prompt a converter collector instead
   of looking ready when the starter collector will skip them.
+- The scaffolded local-drop collector now reports those unsupported files in
+  its own output too, so `collectors/run_all.sh` gives an agent an honest
+  transcript even when supported files were staged successfully.
 - Legacy built-in source labels are no longer friend-facing identity claims.
   The reader-facing model is the whole personal source stack.
 - Remote URL extraction is explicit. `article_extractor: local` stays local

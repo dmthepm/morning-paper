@@ -120,6 +120,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Local Drop Inbox", inbox)
             self.assertIn(".md", inbox)
             self.assertIn("morning-paper stage", inbox)
+            self.assertIn("converter", inbox)
 
             delivery = (root / "DELIVERY.md").read_text(encoding="utf-8")
             self.assertIn("Email / Article View", delivery)
@@ -151,6 +152,46 @@ class NewsroomScaffoldTest(unittest.TestCase):
             for script in ("_lib.sh", "run_all.sh", "shipped.sh", "read.sh", "local-drop.sh"):
                 self.assertTrue(os.access(root / "collectors" / script, os.X_OK), script)
                 subprocess.run(["bash", "-n", str(root / "collectors" / script)], check=True)
+
+    def test_local_drop_collector_reports_unsupported_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            root = tmp_path / "newsroom"
+            self.assertEqual(cli.main(["newsroom", "init", str(root)]), 0)
+            (root / "inbox" / "note.txt").write_text("Something to read.\n", encoding="utf-8")
+            (root / "inbox" / "report.pdf").write_bytes(b"%PDF-1.4\n")
+            (root / "inbox" / "history.csv").write_text("watched_at,title\n2026-06-22,Example\n", encoding="utf-8")
+
+            bin_dir = tmp_path / "bin"
+            bin_dir.mkdir()
+            calls = tmp_path / "calls.log"
+            fake = bin_dir / "morning-paper"
+            fake.write_text(
+                "#!/usr/bin/env bash\n"
+                "printf '%s\\n' \"$*\" >> \"$MP_CALL_LOG\"\n"
+                "printf '{\"ok\": true}\\n'\n",
+                encoding="utf-8",
+            )
+            os.chmod(fake, 0o755)
+
+            env = os.environ.copy()
+            env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+            env["MP_CALL_LOG"] = str(calls)
+            result = subprocess.run(
+                [str(root / "collectors" / "local-drop.sh"), "2026-06-22"],
+                cwd=root,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("ok: Local drop (1)", result.stdout)
+            self.assertIn("unavailable: Unsupported local drop", result.stdout)
+            self.assertIn("history.csv", result.stdout)
+            self.assertIn("report.pdf", result.stdout)
+            self.assertIn("--date 2026-06-22", calls.read_text(encoding="utf-8"))
 
     def test_newsroom_init_does_not_overwrite_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

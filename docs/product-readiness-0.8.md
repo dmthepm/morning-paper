@@ -47,6 +47,9 @@ The product promise stays narrow:
 - Source inventory is honest about starter collector limits: the local drop
   reports supported staging candidates separately from unsupported files that
   need a converter collector.
+- The scaffolded local-drop collector reports unsupported files at runtime too,
+  so a collector transcript cannot say "ok" while silently skipping a PDF, CSV,
+  JSON export, browser dump, or app-specific file.
 - `doctor --strict` proves actual layout for the production print path.
 - The chart furniture now has renderer-level guardrails: built-in `mp-bars`,
   `mp-spark`, and `mp-stats` align with the available measure, cap print

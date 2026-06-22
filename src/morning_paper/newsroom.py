@@ -644,6 +644,7 @@ mkdir -p "$DROP_DIR"
 shopt -s nullglob
 
 count=0
+unsupported=()
 for file in "$DROP_DIR"/*; do
   [ -f "$file" ] || continue
   base="$(basename "$file")"
@@ -665,6 +666,9 @@ for file in "$DROP_DIR"/*; do
         stage_url "${base%.*}" "$url" && count=$((count + 1))
       fi
       ;;
+    *)
+      unsupported+=("$base")
+      ;;
   esac
 done
 
@@ -672,6 +676,9 @@ if [ "$count" -gt 0 ]; then
   ok "Local drop ($count)"
 else
   unavailable "Local drop" "put .md, .txt, or .url files in $DROP_DIR"
+fi
+if [ "${#unsupported[@]}" -gt 0 ]; then
+  unavailable "Unsupported local drop" "needs a converter collector: ${unsupported[*]}"
 fi
 """,
         "memory/reads-ledger.md": """# Reads ledger
@@ -774,8 +781,8 @@ morning-paper queue list --date YYYY-MM-DD
 ```
 
 For PDFs, CSVs, JSON exports, browser dumps, or app-specific exports, ask the
-agent to write a collector that converts the source into markdown and calls
-`morning-paper stage`.
+agent to write a converter collector that turns the source into markdown and
+calls `morning-paper stage`.
 """,
         "inbox/.gitkeep": "",
     }
