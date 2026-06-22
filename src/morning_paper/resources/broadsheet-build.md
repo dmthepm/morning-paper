@@ -7,7 +7,7 @@
 </div>
 
 <div class="strip">
-<!-- Strip: banner, signal count, HN count, print runtime -->
+<!-- Strip: banner, signal count, community count, print runtime -->
 </div>
 
 <div class="dept-kicker">Signals</div>
@@ -20,9 +20,9 @@
 
 <div class="dept-rule"></div>
 
-<div class="dept-kicker">Hacker News — Top {HN_COUNT}</div>
-<p class="mg-note">news.ycombinator.com — {DATE} — via HN Algolia API</p>
-<!-- HN items as table.data rows -->
+<div class="dept-kicker">Community Signals — Top {COMMUNITY_COUNT}</div>
+<p class="mg-note">Optional public/community source — {DATE}</p>
+<!-- Community items as table.data rows -->
 
 <div class="dept-rule"></div>
 

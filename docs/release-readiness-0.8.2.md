@@ -30,8 +30,8 @@ surfaces again.
 - `sources list` / `sources check` now auto-detect a scaffolded newsroom when
   run from its root, so a fresh agent sees the local drop folder and collector
   scripts even if it forgets `--newsroom .`.
-- Hacker News is no longer a friend-facing identity claim. It remains a legacy
-  optional built-in source in the engine and tests.
+- Legacy built-in source labels are no longer friend-facing identity claims.
+  The reader-facing model is the whole personal source stack.
 - Remote URL extraction is explicit. `article_extractor: local` stays local
   unless `remote_extractor_fallback: true` is set.
 - Dependency visibility is part of the release proof. `doctor --json` reports
@@ -89,7 +89,7 @@ WeasyPrint 69.0 and trafilatura 2.1.0 and passes setup smoke.
 | --- | --- |
 | Docs and skills agree | README, `AGENTS.md`, setup/edition skills, changelog, and product-readiness docs use the same setup/source/feedback model. |
 | README stays concise and true | README now keeps details to setup, sources, daily routine, styles, agents, and development. |
-| No stale HN identity | Friend-facing docs describe the whole source stack; HN remains only as an optional legacy built-in source and historical changelog/test fixture. |
+| No stale source identity | Friend-facing docs describe the whole source stack; legacy built-ins stay internal and do not define the product surface. |
 | No stale scraper assumption | Local extraction is default; remote fallback is explicit and tested. Jina/trafilatura are implementation details, not the product promise; dependency versions are visible in `doctor --json` and release checks. |
 | Native recurrence prompts | README carries Claude Code routine, Codex automation, and ChatGPT scheduled-task prompts. |
 | Source onboarding durable path | `sources check --newsroom`, scaffolded-newsroom auto-detection, collector recipes, staging, queue inspection, and fresh-friend smoke all exercise reader-owned sources. |

@@ -79,7 +79,7 @@ def fetch_hacker_news(limit: int) -> list[SourceItem]:
         items.append(
             SourceItem(
                 source_type="hacker_news",
-                source_name="Hacker News",
+                source_name="Community Signals",
                 title=title,
                 url=target_url,
                 summary=f"{hit.get('points', 0)} points · {hit.get('num_comments', 0)} comments",
@@ -271,7 +271,7 @@ def source_inventory(
     hn = {
         "id": "hacker_news",
         "type": "built_in",
-        "name": "Hacker News",
+        "name": "Community Signals",
         "role": "optional_starter",
         "purpose": "technical radar only when the reader asks for it",
         "enabled": bool(config.sources.hacker_news.enabled),

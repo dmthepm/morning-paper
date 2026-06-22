@@ -61,7 +61,7 @@ _CLEAN_EDITION = (
     "The board voted to add a morning crossing after a long debate about the cost.\n\n"
     '<div class="article-head"><div class="dept-title">Bakery wins a regional prize for its rye</div></div>\n\n'
     "The judges praised the crust and the crumb in equal measure this spring season.\n\n"
-    "## Hacker News\n\n"
+    "## Community Signals\n\n"
     '<div class="article-head"><div class="dept-title">A new compiler ships its first release</div></div>\n\n'
     "The team announced the milestone after three years of steady work on the project.\n\n"
     '<div class="article-head"><div class="dept-title">Engineers debate a faster sort method</div></div>\n\n'
@@ -255,7 +255,7 @@ class EightTextChecksTest(unittest.TestCase):
         )
         bad = _review(
             "## Featured Reads\n\n" + fat
-            + "\n## Hacker News\n\nOne lonely item lives here all alone today.\n"
+            + "\n## Community Signals\n\nOne lonely item lives here all alone today.\n"
             + "\n## Signals\n\nA single short signal item sits here today.\n"
             + "\n## Notes\n\nJust one short note in this section here today.\n"
         )
@@ -266,11 +266,11 @@ class EightTextChecksTest(unittest.TestCase):
     def test_6_empty_or_sparse_section_nudges_dead_air(self) -> None:
         bad = _review(
             "## Featured Reads\n\nGood real body content with several words to read here today this morning.\n\n"
-            '## Hacker News\n\n<p class="not-configured">No HN items available.</p>\n'
+            '## Community Signals\n\n<p class="not-configured">No community signals configured.</p>\n'
         )
         found = self._checks(bad, "empty-or-sparse-section")
         self.assertTrue(found)
-        self.assertEqual(found[0]["location"]["section"], "Hacker News")
+        self.assertEqual(found[0]["location"]["section"], "Community Signals")
 
     def test_7_duplicate_headline_nudges_same_url(self) -> None:
         items = [

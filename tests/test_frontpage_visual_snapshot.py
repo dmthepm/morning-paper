@@ -82,7 +82,7 @@ def _render_frontpage_png(tmp_path: Path, *, style: str = "broadsheet") -> Path:
         "hacker_news": [
             _fixture_item(
                 "hacker_news",
-                "Hacker News",
+                "Community Signals",
                 "Show HN: a structured print pipeline for long-form AI reading",
                 "420 points · 188 comments",
                 "https://news.ycombinator.com/item?id=1",
@@ -91,7 +91,7 @@ def _render_frontpage_png(tmp_path: Path, *, style: str = "broadsheet") -> Path:
             ),
             _fixture_item(
                 "hacker_news",
-                "Hacker News",
+                "Community Signals",
                 "Open source maintainers are using PDFs as a regression surface",
                 "312 points · 94 comments",
                 "https://news.ycombinator.com/item?id=2",
@@ -100,7 +100,7 @@ def _render_frontpage_png(tmp_path: Path, *, style: str = "broadsheet") -> Path:
             ),
             _fixture_item(
                 "hacker_news",
-                "Hacker News",
+                "Community Signals",
                 "A practical guide to stable paged-media CSS",
                 "271 points · 61 comments",
                 "https://news.ycombinator.com/item?id=3",
@@ -109,7 +109,7 @@ def _render_frontpage_png(tmp_path: Path, *, style: str = "broadsheet") -> Path:
             ),
             _fixture_item(
                 "hacker_news",
-                "Hacker News",
+                "Community Signals",
                 "Why local-first tooling still matters for agentic systems",
                 "188 points · 55 comments",
                 "https://news.ycombinator.com/item?id=4",

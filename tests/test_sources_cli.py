@@ -79,6 +79,7 @@ class SourcesCliTest(unittest.TestCase):
         self.assertIn("work_systems", payload["source_model"]["reader_owned_inputs"])
         self.assertIn("social_and_video_feeds", payload["source_model"]["reader_owned_inputs"])
         self.assertEqual(payload["sources"][0]["id"], "hacker_news")
+        self.assertEqual(payload["sources"][0]["name"], "Community Signals")
         self.assertEqual(payload["sources"][0]["role"], "optional_starter")
         self.assertEqual(payload["sources"][0]["status"], "disabled")
         self.assertEqual(payload["sources"][1]["role"], "reader_owned")
