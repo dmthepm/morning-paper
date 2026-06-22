@@ -56,10 +56,11 @@ surfaces again.
   `writing` for 0.8.x. Future newsroom desk skills are documented as design
   direction and cannot leak into the plugin without validation failures.
 - Native recurrence is framed through the host's own primitive: Codex
-  automations, Claude Code routines, or ChatGPT scheduled tasks. Codex and
-  Claude paths run where the newsroom is visible; ChatGPT tasks are treated as
-  reminders/check-ins unless an approved runner can access the newsroom. The
-  CLI `routine` command remains a local fallback.
+  automations, Claude Code routines (`/schedule` from the CLI), or ChatGPT
+  scheduled tasks. Codex and Claude paths run where the newsroom is visible;
+  ChatGPT tasks are treated as reminders/check-ins unless an approved runner can
+  access the newsroom, and they must not assume project-file access. The CLI
+  `routine` command remains a local fallback.
 - Visual integration guardrails now cover chart and illustration width,
   label-density, print suitability, captions/source notes, and review
   expectations; `morning-paper review` now nudges on unfurnished visual markup

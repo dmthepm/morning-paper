@@ -127,7 +127,8 @@ Copy one of these into the host:
 Set up a Claude Code routine that builds my Morning Paper each weekday morning.
 Use the Morning Paper edition skill in my private newsroom, render the PDF, open
 or deliver it the way my DELIVERY.md says, and tell me only if the run failed or
-needs my attention.
+needs my attention. If you are in the Claude Code CLI, use /schedule to create
+the routine.
 ```
 
 ```text
@@ -146,10 +147,11 @@ newsroom runner, use it; otherwise do not pretend you rendered the PDF.
 Claude Code calls this a **routine**. Codex calls it an **automation**. ChatGPT
 calls it a **scheduled task**. The important distinction: Codex and Claude can
 run inside the project/newsroom; ChatGPT tasks are useful for reminders or
-connected workflows, but should not claim local PDF work unless the local runner
-is actually available. If those are not available or you specifically want a
-machine-local fallback, the CLI still has `morning-paper routine
-install|status|uninstall`; use it deliberately, not by default.
+connected workflows, but may not have access to project files and should not
+claim local PDF work unless the local runner is actually available. If those are
+not available or you specifically want a machine-local fallback, the CLI still
+has `morning-paper routine install|status|uninstall`; use it deliberately, not
+by default.
 
 ## Styles
 

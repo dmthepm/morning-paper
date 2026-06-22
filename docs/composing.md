@@ -454,11 +454,10 @@ primitive:
 
 - Codex automation: can run the `edition` skill in the project/newsroom and
   choose a local project or background worktree environment;
-- Claude Code routine: use a schedule trigger and run the edition workflow from
-  the private newsroom;
+- Claude Code routine: use a schedule trigger (`/schedule` in the Claude Code
+  CLI) and run the edition workflow from the private newsroom;
 - ChatGPT scheduled task: good for reminders, check-ins, or connected workflows;
-  it should not claim it rendered a local PDF unless it has approved access to
-  the newsroom runner.
+  it may not have access to project files and should not claim it rendered a local PDF unless it has approved access to the newsroom runner.
 
 The CLI's `morning-paper routine install|status|uninstall` remains an advanced
 local fallback for users who explicitly want launchd/systemd/cron. It should

@@ -79,6 +79,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   fail if the 0.8.x plugin exposes anything other than the shipped
   `setup`/`edition`/`writing` skill set. Future newsroom desk skills must land
   deliberately with updated manifests, evals, and docs.
+- **Host-native recurrence wording.** Setup/readme guidance now names Claude
+  Code `/schedule` for routines and warns that ChatGPT scheduled tasks must not
+  assume project-file or local-newsroom access.
 - `morning-paper review` now includes an advisory `visual-provenance` check for
   standalone images, missing captions/source notes, explicit narrow visual
   widths, and one-item visual grids.

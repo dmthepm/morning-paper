@@ -670,7 +670,8 @@ Offer the matching prompt:
 Set up a Claude Code routine with a schedule trigger that builds my Morning
 Paper each weekday morning. Use this private newsroom, run the Morning Paper
 edition workflow, render the PDF, open or deliver it according to DELIVERY.md,
-and tell me only if the run failed or needs my attention.
+and tell me only if the run failed or needs my attention. If you are in the
+Claude Code CLI, use /schedule to create the routine.
 ```
 
 ```text
@@ -684,7 +685,9 @@ the Codex automation environment that can actually see this newsroom.
 Set up a ChatGPT scheduled task for my Morning Paper. Each weekday morning,
 check whether today's paper was produced or remind me to run the Morning Paper
 edition workflow in my newsroom. If you have an approved way to access the
-newsroom runner, use it; otherwise do not pretend you rendered the PDF.
+newsroom runner, use it; otherwise do not pretend you rendered the PDF. Do not
+assume a scheduled task can read project files or my local newsroom unless that
+access is explicitly available.
 ```
 
 Only if they specifically want a machine-local fallback, run

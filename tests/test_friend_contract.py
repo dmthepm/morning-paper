@@ -201,10 +201,14 @@ def test_recurrence_guidance_prefers_host_native_primitives() -> None:
     assert "Set up a Claude Code routine" in readme
     assert "Set up a Codex automation" in readme
     assert "Set up a scheduled task for my Morning Paper" in readme
+    assert "/schedule" in readme
     assert "do not pretend you rendered the PDF" in readme
+    assert "may not have access to project files" in readme
     assert "should not claim it rendered a local PDF" in composing
     assert "Codex automation environment" in setup_skill
     assert "with a schedule trigger" in setup_skill
+    assert "/schedule" in setup_skill
+    assert "project files" in setup_skill
     assert "Do not install a local scheduler unless they explicitly ask" in setup_skill
 
 

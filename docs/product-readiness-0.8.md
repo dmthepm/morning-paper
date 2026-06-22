@@ -157,15 +157,17 @@ The daily paper should lean into the recurring primitive of the host the reader
 already uses:
 
 - Codex: **automations**;
-- Claude Code: **routines** with schedule triggers;
+- Claude Code: **routines** with schedule triggers, including `/schedule` in
+  the Claude Code CLI;
 - ChatGPT: **scheduled tasks**.
 
 Morning Paper should provide short prompts that ask the host agent to set up the
 recurring run using the reader's newsroom and the `edition` workflow. Codex and
 Claude paths should run where the private newsroom is visible. ChatGPT scheduled
 tasks are a reminder/check-in path unless the reader has explicitly connected a
-runner that can access the newsroom and render the PDF. The CLI's `routine`
-command remains a deliberate local fallback for users who want
+runner that can access the newsroom and render the PDF; they must not assume
+project-file or local-newsroom access. The CLI's `routine` command remains a
+deliberate local fallback for users who want
 launchd/systemd/cron, not the default onboarding path.
 
 ## Print Stack Policy
