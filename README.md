@@ -41,8 +41,9 @@ install. Do this end to end and verify each step:
 
 1. Install the latest `morning-paper[pretty]`.
 2. Confirm `morning-paper --version` matches the latest version on PyPI.
-3. Run `morning-paper doctor` and fix what it flags until the typewriter
-   renderer is ready (macOS may need `brew install pango gdk-pixbuf`).
+3. Run `morning-paper doctor --strict` and fix what it flags until the
+   typewriter renderer and render self-test are ready (macOS may need
+   `brew install pango gdk-pixbuf`).
 4. Run `morning-paper demo --open` and confirm the PDF it names exists on disk
    and opens on screen.
 5. If `uv tool install` resolves an old version or the wrong Python,
@@ -76,7 +77,7 @@ files you own. The `edition` skill composes and prints each day's paper.
 ```bash
 uv tool install --python 3.13 "morning-paper[pretty]"   # pin the interpreter
 morning-paper --version    # should match the latest on PyPI
-morning-paper doctor       # must say: typewriter ready
+morning-paper doctor --strict # must say: typewriter ready + self-test passed
 morning-paper demo --open  # renders the sample PDF, prints its path, opens it
 ```
 
@@ -93,18 +94,19 @@ it. That is the product.
 ## For Agents (read this first if you are one)
 
 Your human wants a daily printed paper. You can give them one. If they pasted
-the ["Set Up With An Agent" prompt](#set-up-with-an-agent) above, follow it —
-it is the full onboarding arc (read, explore, interview, install, demo,
-newsroom repo, first edition, daily loop). The repo-level contract is
-[AGENTS.md](AGENTS.md). Otherwise:
+the ["Set Up With An Agent" prompt](#set-up-with-an-agent) above, follow it
+exactly: it proves the engine can print before touching their private
+newsroom. After the demo PDF is open, install the plugin and use the `setup`
+skill for the onboarding arc: interview, newsroom repo, first edition, and
+daily loop. The repo-level contract is [AGENTS.md](AGENTS.md). Otherwise:
 
 1. Install: `uv tool install --python 3.13 "morning-paper[pretty]"` (or
    `pipx install --python 3.13 "morning-paper[pretty]"`; use `pip` only inside
    a venv — PEP 668 blocks it on brew/system Pythons). Pin the interpreter: a
    bare install can pick a Python beta with no print-stack wheels and resolve
    an old release. Then `morning-paper --version` (confirm it is the latest on
-   PyPI) and `morning-paper doctor`. `morning-paper demo` proves the print path
-   end to end.
+   PyPI) and `morning-paper doctor --strict`. `morning-paper demo --open`
+   proves the print path end to end.
 2. If this repo is installed as a plugin (Claude Code or Codex), run the
    `setup` skill — it interviews the reader, creates their private newsroom repo
    (preferences as files: the owned algorithm), and wires a morning routine. The
@@ -169,7 +171,7 @@ newsroom repo, first edition, daily loop). The repo-level contract is
 - Reviews a finished edition for editorial problems CSS can't fix with
   `morning-paper review` — warnings, never a hard fail
 - Renders charts from plain-text directives (`mp-bars`, `mp-spark`,
-  `mp-stats`) as inline SVG — stdlib only, no plotting library
+  `mp-stats`) with print-density guardrails — stdlib only, no plotting library
 - Works without an LLM key
 
 No database. No Docker. No SaaS requirement. It is not a second-brain
@@ -183,7 +185,7 @@ uv tool install --python 3.13 "morning-paper[pretty]"
 morning-paper init      # starter config
 morning-paper newsroom init ~/Newsroom
 morning-paper edition prepare ~/Newsroom
-morning-paper doctor    # must say: typewriter ready
+morning-paper doctor --strict # must say: typewriter ready + self-test passed
 morning-paper build     # today's edition
 ```
 

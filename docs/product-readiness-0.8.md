@@ -20,8 +20,9 @@ The product promise stays narrow:
 
 ## Current Truth
 
-- `morning-paper` 0.7.1 is live on PyPI; the current repo is prepared as the
-  0.8.0 release candidate and carries one skill tree for Claude Code and Codex.
+- `morning-paper` 0.7.1 is live on PyPI and GitHub Releases; the current repo
+  is prepared as the 0.8.0 release candidate and carries one skill tree for
+  Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
   host manifests carry the same 0.8.0 semver.
@@ -41,8 +42,9 @@ The product promise stays narrow:
   sources, and everything else can arrive through collectors that stage
   markdown for a specific edition date.
 - `doctor --strict` proves actual layout for the production print path.
-- The demo's chart furniture now has a renderer-level guardrail: built-in
-  `mp-bars` and `mp-spark` visuals use the full available measure instead of
+- The chart furniture now has renderer-level guardrails: built-in `mp-bars`,
+  `mp-spark`, and `mp-stats` align with the available measure, cap print
+  density, clip labels, and add honest overflow notes instead of colliding or
   floating as narrow inserts.
 
 ## User Stories

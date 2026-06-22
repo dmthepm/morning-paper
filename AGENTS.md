@@ -41,11 +41,13 @@ manager can resolve an old version or the wrong interpreter and report success
 anyway, so check each step against reality:
 
 1. `uv tool install --python 3.13 "morning-paper[pretty]"` (pinning the
-   interpreter avoids a beta Python with no print-stack wheels). `pipx install
-   "morning-paper[pretty]"` or a clean venv are equal fallbacks.
+   interpreter avoids a beta Python with no print-stack wheels).
+   `pipx install --python 3.13 "morning-paper[pretty]"` or a clean venv are
+   equal fallbacks.
 2. `morning-paper --version` — confirm it matches the latest on PyPI.
-3. `morning-paper doctor` — fix until it reports the typewriter renderer ready
-   (macOS may need `brew install pango gdk-pixbuf`).
+3. `morning-paper doctor --strict` — fix until it reports the typewriter
+   renderer ready and the render self-test passed (macOS may need
+   `brew install pango gdk-pixbuf`).
 4. `morning-paper demo --open` — confirm the PDF exists on disk and opens on
    screen. That is the proof.
 

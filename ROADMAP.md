@@ -130,9 +130,10 @@
   two-page PDF, and opened it on screen; full interactive setup against the
   real home directory remains intentionally unforced because it can install a
   routine and write user config
-- chart directives now have a print-layout guardrail: built-in `mp-bars` and
-  `mp-spark` visuals use the full available measure so demo/newsroom visuals
-  align with surrounding sections instead of floating as narrow inserts
+- chart directives now have print-layout guardrails: built-in `mp-bars`,
+  `mp-spark`, and `mp-stats` align with surrounding sections, cap density,
+  clip labels, and add honest overflow notes instead of colliding or floating
+  as narrow inserts
 - collector date semantics are explicit: edition collectors target the
   edition date, ad hoc `stage` remains "read this later" and defaults to
   tomorrow
@@ -147,7 +148,7 @@
   workspace, overwrites pending render/review artifacts, and ends by asking
   for natural-language feedback
 - visual QA guardrails for arbitrary agent-created raw HTML/SVG/images:
-  geometry checks, asset provenance, image sizing, and chart row/label bounds
+  geometry checks, asset provenance, and image sizing
 - style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
 - source plugins for YouTube transcripts and X/Twitter thread workflows
