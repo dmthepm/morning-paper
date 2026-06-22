@@ -83,6 +83,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
     readiness = _read("docs/product-readiness-0.8.md")
+    release_readiness = _read("docs/release-readiness-0.8.2.md")
     roadmap = _read("ROADMAP.md")
     skill_suite = _read("docs/newsroom-skill-suite.md")
     install_smoke = _read("scripts/install_smoke.py")
@@ -112,6 +113,9 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in codex_validator
     assert "--isolated" in setup_smoke
     assert "setup_scaffold_smoke.py --isolated" in readiness
+    assert "/tmp/morning-paper-rc-final-local" in release_readiness
+    assert "Latest full local verification" in release_readiness
+    assert "current `main` HEAD" in release_readiness
     assert "edition apply-feedback" in readiness
     for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         assert newsroom_file in skill_suite

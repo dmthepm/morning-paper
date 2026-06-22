@@ -78,10 +78,14 @@ python scripts/install_smoke.py
 python scripts/host_plugin_smoke.py
 python scripts/validate_codex_plugin.py
 claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-paper
-python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --install-check
+python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-final-local --install-check
 ```
 
 Last full isolated local result: `216 passed`.
+Latest full local verification: 2026-06-22 on current `main` HEAD, with setup
+scaffold smoke, five fresh-friend personas, install smoke, Codex plugin
+validation, host plugin smoke, Claude strict plugin validation, and clean
+wheel/sdist install checks all passing.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack
