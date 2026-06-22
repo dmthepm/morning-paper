@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+import io
+import json
+import tempfile
+import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
+
+import yaml
+
+from morning_paper import cli
+
+
+class EditionWorkspaceTest(unittest.TestCase):
+    def _config_path(self, tmp_path: Path) -> Path:
+        config_path = tmp_path / "config.yaml"
+        rc = cli.main(["init", "--config", str(config_path)])
+        self.assertEqual(rc, 0)
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        config["outputs"]["directory"] = str(tmp_path / "out")
+        config["sources"]["hacker_news"]["enabled"] = False
+        config["sources"]["rss"] = []
+        config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+        return config_path
+
+    def test_edition_prepare_writes_all_resume_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            self.assertEqual(payload["edition_dir"], str(edition_dir.resolve()))
+
+            expected = {
+                "source-inventory.json",
+                "collector-report.md",
+                "queue-snapshot.json",
+                "draft.md",
+                "render-result.json",
+                "review.json",
+                "operator-answers.md",
+            }
+            self.assertEqual(set(payload["written"]), expected)
+            for filename in expected:
+                self.assertTrue((edition_dir / filename).exists(), filename)
+
+            source_inventory = json.loads((edition_dir / "source-inventory.json").read_text(encoding="utf-8"))
+            self.assertEqual(source_inventory["sources"][0]["id"], "hacker_news")
+            self.assertEqual(source_inventory["sources"][0]["status"], "disabled")
+            self.assertEqual(source_inventory["newsroom"]["status"], "configured")
+            collector_ids = {item["id"] for item in source_inventory["newsroom"]["collectors"]}
+            self.assertIn("collector:local-drop", collector_ids)
+            queue = json.loads((edition_dir / "queue-snapshot.json").read_text(encoding="utf-8"))
+            self.assertEqual(queue["date"], "2026-06-22")
+            self.assertEqual(queue["count"], 0)
+            render_result = json.loads((edition_dir / "render-result.json").read_text(encoding="utf-8"))
+            self.assertEqual(render_result["status"], "pending")
+            self.assertIn("morning-paper render", render_result["command"])
+            review = json.loads((edition_dir / "review.json").read_text(encoding="utf-8"))
+            self.assertEqual(review["status"], "pending")
+            self.assertIn("morning-paper review", review["command"])
+            self.assertIn("Print Tomorrow", (edition_dir / "operator-answers.md").read_text(encoding="utf-8"))
+
+    def test_edition_prepare_preserves_draft_without_force(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            args = [
+                "edition",
+                "prepare",
+                str(newsroom),
+                "--config",
+                str(config_path),
+                "--date",
+                "2026-06-22",
+            ]
+            self.assertEqual(cli.main(args), 0)
+            draft = newsroom / "editions" / "2026-06-22" / "draft.md"
+            draft.write_text("# Edited Draft\n\nKeep this.\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(args)
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertIn("draft.md", payload["skipped"])
+            self.assertEqual(draft.read_text(encoding="utf-8"), "# Edited Draft\n\nKeep this.\n")
+
+            self.assertEqual(cli.main([*args, "--force"]), 0)
+            self.assertNotEqual(draft.read_text(encoding="utf-8"), "# Edited Draft\n\nKeep this.\n")
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -31,6 +31,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Utilities",
   "Topic :: Text Processing",
 ]
@@ -45,7 +46,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pretty = ["weasyprint>=62.0"]
+# WeasyPrint is the production renderer. Keep this bounded to the current
+# major line until CI proves the next one against the style packs.
+pretty = ["weasyprint>=69.0,<70"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]

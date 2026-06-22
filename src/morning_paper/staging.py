@@ -13,6 +13,8 @@ Layout:
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -25,7 +27,7 @@ from .article_print import (
     render_article_markdown,
 )
 from .config import MorningPaperConfig
-from .renderers import _safe_filename, count_pages
+from .renderers import _safe_filename
 
 
 @dataclass(slots=True)
@@ -66,6 +68,41 @@ def _save_queue(path: Path, items: list[dict]) -> None:
     (path / "queue.json").write_text(json.dumps(items, indent=2), encoding="utf-8")
 
 
+def _estimate_pages(config: MorningPaperConfig, markdown: str) -> int:
+    """Estimate staged pages in an isolated process.
+
+    WeasyPrint is a native-library stack; if it segfaults, a normal try/except
+    cannot protect the inbox/stage workflow. Staging must still succeed, so the
+    renderer runs in a worker process and any failure falls back to a word
+    heuristic.
+    """
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "morning_paper.page_count_worker"],
+            input=json.dumps(
+                {
+                    "markdown": markdown,
+                    "style": config.outputs.style,
+                    "palette": config.outputs.palette,
+                    "font_scale": config.outputs.font_scale,
+                }
+            ),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=20,
+            check=False,
+        )
+        if result.returncode == 0:
+            payload = json.loads(result.stdout)
+            pages = int(payload["pages"])
+            if pages >= 1:
+                return pages
+    except Exception:
+        pass
+    return max(1, round(len(markdown.split()) / 550))
+
+
 def stage_markdown(
     config: MorningPaperConfig,
     markdown: str,
@@ -87,16 +124,7 @@ def stage_markdown(
     base, n = slug, 2
     while slug in existing:
         slug, n = f"{base}-{n}", n + 1
-    try:
-        pages = count_pages(
-            markdown,
-            style=config.outputs.style,
-            palette=config.outputs.palette,
-            font_scale=config.outputs.font_scale,
-        )
-    except Exception:
-        # estimation must never block staging; fall back to a words heuristic
-        pages = max(1, round(len(markdown.split()) / 550))
+    pages = _estimate_pages(config, markdown)
     sdir.mkdir(parents=True, exist_ok=True)
     (sdir / f"{slug}.md").write_text(markdown, encoding="utf-8")
     item = StagedItem(
@@ -170,5 +198,54 @@ def queue_status(config: MorningPaperConfig, date_str: str) -> dict:
         "est_pages_total": total,
         "page_budget": budget,
         "budget_remaining": (budget - total) if budget else None,
+        "staging_dir": str(sdir),
+    }
+
+
+def queue_item(config: MorningPaperConfig, date_str: str, slug: str) -> dict:
+    sdir = staging_dir(config, date_str)
+    items = _load_queue(sdir)
+    for item in items:
+        if item.get("slug") == slug:
+            markdown_path = sdir / f"{slug}.md"
+            markdown = ""
+            missing = not markdown_path.exists()
+            if not missing:
+                markdown = markdown_path.read_text(encoding="utf-8")
+            return {
+                "found": True,
+                "date": date_str,
+                "item": item,
+                "markdown_path": str(markdown_path),
+                "markdown_missing": missing,
+                "markdown": markdown,
+            }
+    return {
+        "found": False,
+        "date": date_str,
+        "slug": slug,
+        "staging_dir": str(sdir),
+    }
+
+
+def remove_queue_item(config: MorningPaperConfig, date_str: str, slug: str) -> dict:
+    sdir = staging_dir(config, date_str)
+    items = _load_queue(sdir)
+    kept = [item for item in items if item.get("slug") != slug]
+    removed = len(kept) != len(items)
+    markdown_path = sdir / f"{slug}.md"
+    file_removed = False
+    if removed:
+        _save_queue(sdir, kept)
+        if markdown_path.exists():
+            markdown_path.unlink()
+            file_removed = True
+    return {
+        "removed": removed,
+        "date": date_str,
+        "slug": slug,
+        "markdown_path": str(markdown_path),
+        "file_removed": file_removed,
+        "count": len(kept),
         "staging_dir": str(sdir),
     }

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import json
+import platform
 import re
+import shutil
+import subprocess
 import sys
 from datetime import datetime
+from importlib import metadata
 from importlib import import_module, resources
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -21,6 +25,7 @@ from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_c
 from .renderers import (
     TypewriterRendererUnavailable,
     _load_weasyprint,
+    count_pages,
     _safe_filename,
     document_uses_custom_css,
     write_custom_markdown,
@@ -37,13 +42,16 @@ HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own so
 Commands:
   demo              Print a sample edition right now — no config, no network
   init              Create a starter config
+  newsroom          Scaffold/update a private newsroom repo (init|state)
   build             Build today's paper from configured sources
+  sources           List or check configured sources and collector contract
   print <url>       Print a single article right now
   render <file.md>  Typeset any markdown file through a style pack
   stage <url|file>  Queue material for tomorrow's paper (returns a page estimate)
   inbox             Poll the contributor inbox: mail from your masthead becomes
                     staged pages, the sender gets a confirmation (--dry-run)
-  queue             Show what's staged vs the page budget (JSON)
+  queue             Show/list/read/remove staged material vs the page budget
+  edition           Prepare durable files for an edition (prepare PATH)
   estimate <file>   Page count for a markdown file, nothing written
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)
@@ -56,8 +64,10 @@ Commands:
   --version         Show installed version
 
 Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
-the bare version). `stage` + `queue` are the seam for "add this to
-tomorrow's brief" workflows. See docs/composing.md.
+the bare version). `newsroom init` creates the private file contract; `edition
+prepare` creates compaction-safe edition files; `sources` inventories feeds;
+`stage` + `queue` are the seam for "add this to tomorrow's brief" workflows.
+See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
 Docs:   {DOCS_URL}
@@ -92,7 +102,7 @@ def _print_update_notice() -> None:
 
 
 def _pretty_install_hint_lines() -> list[str]:
-    lines = ['recommended install: pip install "morning-paper[pretty]"']
+    lines = ['recommended install: uv tool install --python 3.13 "morning-paper[pretty]"']
     if sys.platform == "darwin":
         lines.append("macOS may also need: brew install pango gdk-pixbuf")
     elif sys.platform.startswith("linux"):
@@ -112,6 +122,81 @@ def _renderer_hint_lines(renderer_error: str | None) -> list[str]:
             'if it still fails: export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH"',
         ]
     return _pretty_install_hint_lines()
+
+
+def _dependency_report() -> dict[str, object]:
+    packages = [
+        "weasyprint",
+        "tinycss2",
+        "cssselect2",
+        "pydyf",
+        "cffi",
+        "Pillow",
+        "fontTools",
+    ]
+    versions: dict[str, str | None] = {}
+    for package in packages:
+        try:
+            versions[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:
+            versions[package] = None
+    return {
+        "python": {
+            "version": platform.python_version(),
+            "implementation": platform.python_implementation(),
+            "executable": sys.executable,
+        },
+        "packages": versions,
+        "native": {
+            "pango": _native_tool_version("pango-view", "--version"),
+        },
+    }
+
+
+def _native_tool_version(command: str, *args: str) -> dict[str, object]:
+    path = shutil.which(command)
+    if not path:
+        return {"found": False, "path": None, "version": None, "error": ""}
+    try:
+        result = subprocess.run(
+            [path, *args],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=5,
+        )
+    except Exception as exc:
+        return {"found": True, "path": path, "version": None, "error": str(exc)}
+    first_line = (result.stdout or "").strip().splitlines()
+    return {
+        "found": True,
+        "path": path,
+        "version": first_line[0] if first_line else "",
+        "error": "" if result.returncode == 0 else (result.stdout or "").strip(),
+    }
+
+
+def _render_self_test(enabled: bool, typewriter_ready: bool) -> dict[str, object]:
+    if not enabled:
+        return {"run": False, "ok": None, "pages": None, "error": ""}
+    if not typewriter_ready:
+        return {"run": False, "ok": False, "pages": None, "error": "typewriter renderer unavailable"}
+    sample = """---
+title: Morning Paper Doctor
+---
+
+# Morning Paper Doctor
+
+This one-page proof verifies that WeasyPrint can lay out the production
+style stack on this machine. The user should not need to know what WeasyPrint
+is; `doctor --strict` owns that proof.
+"""
+    try:
+        pages = count_pages(sample, style="broadsheet", palette="color")
+    except Exception as exc:
+        return {"run": True, "ok": False, "pages": None, "error": str(exc)}
+    return {"run": True, "ok": pages >= 1, "pages": pages, "error": "" if pages >= 1 else "rendered zero pages"}
 
 
 def _routine_status_line(routine_info: dict) -> str:
@@ -170,18 +255,22 @@ def doctor(args: list[str] | None = None) -> int:
     _, renderer_error = _load_weasyprint()
     typewriter_ready = renderer_error is None
     hints = [] if typewriter_ready else _renderer_hint_lines(renderer_error)
+    render_self_test = _render_self_test(strict, typewriter_ready)
+    dependency_report = _dependency_report()
     # The routine is optional: report installed/not, never an error when absent.
     from .routine import routine_doctor_summary
 
     routine_info = routine_doctor_summary()
     if missing:
         status = "broken"
+    elif render_self_test.get("run") and not render_self_test.get("ok"):
+        status = "render-broken"
     elif typewriter_ready:
         status = "ok"
     else:
         status = "fallback-only"
     exit_code = 0
-    if missing or (strict and not typewriter_ready):
+    if missing or (strict and (not typewriter_ready or not render_self_test.get("ok"))):
         exit_code = 1
     if as_json:
         payload: dict[str, object] = {
@@ -190,7 +279,9 @@ def doctor(args: list[str] | None = None) -> int:
                 "typewriter": typewriter_ready,
                 "error": renderer_error,
                 "hints": hints,
+                "render_self_test": render_self_test,
             },
+            "dependencies": dependency_report,
             "routine": routine_info,
             "status": status,
         }
@@ -212,8 +303,16 @@ def doctor(args: list[str] | None = None) -> int:
         return exit_code
     print("doctor: ok")
     print("renderer: typewriter ready")
+    if render_self_test.get("run"):
+        if render_self_test.get("ok"):
+            print(f"renderer self-test: passed ({render_self_test.get('pages')} page(s))")
+        else:
+            print(f"renderer self-test: failed ({render_self_test.get('error')})")
     print(_routine_status_line(routine_info))
-    print("status: high-quality print path available")
+    if status == "render-broken":
+        print("status: typewriter imported, but the layout self-test failed")
+    else:
+        print("status: high-quality print path available")
     _print_update_notice()
     return exit_code
 
@@ -244,15 +343,39 @@ def _deliver_pdf(outputs: dict[str, object], output_arg: str | None) -> tuple[st
     return str(target), 0
 
 
+def _open_pdf(path: Path) -> dict[str, object]:
+    if sys.platform == "darwin":
+        command = ["open", str(path)]
+    elif sys.platform.startswith("win"):
+        command = ["cmd", "/c", "start", "", str(path)]
+    else:
+        command = ["xdg-open", str(path)]
+    try:
+        result = subprocess.run(command, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    except OSError as exc:
+        return {"requested": True, "ok": False, "command": command, "error": str(exc)}
+    return {
+        "requested": True,
+        "ok": result.returncode == 0,
+        "command": command,
+        "error": "" if result.returncode == 0 else (result.stderr or result.stdout).strip(),
+    }
+
+
 def demo_command(args: list[str]) -> int:
-    usage = "usage: morning-paper demo [--output PATH]"
+    usage = "usage: morning-paper demo [--output PATH] [--open]"
     output_arg: str | None = None
+    open_pdf = False
     index = 0
     while index < len(args):
         arg = args[index]
         if arg in {"-h", "--help"}:
             print(usage)
             return 0
+        if arg == "--open":
+            open_pdf = True
+            index += 1
+            continue
         if arg == "--output" and index + 1 < len(args):
             output_arg = args[index + 1]
             index += 2
@@ -272,6 +395,10 @@ def demo_command(args: list[str]) -> int:
     config.outputs.palette = "color"
     config.outputs.html = True
     config.outputs.pdf = True
+    if output_arg:
+        target = Path(output_arg).expanduser()
+        if output_arg.endswith(("/", "\\")) or target.is_dir():
+            config.outputs.directory = target
     target_date = datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     try:
         outputs, warnings, pages = write_custom_markdown(
@@ -292,6 +419,8 @@ def demo_command(args: list[str]) -> int:
     output_paths = {key: str(value) for key, value in outputs.items() if key != "dir"}
     if delivered:
         output_paths["pdf"] = delivered
+    final_pdf = Path(str(delivered or outputs["pdf"]))
+    open_result = _open_pdf(final_pdf) if open_pdf else {"requested": False, "ok": None, "command": [], "error": ""}
     print(
         json.dumps(
             {
@@ -303,13 +432,20 @@ def demo_command(args: list[str]) -> int:
                 "warnings": warnings,
                 "outputs": output_paths,
                 "output_dir": str(outputs["dir"]),
+                "opened": open_result,
             },
             indent=2,
         )
     )
-    print(f"Print it: lp {delivered or outputs['pdf']}")
-    print('Make it yours: uv tool install "morning-paper[pretty]" && morning-paper init (or run the setup skill in Claude Code)')
-    print("Post your paper: https://github.com/dmthepm/morning-paper/discussions")
+    if open_pdf and not open_result["ok"]:
+        print(f"warning: could not open PDF automatically ({open_result['error']})", file=sys.stderr)
+    print(f"Print it: lp {final_pdf}", file=sys.stderr)
+    print(
+        'Make it yours: uv tool install --python 3.13 "morning-paper[pretty]" '
+        "&& morning-paper init (or run the setup skill in Claude Code/Codex)",
+        file=sys.stderr,
+    )
+    print("Post your paper: https://github.com/dmthepm/morning-paper/discussions", file=sys.stderr)
     return 0
 
 
@@ -339,6 +475,62 @@ def init_command(args: list[str]) -> int:
         return 1
     config_path.write_text(render_default_config(), encoding="utf-8")
     print(json.dumps({"config": str(config_path), "created": True}, indent=2))
+    return 0
+
+
+def newsroom_command(args: list[str]) -> int:
+    from .newsroom import scaffold_newsroom, update_setup_state
+
+    usage = (
+        "usage: morning-paper newsroom init <path> [--name NAME] [--force]\n"
+        "       morning-paper newsroom state <path> [--set KEY=VALUE] [--pending TEXT] [--clear-pending]"
+    )
+    force = False
+    name = "Morning Paper"
+    sets: list[str] = []
+    pending: list[str] = []
+    clear_pending = False
+    rest: list[str] = []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--force":
+            force = True
+            index += 1
+            continue
+        if arg == "--name" and index + 1 < len(args):
+            name = args[index + 1]
+            index += 2
+            continue
+        if arg == "--set" and index + 1 < len(args):
+            sets.append(args[index + 1])
+            index += 2
+            continue
+        if arg == "--pending" and index + 1 < len(args):
+            pending.append(args[index + 1])
+            index += 2
+            continue
+        if arg == "--clear-pending":
+            clear_pending = True
+            index += 1
+            continue
+        rest.append(arg)
+        index += 1
+    if len(rest) != 2 or rest[0] not in {"init", "state"}:
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        if rest[0] == "init":
+            payload = scaffold_newsroom(Path(rest[1]), name=name, force=force)
+        else:
+            payload = update_setup_state(Path(rest[1]), sets=sets, pending=pending, clear_pending=clear_pending)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(payload, indent=2))
     return 0
 
 
@@ -722,14 +914,28 @@ def inbox_command(args: list[str]) -> int:
 
 
 def queue_command(args: list[str]) -> int:
-    from .staging import default_edition_date, queue_status
+    from .staging import default_edition_date, queue_item, queue_status, remove_queue_item
 
-    usage = "usage: morning-paper queue [--date YYYY-MM-DD] [--config PATH]"
+    usage = (
+        "usage: morning-paper queue [status|list|show SLUG|remove SLUG] "
+        "[--date YYYY-MM-DD] [--config PATH] [--content]"
+    )
+    include_content = False
+    if "--content" in args:
+        include_content = True
+        args = [arg for arg in args if arg != "--content"]
     parsed = _parse_common(args, usage)
     if isinstance(parsed, int):
         return parsed
     config_path, date, rest = parsed
-    if rest:
+    action = rest[0] if rest else "status"
+    if action not in {"status", "list", "show", "remove"}:
+        print(usage, file=sys.stderr)
+        return 2
+    if action in {"status", "list"} and len(rest) > 1:
+        print(usage, file=sys.stderr)
+        return 2
+    if action in {"show", "remove"} and len(rest) != 2:
         print(usage, file=sys.stderr)
         return 2
     try:
@@ -737,7 +943,105 @@ def queue_command(args: list[str]) -> int:
     except ConfigError as exc:
         print(f"invalid config: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(queue_status(config, date or default_edition_date(config)), indent=2))
+    date_str = date or default_edition_date(config)
+    if action in {"status", "list"}:
+        print(json.dumps(queue_status(config, date_str), indent=2))
+        return 0
+    if action == "show":
+        payload = queue_item(config, date_str, rest[1])
+        if not include_content and payload.get("markdown"):
+            markdown = str(payload["markdown"])
+            payload["markdown_preview"] = markdown[:1200]
+            del payload["markdown"]
+        print(json.dumps(payload, indent=2))
+        return 0 if payload.get("found") else 1
+    payload = remove_queue_item(config, date_str, rest[1])
+    print(json.dumps(payload, indent=2))
+    return 0 if payload.get("removed") else 1
+
+
+def sources_command(args: list[str]) -> int:
+    from .sources import source_inventory
+
+    usage = "usage: morning-paper sources [list|check] [--config PATH] [--newsroom PATH]"
+    newsroom: Path | None = None
+    if "--newsroom" in args:
+        index = args.index("--newsroom")
+        if index + 1 >= len(args):
+            print(usage, file=sys.stderr)
+            return 2
+        newsroom = Path(args[index + 1]).expanduser().resolve()
+        args = args[:index] + args[index + 2 :]
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, _date, rest = parsed
+    action = rest[0] if rest else "list"
+    if action not in {"list", "check"} or len(rest) > 1:
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(source_inventory(config, check=action == "check", newsroom=newsroom), indent=2))
+    return 0
+
+
+def edition_command(args: list[str]) -> int:
+    from .edition_workspace import prepare_edition_workspace
+
+    usage = (
+        "usage: morning-paper edition prepare <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]"
+    )
+    config_path = DEFAULT_CONFIG_PATH
+    date: str | None = None
+    check_sources = False
+    force = False
+    rest: list[str] = []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-h", "--help"}:
+            print(usage)
+            return 0
+        if arg == "--config" and index + 1 < len(args):
+            config_path = Path(args[index + 1]).expanduser().resolve()
+            index += 2
+            continue
+        if arg == "--date" and index + 1 < len(args):
+            date = args[index + 1]
+            index += 2
+            continue
+        if arg == "--check-sources":
+            check_sources = True
+            index += 1
+            continue
+        if arg == "--force":
+            force = True
+            index += 1
+            continue
+        rest.append(arg)
+        index += 1
+    if len(rest) != 2 or rest[0] != "prepare":
+        print(usage, file=sys.stderr)
+        return 2
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    date_str = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
+    payload = prepare_edition_workspace(
+        Path(rest[1]),
+        config,
+        date_str=date_str,
+        check_sources=check_sources,
+        force=force,
+    )
+    print(json.dumps(payload, indent=2))
     return 0
 
 
@@ -928,8 +1232,12 @@ def main(argv: list[str] | None = None) -> int:
         return demo_command(extra)
     if command == "init":
         return init_command(extra)
+    if command == "newsroom":
+        return newsroom_command(extra)
     if command == "build":
         return build_command(extra)
+    if command in {"sources", "source"}:
+        return sources_command(extra)
     if command == "print":
         return print_command(extra)
     if command == "render":
@@ -940,6 +1248,8 @@ def main(argv: list[str] | None = None) -> int:
         return inbox_command(extra)
     if command in {"queue", "status"}:
         return queue_command(extra)
+    if command == "edition":
+        return edition_command(extra)
     if command == "estimate":
         return estimate_command(extra)
     if command == "review":

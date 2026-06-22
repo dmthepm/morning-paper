@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -97,15 +98,19 @@ class OnPageTruncationNoticeTest(unittest.TestCase):
 
 
 class StageTruncationTest(unittest.TestCase):
+    def _config_path(self, tmp_path: Path) -> Path:
+        config_path = tmp_path / "config.yaml"
+        rc = cli.main(["init", "--config", str(config_path)])
+        self.assertEqual(rc, 0)
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        config["outputs"]["directory"] = str(tmp_path / "out")
+        config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+        return config_path
+
     def _stage(self, article: Article) -> dict:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            config_path = tmp_path / "config.yaml"
-            rc = cli.main(["init", "--config", str(config_path)])
-            self.assertEqual(rc, 0)
-            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-            config["outputs"]["directory"] = str(tmp_path / "out")
-            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+            config_path = self._config_path(tmp_path)
 
             stdout = io.StringIO()
             with patch("morning_paper.staging.fetch_article", return_value=article):
@@ -147,6 +152,119 @@ class StageTruncationTest(unittest.TestCase):
         self.assertTrue(payload["staged"])
         self.assertFalse(payload["truncated"])
         self.assertEqual(payload["warning"], "")
+
+    def test_queue_show_and_remove_staged_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+            source = tmp_path / "field-note.md"
+            source.write_text("# Field Note\n\nThis belongs in the next edition.\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "stage",
+                        str(source),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-12",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            staged = json.loads(stdout.getvalue())
+            slug = staged["slug"]
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["queue", "list", "--config", str(config_path), "--date", "2026-06-12"])
+            self.assertEqual(rc, 0)
+            listed = json.loads(stdout.getvalue())
+            self.assertEqual(listed["count"], 1)
+            self.assertEqual(listed["items"][0]["slug"], slug)
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["queue", "show", slug, "--config", str(config_path), "--date", "2026-06-12"])
+            self.assertEqual(rc, 0)
+            shown = json.loads(stdout.getvalue())
+            self.assertTrue(shown["found"])
+            self.assertNotIn("markdown", shown)
+            self.assertIn("This belongs in the next edition.", shown["markdown_preview"])
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["queue", "show", slug, "--content", "--config", str(config_path), "--date", "2026-06-12"]
+                )
+            self.assertEqual(rc, 0)
+            shown = json.loads(stdout.getvalue())
+            self.assertIn("# Field Note", shown["markdown"])
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["queue", "remove", slug, "--config", str(config_path), "--date", "2026-06-12"])
+            self.assertEqual(rc, 0)
+            removed = json.loads(stdout.getvalue())
+            self.assertTrue(removed["removed"])
+            self.assertTrue(removed["file_removed"])
+            self.assertFalse(Path(removed["markdown_path"]).exists())
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["queue", "list", "--config", str(config_path), "--date", "2026-06-12"])
+            self.assertEqual(rc, 0)
+            listed = json.loads(stdout.getvalue())
+            self.assertEqual(listed["count"], 0)
+
+    def test_queue_show_and_remove_missing_slug_fail_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["queue", "show", "missing", "--config", str(config_path), "--date", "2026-06-12"])
+            self.assertEqual(rc, 1)
+            shown = json.loads(stdout.getvalue())
+            self.assertFalse(shown["found"])
+            self.assertEqual(shown["slug"], "missing")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["queue", "remove", "missing", "--config", str(config_path), "--date", "2026-06-12"])
+            self.assertEqual(rc, 1)
+            removed = json.loads(stdout.getvalue())
+            self.assertFalse(removed["removed"])
+
+    def test_stage_file_survives_page_estimator_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+            source = tmp_path / "note.md"
+            source.write_text("# Note\n\n" + ("word " * 700), encoding="utf-8")
+
+            def crashed(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+                return subprocess.CompletedProcess(args=args, returncode=-11, stdout="", stderr="segfault")
+
+            stdout = io.StringIO()
+            with patch("morning_paper.staging.subprocess.run", side_effect=crashed):
+                with redirect_stdout(stdout):
+                    rc = cli.main(
+                        [
+                            "stage",
+                            str(source),
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-06-12",
+                        ]
+                    )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertTrue(payload["staged"])
+            self.assertGreaterEqual(payload["est_pages"], 1)
 
 
 if __name__ == "__main__":

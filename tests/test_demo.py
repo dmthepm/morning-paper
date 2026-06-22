@@ -88,27 +88,30 @@ class DemoCommandTest(unittest.TestCase):
             config = MorningPaperConfig()
             config.outputs.directory = Path(tmp) / "out"
             stdout = io.StringIO()
+            stderr = io.StringIO()
             with patch("morning_paper.cli.MorningPaperConfig", return_value=config):
-                with redirect_stdout(stdout):
+                with redirect_stdout(stdout), redirect_stderr(stderr):
                     rc = cli.main(["demo"])
             self.assertEqual(rc, 0)
 
-            lines = stdout.getvalue().rstrip("\n").splitlines()
-            payload = json.loads("\n".join(lines[:-3]))
+            payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["mode"], "demo")
             self.assertEqual(payload["style"], "broadsheet")
             self.assertEqual(payload["palette"], "color")
             self.assertIsInstance(payload["pages"], int)
             self.assertGreaterEqual(payload["pages"], 1)
+            self.assertEqual(payload["opened"], {"requested": False, "ok": None, "command": [], "error": ""})
             for key in ("json", "markdown", "html", "pdf"):
                 path = Path(payload["outputs"][key])
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
 
+            lines = stderr.getvalue().rstrip("\n").splitlines()
             self.assertEqual(lines[-3], f"Print it: lp {payload['outputs']['pdf']}")
             self.assertEqual(
                 lines[-2],
-                'Make it yours: uv tool install "morning-paper[pretty]" && morning-paper init (or run the setup skill in Claude Code)',
+                'Make it yours: uv tool install --python 3.13 "morning-paper[pretty]" '
+                "&& morning-paper init (or run the setup skill in Claude Code/Codex)",
             )
             self.assertEqual(lines[-1], "Post your paper: https://github.com/dmthepm/morning-paper/discussions")
 
@@ -120,6 +123,45 @@ class DemoCommandTest(unittest.TestCase):
             # honesty doctrine: the sample edition declares itself fictional
             markdown_text = Path(payload["outputs"]["markdown"]).read_text(encoding="utf-8")
             self.assertIn("fictional", markdown_text.lower())
+
+    @unittest.skipUnless(_pretty_stack_ready(), "demo render requires the pretty print stack (weasyprint)")
+    def test_demo_output_directory_contains_the_full_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp) / "demo-out"
+            output_dir.mkdir()
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["demo", "--output", str(output_dir)])
+            self.assertEqual(rc, 0)
+
+            payload = json.loads(stdout.getvalue())
+            self.assertTrue(Path(payload["output_dir"]).is_relative_to(output_dir))
+            for key in ("json", "markdown", "html", "pdf"):
+                path = Path(payload["outputs"][key])
+                self.assertTrue(path.exists(), key)
+                self.assertTrue(path.is_relative_to(output_dir), key)
+            self.assertEqual(Path(payload["outputs"]["pdf"]), output_dir / "demo.pdf")
+
+    @unittest.skipUnless(_pretty_stack_ready(), "demo render requires the pretty print stack (weasyprint)")
+    def test_demo_open_requests_platform_opener_for_delivered_pdf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp) / "demo-out"
+            output_dir.mkdir()
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with patch("morning_paper.cli.sys.platform", "darwin"):
+                with patch("morning_paper.cli.subprocess.run") as run:
+                    run.return_value.returncode = 0
+                    run.return_value.stdout = ""
+                    run.return_value.stderr = ""
+                    with redirect_stdout(stdout), redirect_stderr(stderr):
+                        rc = cli.main(["demo", "--output", str(output_dir), "--open"])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["opened"]["requested"], True)
+            self.assertEqual(payload["opened"]["ok"], True)
+            self.assertEqual(payload["opened"]["command"], ["open", str(output_dir / "demo.pdf")])
+            run.assert_called_once()
 
     def test_demo_fails_honestly_without_pretty_stack(self) -> None:
         stderr = io.StringIO()

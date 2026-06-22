@@ -650,6 +650,8 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("Morning Paper", output)
         self.assertIn("Commands:", output)
         self.assertIn("demo", output)
+        self.assertIn("newsroom", output)
+        self.assertIn("sources", output)
         self.assertIn("print <url>", output)
         self.assertIn("stage <url|file>", output)
         self.assertIn("https://github.com/dmthepm/morning-paper", output)
@@ -703,10 +705,50 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         self.assertTrue(payload["renderer"]["typewriter"])
         self.assertIsNone(payload["renderer"]["error"])
+        self.assertFalse(payload["renderer"]["render_self_test"]["run"])
+        self.assertIn("dependencies", payload)
+        self.assertIn("python", payload["dependencies"])
+        self.assertIn("weasyprint", payload["dependencies"]["packages"])
         check_names = {check["name"] for check in payload["checks"]}
         self.assertIn("morning_paper.renderers", check_names)
         self.assertIn("morning_paper/resources/broadsheet-build.md", check_names)
         self.assertTrue(all(check["ok"] for check in payload["checks"]))
+
+    def test_doctor_strict_runs_render_self_test(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
+            with patch("morning_paper.cli.count_pages", return_value=1) as count_pages:
+                with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                    with redirect_stdout(stdout):
+                        rc = cli.main(["doctor", "--strict"])
+        self.assertEqual(rc, 0)
+        count_pages.assert_called_once()
+        output = stdout.getvalue()
+        self.assertIn("renderer: typewriter ready", output)
+        self.assertIn("renderer self-test: passed (1 page(s))", output)
+
+    def test_doctor_json_strict_reports_render_self_test(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
+            with patch("morning_paper.cli.count_pages", return_value=2):
+                with redirect_stdout(stdout):
+                    rc = cli.main(["doctor", "--json", "--strict"])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["renderer"]["render_self_test"], {"run": True, "ok": True, "pages": 2, "error": ""})
+
+    def test_doctor_strict_fails_when_render_self_test_fails(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
+            with patch("morning_paper.cli.count_pages", side_effect=RuntimeError("layout crashed")):
+                with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                    with redirect_stdout(stdout):
+                        rc = cli.main(["doctor", "--strict"])
+        self.assertEqual(rc, 1)
+        output = stdout.getvalue()
+        self.assertIn("renderer: typewriter ready", output)
+        self.assertIn("renderer self-test: failed (layout crashed)", output)
 
     def test_doctor_json_fallback_only_exits_zero_without_strict(self) -> None:
         stdout = io.StringIO()
