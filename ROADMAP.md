@@ -139,6 +139,9 @@
   (Arimo) are vendored and wired through `@font-face`, charts lead with
   vendored Courier Prime, and WeasyPrint gets the correct OTF/TTF `format()`
   hint so the same paper uses the same glyphs on macOS and Linux
+- next skill architecture is banked in `docs/newsroom-skill-suite.md`: grow
+  from the current setup/edition/writing proof into narrow newsroom desks
+  without breaking the friend path
 - collector date semantics are explicit: edition collectors target the
   edition date, ad hoc `stage` remains "read this later" and defaults to
   tomorrow

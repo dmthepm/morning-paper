@@ -76,6 +76,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     changelog = _read("CHANGELOG.md")
     readiness = _read("docs/product-readiness-0.8.md")
     roadmap = _read("ROADMAP.md")
+    skill_suite = _read("docs/newsroom-skill-suite.md")
 
     summary = _pyproject_field("description")
     version = _pyproject_field("version")
@@ -88,6 +89,10 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert f"`morning-paper` {version} is live" in readiness
     assert f"same {version} semver" in readiness
     assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
+    assert "skills as newsroom desks" in readiness
+    assert "Morning Paper skills are newsroom desks" in skill_suite
+    for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
+        assert newsroom_file in skill_suite
 
     for manifest in (claude_manifest, codex_manifest):
         description = manifest["description"]

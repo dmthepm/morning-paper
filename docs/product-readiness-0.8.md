@@ -50,6 +50,9 @@ The product promise stays narrow:
   faces now lead with vendored MP Serif (TeX Gyre Pagella) and MP Sans (Arimo),
   charts lead with vendored Courier Prime, and `@font-face` emits the correct
   format hint for OTF vs TTF files.
+- The next skill architecture is drafted in `docs/newsroom-skill-suite.md`.
+  It treats skills as newsroom desks over durable files, not as a pile of
+  source adapters or a clone of generic product/design docs.
 
 ## User Stories
 
