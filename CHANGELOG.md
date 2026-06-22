@@ -6,6 +6,84 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-22
+
+### Added
+- **Friend-ready personal newsroom setup.** `morning-paper newsroom init
+  <path>` now scaffolds a private newsroom repo with resumable setup state
+  (`setup-state.json` + `SETUP.md`), the operating constitution (`CLAUDE.md`),
+  section specs, source collectors, edition templates, memory files, and
+  newsroom-native taste files: `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`,
+  `DELIVERY.md`, and `TASTELOG.md`. These are the durable files an agent edits
+  when the reader gives natural-language feedback.
+- **Resumable setup state.** `morning-paper newsroom state <path> --set
+  key=value` updates `setup-state.json` and refreshes `SETUP.md`, recording the
+  installed version, strict doctor proof, demo PDF path/open status, Claude
+  Code/Codex plugin state, source choices, printer choice, pending questions,
+  and next action.
+- **Source inventory and local collector bridge.** `morning-paper sources
+  list|check --newsroom <path>` inventories built-in feeds plus local newsroom
+  collector scripts, checks RSS reachability/full-text mode, and validates
+  collector shell syntax. The scaffold includes a local drop-folder collector
+  for `.md`, `.txt`, `.url`, synced-folder files, and agent-produced files.
+- **Queue inspection verbs.** `morning-paper queue list|show|remove` gives
+  agents a durable, file-backed way to inspect and prune staged material
+  against the page budget.
+- **Compaction-safe edition workspaces.** `morning-paper edition prepare
+  <newsroom>` writes the files a compacted or fresh agent needs before
+  composing: `source-inventory.json`, `collector-report.md`,
+  `queue-snapshot.json`, `draft.md`, `render-result.json`, `review.json`, and
+  `operator-answers.md`.
+- **First-run PDF opening.** `morning-paper demo --open` now renders the
+  synthetic paper, reports an `opened` JSON payload, and asks the platform to
+  open the PDF (`open`, `start`, or `xdg-open`) so setup ends with the product
+  on screen.
+- **Release verification machinery.** New smoke scripts cover setup scaffold,
+  fresh-friend personas, host plugin installs, install-smoke, and clean release
+  artifact builds. `scripts/release_candidate_check.py` builds from a clean
+  source copy, rejects stale build debris, and can install both wheel and sdist
+  with `[pretty]` to prove `doctor --strict` and demo rendering before publish.
+
+### Changed
+- **WeasyPrint is the production print stack.** The `[pretty]` extra is bounded
+  to the supported WeasyPrint major line (`>=69,<70`), CI exercises the pretty
+  renderer path, and `doctor --strict` now runs a real layout self-test instead
+  of only checking imports. `doctor --json` reports Python, WeasyPrint,
+  tinycss2, cssselect2, pydyf, cffi, Pillow, fontTools, and detectable native
+  Pango status.
+- **One canonical friend path.** README, `AGENTS.md`, the setup skill, CLI help,
+  roadmap, and tests now agree: install with a pinned Python, run
+  `morning-paper doctor --strict`, run `morning-paper demo --open`, then install
+  the Claude Code or Codex plugin and let the `setup` skill create the private
+  newsroom.
+- **Hacker News is an optional starter source, not the product identity.**
+  Source docs and scaffolded `SOURCES.md` frame HN as a starter technical radar
+  only; the real source model is local-folder-first and collector-backed.
+- **Date semantics are explicit.** Edition collectors target the edition date;
+  ad hoc `stage` remains "read this later" and defaults to tomorrow.
+- **Visuals gained print guardrails.** Built-in `mp-bars`, `mp-spark`, and
+  `mp-stats` use the available measure, cap density, clip labels, and add
+  honest overflow notes instead of colliding or floating as narrow inserts.
+- **Package and plugin copy now match the mission.** Project metadata and both
+  plugin manifests describe Morning Paper as a personal newsroom / owned
+  algorithm, not a generic PDF builder.
+
+### Fixed
+- The demo's "make it yours" hint now uses the pinned `uv tool install
+  --python 3.13 "morning-paper[pretty]"` path.
+- `morning-paper review <prepared-edition-dir>` now follows `render-result.json`
+  to the rendered artifacts instead of accidentally reviewing workspace
+  metadata.
+- Release builds now run from a clean source copy so stale `build/` artifacts
+  cannot leak removed resources into the wheel.
+
+### Verified
+- Current local release-candidate checks pass: unit tests, Codex plugin
+  validation, Claude Code plugin validation, install-smoke, host plugin smoke,
+  setup scaffold smoke, fresh-friend persona simulations, `doctor --strict`,
+  and clean wheel/sdist install checks with WeasyPrint 69.0 and a rendered demo
+  PDF.
+
 ## [0.7.1] - 2026-06-22
 
 ### Added

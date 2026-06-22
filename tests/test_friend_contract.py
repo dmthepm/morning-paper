@@ -60,14 +60,20 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     pyproject = tomllib.loads(_read("pyproject.toml"))
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
+    changelog = _read("CHANGELOG.md")
 
     summary = pyproject["project"]["description"]
+    version = pyproject["project"]["version"]
     assert summary.startswith("Own your algorithm")
     assert "personal newsroom" in summary
     assert "sources and preferences you own as files" in summary
+    assert f"## [{version}]" in changelog
+    assert "Friend-ready personal newsroom setup" in changelog
+    assert "release-candidate checks pass" in changelog
 
     for manifest in (claude_manifest, codex_manifest):
         description = manifest["description"]
+        assert manifest["version"] == version
         assert "personal newsroom" in description
         assert "preferences you own as files" in description
 
