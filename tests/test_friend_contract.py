@@ -100,6 +100,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert f"Current release candidate: {version}" in readiness
     assert f"release candidate {version}" in readiness
     assert f"same {version} semver" in readiness
+    assert "live 0.7.1 demo" not in readiness
+    assert "historical live-host evidence" in readiness
     assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
     assert "skills as newsroom desks" in readiness
     assert "Morning Paper skills are newsroom desks" in skill_suite

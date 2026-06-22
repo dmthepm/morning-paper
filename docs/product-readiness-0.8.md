@@ -376,10 +376,11 @@ Two useful catches from the live run:
   checkout simulation, a workspace-local shim is useful so collectors exercise
   the current worktree instead of any globally installed package.
 
-2026-06-22 Claude Code live check: passed from an authenticated Claude session.
-The session ran the live 0.7.1 demo, produced a real two-page PDF, and opened it
-on screen. The deliberately unforced piece is full interactive setup against
-the user's real home/config because it can install a routine and write
-`~/.config`; deterministic sandbox setup is now covered by
-`scripts/setup_scaffold_smoke.py --isolated`, while a true live-agent setup-skill run
-should still use a temp home/config or explicit user approval.
+2026-06-22 Claude Code live check: an authenticated Claude session proved the
+demo path by producing a real two-page PDF and opening it on screen. Treat this
+as historical live-host evidence, not as the current release proof: the 0.8.2
+release gate is the clean artifact check, strict Claude plugin validation,
+host-plugin smoke, and sandbox setup smoke. Full interactive setup against the
+user's real home/config remains deliberately unforced because it can install a
+routine and write `~/.config`; any future live-agent setup-skill run should use
+a temp home/config or explicit user approval.

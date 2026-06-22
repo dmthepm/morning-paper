@@ -81,7 +81,7 @@ claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-pap
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --install-check
 ```
 
-Last full isolated local result: `215 passed`.
+Last full isolated local result: `216 passed`.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack
