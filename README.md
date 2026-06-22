@@ -8,12 +8,15 @@
 
 ---
 
-A feed runs an algorithm you cannot see, tuned to keep you scrolling. Morning
-Paper inverts that. An agent composes you a newspaper from sources you choose;
-code typesets it into a print-ready PDF. Your preferences and your weighting
-are files you own and edit — not a feed you rent, and never tuned for time on
-page. It is print-first and calm by design: a paper has edges, lands once, and
-ends.
+Your feeds already trained an algorithm you cannot see — tuned to keep you
+scrolling. Morning Paper helps you build one you can inspect, edit, and print.
+An agent composes you a newspaper from sources you choose; code typesets it into
+a print-ready PDF. Your preferences and your weighting are files you own and
+edit — not a feed you rent, and never tuned for time on page. It is print-first
+and calm by design: a paper has edges, lands once, and ends.
+
+It gets better the way an editor gets better: you read the paper, mark it up,
+and the agent turns your notes into files you own.
 
 Optional connections make it richer when you want them, and only then. Bring
 your own sources. Bridge in your work. Hand it your own downloaded data as a
@@ -44,8 +47,11 @@ install. Do this end to end and verify each step:
 5. If `uv tool install` resolves an old version or the wrong Python,
    diagnose it — prefer `uv tool install --python 3.13 "morning-paper[pretty]"`,
    else pipx or a clean venv.
-6. Stop when the demo PDF exists. Show me the exact commands that worked, the
-   installed version, and the PDF path.
+6. Open the demo PDF so it is visible — macOS `open <pdf-path>`, Windows
+   `start <pdf-path>`, Linux `xdg-open <pdf-path>`.
+
+Stop when the demo PDF exists and is open on my screen. Show me the exact
+commands that worked, the installed version, and the PDF path.
 
 Do not set up my private newsroom yet — first prove the engine prints.
 ```
