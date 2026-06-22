@@ -22,8 +22,10 @@ configured" — never an invented headline, number, or quote.
 - **The reader's newsroom repo** — private, created during setup, holds their
   preferences as files (the operating constitution, section specs, editorial
   taste, visual desk, source desk, delivery preferences, voice, collectors,
-  memory, and taste log). You write there freely on the reader's behalf.
-  Nothing from a newsroom ever belongs in this public repo.
+  memory, and taste log). The durable taste files are `EDITORIAL.md`,
+  `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and `TASTELOG.md`; update the
+  smallest one that captures the reader's feedback. You write there freely on
+  the reader's behalf. Nothing from a newsroom ever belongs in this public repo.
 
 ## Skills
 
