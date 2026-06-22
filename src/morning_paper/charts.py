@@ -39,10 +39,23 @@ _FONT = "Courier New, Courier, monospace"
 DEFAULT_INK = "#222222"
 DEFAULT_TRACK = "#dddddd"
 DEFAULT_TEXT = "#111111"
+MAX_BAR_ROWS = 12
+MAX_STAT_BLOCKS = 6
+MAX_SPARK_VALUES = 90
+MAX_LABEL_CHARS = 34
+MAX_NOTE_CHARS = 42
+MAX_TITLE_CHARS = 90
 
 
 def _esc(value: str) -> str:
     return html.escape(value, quote=True)
+
+
+def _clip_text(value: str, limit: int) -> str:
+    value = " ".join(value.split())
+    if len(value) <= limit:
+        return value
+    return value[: max(1, limit - 3)].rstrip() + "..."
 
 
 def bar_row_chart(
@@ -56,15 +69,20 @@ def bar_row_chart(
     bar_width: int | None = None,
 ) -> str:
     """Horizontal labelled bars: (label, value, max, annotation) per row."""
+    hidden = max(0, len(rows) - MAX_BAR_ROWS)
+    rows = rows[:MAX_BAR_ROWS]
     row_h, gap = 17, 6
     bar_h = 7
     track_w = bar_width or width
-    height = max(len(rows) * (row_h + gap) + 2, row_h + 8)
+    note_h = 10 if hidden else 0
+    height = max(len(rows) * (row_h + gap) + 2 + note_h, row_h + 8)
     parts = [
         f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" font-family="{_FONT}">'
     ]
     y = 2
     for label, value, max_value, note in rows:
+        label = _clip_text(label, MAX_LABEL_CHARS)
+        note = _clip_text(note, MAX_NOTE_CHARS)
         label_y = y + 7
         bar_y = y + 10
         safe_max = max_value if max_value > 0 else 1.0
@@ -80,6 +98,10 @@ def bar_row_chart(
         if fill_w >= 0.5:
             parts.append(f'<rect x="0" y="{bar_y}" width="{fill_w:.1f}" height="{bar_h}" fill="{ink}"/>')
         y += row_h + gap
+    if hidden:
+        parts.append(
+            f'<text x="0" y="{y + 5}" font-size="8" fill="{text}">+{hidden} row(s) not shown; split the chart or summarize.</text>'
+        )
     parts.append("</svg>")
     svg = "".join(parts)
     return _wrap_chart(svg, title, "bars")
@@ -99,6 +121,8 @@ def sparkline(
     clean = [v for v in values if isinstance(v, (int, float)) and math.isfinite(v)]
     if len(clean) < 2:
         return _placeholder(title or "sparkline", "needs at least 2 finite values")
+    if len(clean) > MAX_SPARK_VALUES:
+        clean = clean[-MAX_SPARK_VALUES:]
     lo, hi = min(clean), max(clean)
     spread = (hi - lo) or 1.0
     pad_left, pad_right, pad_y = 28, 34, 8
@@ -124,14 +148,24 @@ def sparkline(
 
 def stat_row(stats: list[tuple[str, str, str]]) -> str:
     """Big-number blocks: (label, value, delta) each. Pure HTML; styled by the pack."""
+    hidden = max(0, len(stats) - MAX_STAT_BLOCKS)
+    stats = stats[:MAX_STAT_BLOCKS]
     blocks = [
         '<div class="mp-stat">'
-        f'<div class="mp-stat-value">{_esc(value)}</div>'
-        f'<div class="mp-stat-delta">{_esc(delta)}</div>'
-        f'<div class="mp-stat-label">{_esc(label)}</div>'
+        f'<div class="mp-stat-value">{_esc(_clip_text(value, MAX_LABEL_CHARS))}</div>'
+        f'<div class="mp-stat-delta">{_esc(_clip_text(delta, MAX_NOTE_CHARS))}</div>'
+        f'<div class="mp-stat-label">{_esc(_clip_text(label, MAX_LABEL_CHARS))}</div>'
         "</div>"
         for label, value, delta in stats
     ]
+    if hidden:
+        blocks.append(
+            '<div class="mp-stat mp-stat-note">'
+            f'<div class="mp-stat-value">+{hidden}</div>'
+            '<div class="mp-stat-delta">not shown</div>'
+            '<div class="mp-stat-label">split or summarize</div>'
+            "</div>"
+        )
     return '<div class="mp-stats">' + "".join(blocks) + "</div>"
 
 
@@ -140,7 +174,7 @@ def _fmt_num(value: float) -> str:
 
 
 def _wrap_chart(svg: str, title: str, kind: str) -> str:
-    title_html = f'<div class="mp-chart-title">{_esc(title)}</div>' if title else ""
+    title_html = f'<div class="mp-chart-title">{_esc(_clip_text(title, MAX_TITLE_CHARS))}</div>' if title else ""
     return f'<div class="mp-chart mp-chart-{kind}">{title_html}{svg}</div>'
 
 
@@ -183,6 +217,8 @@ def _render_directive(kind: str, body: str, *, ink: str, track: str, text: str) 
             values = [float(token) for line in lines for token in line.replace(",", " ").split()]
         except ValueError:
             return _placeholder(title or "mp-spark", "non-numeric values")
+        if len(values) > MAX_SPARK_VALUES:
+            title = title or "mp-spark"
         return sparkline(values, title=title, ink=ink, track=track, text=text)
     if kind == "stats":
         stats: list[tuple[str, str, str]] = []

@@ -214,6 +214,10 @@ Chart ink follows the palette automatically.
 Charts are guarded print furniture: each directive renders as one atomic block,
 and the built-in bar/spark primitives use the full available measure so visuals
 align with the section above and below instead of floating as narrow inserts.
+They also have print-density bounds: `mp-bars` shows up to 12 rows, `mp-stats`
+shows up to 6 primary blocks plus an honest "not shown" note, and `mp-spark`
+uses the most recent 90 values. Labels and annotations are clipped rather than
+allowed to collide. If a chart needs more than that, split it or summarize.
 
 ## Class vocabulary
 

@@ -264,6 +264,10 @@ preferred_primitives:
     - mp-bars
     - mp-spark
     - mp-stats
+  chart_bounds:
+    mp-bars: 12 rows
+    mp-stats: 6 primary blocks
+    mp-spark: 90 most recent values
   custom_allowed:
     - svg_diagram
     - generated_illustration
@@ -281,7 +285,9 @@ explain as well. If it only decorates, cut it.
 ## Visual Types
 
 - **Chart** - use for comparison, movement, count, budget, or trend. Prefer
-  `mp-bars`, `mp-spark`, and `mp-stats` before custom SVG.
+  `mp-bars`, `mp-spark`, and `mp-stats` before custom SVG. If a chart needs
+  more than 12 bar rows, 6 stat blocks, or 90 sparkline values, split it or
+  summarize before rendering.
 - **Diagram** - use when the reader needs a relationship, workflow, stack, or
   system map.
 - **Timeline** - use when sequence is the story.
