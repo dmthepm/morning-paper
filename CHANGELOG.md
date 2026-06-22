@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-06-22
+
+### Added
+- **Codex support — the plugin now installs on Claude Code and Codex from one repo.** The skill bodies moved to `plugins/morning-paper/skills/<name>/SKILL.md` and are the single source both hosts load. The Claude Code manifest (`.claude-plugin/plugin.json`) points at them with `"skills": "./plugins/morning-paper/skills/"`; a new Codex manifest (`plugins/morning-paper/.codex-plugin/plugin.json`) points at the same tree with `"skills": "./skills/"` relative to its own plugin root, carries the required `interface` block, omits `hooks` (Codex validation rejects it), and pins the same strict-semver version. A new Codex marketplace (`.agents/plugins/marketplace.json`) lists the plugin at `./plugins/morning-paper`. No skill prose is duplicated and no skill body differs between hosts. Verified end to end on this machine: `claude plugin validate ./ --strict` passes, the official Codex `validate_plugin.py` passes, and a live `codex plugin add morning-paper@morning-paper` installs with all three skills (`setup`, `edition`, `writing`) present
+- **`AGENTS.md`** — the repo-level cross-agent contract Codex and other agents read: the owned-algorithm product shape, the public-engine / private-newsroom boundary (never write the public repo), the verify-each-step install discipline, and the single-source rule
+- **CI gates for the plugin surface and a Codex structural validator.** A new `plugins` CI job runs `claude plugin validate ./ --strict`, the new `scripts/validate_codex_plugin.py` (mirrors the official Codex validator's rules — strict semver, required `interface`, no `hooks`, `skills` resolves to `skills`, the marketplace source is a real subdirectory), and `scripts/install_smoke.py` (proves both manifests resolve to the same real skills tree carrying all three skills, and that the two manifest versions match)
+
+### Changed
+- **Install guidance pins the interpreter.** The README, the `setup` skill, and `AGENTS.md` now recommend `uv tool install --python 3.13 "morning-paper[pretty]"` (and `pipx install --python 3.13 …`). A bare `uv tool install` can pick a Python beta with no WeasyPrint wheels and resolve an older release or fail; the pin avoids it. Each path now also says to confirm `morning-paper --version` against PyPI before trusting the install
+- **README mission rewrite + a "Set Up With An Agent" section.** The opening states the product as an owned algorithm — an agent composes from sources and preferences you keep as files, code renders the PDF; print-first, anti-feed, optional connections that make it richer. The agent-setup section carries a copyable prompt that teaches the agent how to think (success is a demo PDF on disk, not a package install; verify each step) and routes friends to the plugin on both hosts; a smaller manual fast-path follows
+- The `setup` skill's two deepening links (`docs/collectors.md`, `examples/brief.example.md`) became absolute GitHub URLs, so they resolve from an installed plugin that ships only the skill bodies; `docs/architecture-decisions.md` §16 and `docs/composing.md` were updated to the dual-host skill-distribution layout
+
 ## [0.7.0] - 2026-06-22
 
 ### Added

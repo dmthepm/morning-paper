@@ -1,0 +1,26 @@
+{
+  "name": "morning-paper",
+  "version": "0.7.1",
+  "description": "Your personal newsroom: a daily printed paper composed by your agent from your sources, with preferences you own as files.",
+  "author": { "name": "Devon Meadows", "url": "https://github.com/dmthepm" },
+  "homepage": "https://github.com/dmthepm/morning-paper",
+  "repository": "https://github.com/dmthepm/morning-paper",
+  "license": "MIT",
+  "keywords": ["newspaper", "print", "daily-brief", "newsroom", "pdf"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Morning Paper",
+    "shortDescription": "Own your algorithm. Your personal newsroom.",
+    "longDescription": "A print-first personal newspaper your agent composes and code renders. Your sources and preferences live in files you own, not a feed you rent. Setup interviews you and builds your private newsroom; edition composes and prints each day's paper; writing is the revision discipline for everything it prints.",
+    "developerName": "Devon Meadows",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/dmthepm/morning-paper",
+    "defaultPrompt": [
+      "Set up my morning paper.",
+      "Build today's edition.",
+      "Run the writing pass over this draft."
+    ],
+    "brandColor": "#1A1A1A"
+  }
+}

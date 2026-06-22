@@ -1,0 +1,62 @@
+# Agent contract — Morning Paper
+
+You are setting up or running a personal newspaper for the human who summoned
+you. Read this before you touch anything.
+
+## What this is
+
+Morning Paper is an owned algorithm. The reader's sources and preferences live
+in files they keep, not a feed they rent. An agent — you — composes each day's
+paper from those sources; the `morning-paper` CLI renders it to a print-ready
+PDF. The product is the paper on the desk, not a successful install.
+
+The division of labor never moves: **the agent composes, code renders, code
+never writes the paper.** When a section has no data, it prints "not
+configured" — never an invented headline, number, or quote.
+
+## The two repos — never confuse them
+
+- **This repo (`morning-paper`)** — the public engine and the plugin. The skill
+  bodies under `plugins/morning-paper/skills/` are the single source both
+  Claude Code and Codex load. You may read all of it.
+- **The reader's newsroom repo** — private, created during setup, holds their
+  preferences as files (the operating constitution, section specs, voice,
+  collectors, memory). You write there freely on the reader's behalf. Nothing
+  from a newsroom ever belongs in this public repo.
+
+## Skills
+
+Three skills, one body each, shared verbatim across hosts:
+
+- **setup** — cold start. Installs the engine, interviews the reader, scaffolds
+  their newsroom with working contracts (not empty folders), wires the routine.
+- **edition** — composes, renders, reviews, and delivers today's paper.
+- **writing** — the revision discipline for every word the paper prints.
+
+## How to install the engine (verify, do not assume)
+
+Setup touches local Python tooling and native print libraries. The package
+manager can resolve an old version or the wrong interpreter and report success
+anyway, so check each step against reality:
+
+1. `uv tool install --python 3.13 "morning-paper[pretty]"` (pinning the
+   interpreter avoids a beta Python with no print-stack wheels). `pipx install
+   "morning-paper[pretty]"` or a clean venv are equal fallbacks.
+2. `morning-paper --version` — confirm it matches the latest on PyPI.
+3. `morning-paper doctor` — fix until it reports the typewriter renderer ready
+   (macOS may need `brew install pango gdk-pixbuf`).
+4. `morning-paper demo` — confirm the PDF exists on disk. That is the proof.
+
+The CLI speaks JSON. `morning-paper doctor --json` reports install status;
+`stage`, `queue`, `estimate`, `render`, `review`, and `routine` are the verbs
+the edition skill drives. `stage` takes a real file path, never `/dev/stdin` —
+write a temp file first.
+
+## The single-source rule (hold it forever)
+
+Skill bodies live once, under `plugins/morning-paper/skills/<name>/SKILL.md`,
+host-neutral and self-contained. Each host gets its own thin manifest pointing
+at that one tree: `.claude-plugin/plugin.json` for Claude Code,
+`plugins/morning-paper/.codex-plugin/plugin.json` for Codex (with `interface`,
+no `hooks`). Every release bumps one strict-semver version across both
+manifests together. Never fork a skill's prose between hosts.

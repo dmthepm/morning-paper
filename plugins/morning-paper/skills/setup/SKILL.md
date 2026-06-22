@@ -69,7 +69,8 @@ generic stage/inbox contract any script can write to. Everything below is a
 compose time, dropping markdown into the staging queue. None of these ship in
 the engine; they are recipes to build in the newsroom's `collectors/` (which
 §5 scaffolds with the contract and two worked examples). See
-[docs/collectors.md](../../docs/collectors.md) for the contract.
+[docs/collectors.md](https://github.com/dmthepm/morning-paper/blob/main/docs/collectors.md)
+for the contract.
 
 - **Apify** (`APIFY_TOKEN`): a collector that pulls an X/Twitter radar via
   tweet-scraper actors, about $0.02/day at 40 tweets. Worth it if their work
@@ -465,7 +466,8 @@ stage_url "Today's read" "$URL" && ok "Read"
 **`examples/edition-skeleton.md`** — copy the engine's edition skeleton as the
 starting point for hand-composed editions: it shows the masthead, strip, and
 section furniture. Point the reader at the engine's
-[examples/brief.example.md](../../examples/brief.example.md) and write a copy
+[examples/brief.example.md](https://github.com/dmthepm/morning-paper/blob/main/examples/brief.example.md)
+and write a copy
 into the newsroom they can edit. It is fully synthetic (Port Anselm) — replace
 the place and the prose with their own.
 
