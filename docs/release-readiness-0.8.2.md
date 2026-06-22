@@ -9,8 +9,8 @@ Date: 2026-06-22
 - Local package version: `0.8.2`
 - Public PyPI version verified on 2026-06-22: `0.8.1`
 - Latest local tag: `v0.8.1`
-- Local branch state at latest audit: `main` ahead of `origin/main` by 14
-  commits
+- Local branch state at latest audit: `main` is ahead of `origin/main`; local
+  commits are not pushed, tagged, or published yet.
 
 0.8.2 is ready for release review from the local repo, but it still needs the
 normal publish sequence: push commits, tag `v0.8.2`, build clean artifacts,
@@ -43,7 +43,9 @@ surfaces again.
   writes stable notes into the selected newsroom file, `TASTELOG.md`, and that
   edition's `feedback-plan.md`. It can now target the narrower scaffolded
   files for voice, standing interests, review preferences, and section specs
-  instead of only the broad desk files.
+  instead of only the broad desk files. Feedback to YAML targets is recorded as
+  comments so `preferences/algorithm-prior.yaml` and `preferences/checks.yaml`
+  remain parseable.
 - The shipped plugin surface is locked to exactly `setup`, `edition`, and
   `writing` for 0.8.x. Future newsroom desk skills are documented as design
   direction and cannot leak into the plugin without validation failures.
@@ -69,7 +71,7 @@ claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-pap
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --install-check
 ```
 
-Last full local result: `211 passed`.
+Last full isolated local result: `212 passed`.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack

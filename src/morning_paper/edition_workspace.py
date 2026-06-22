@@ -97,6 +97,9 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
   action in `SOURCES.md`.
 - If feedback conflicts with an existing rule, update `TASTELOG.md` with the
   decision and why the older rule changed.
+- YAML targets (`preferences/algorithm-prior.yaml`, `preferences/checks.yaml`)
+  receive feedback as comments so the file stays parseable. Promote the note
+  into real YAML only when the exact setting is clear.
 
 ## Applied Feedback
 
@@ -135,6 +138,17 @@ def _append_section_note(path: Path, *, heading: str, note: str) -> None:
         text = text.rstrip() + f"\n\n{heading}\n"
     text = text.rstrip() + f"\n- {note}\n"
     path.write_text(text, encoding="utf-8")
+
+
+def _append_feedback_note(path: Path, *, note: str) -> None:
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        if "# Feedback Notes" not in text:
+            text = text.rstrip() + "\n\n# Feedback Notes\n"
+        text = text.rstrip() + f"\n# - {note}\n"
+        path.write_text(text, encoding="utf-8")
+        return
+    _append_section_note(path, heading="## Feedback Notes", note=note)
 
 
 def _append_applied_feedback(feedback_plan: Path, line: str, *, date_str: str) -> None:
@@ -176,7 +190,7 @@ def apply_feedback(
     target_line = f"{stamp} - {decision_key} - {clean_note} ({clean_why})"
     changed_paths: list[str] = []
     if target.name != "TASTELOG.md":
-        _append_section_note(target, heading="## Feedback Notes", note=target_line)
+        _append_feedback_note(target, note=target_line)
         changed_paths.append(str(target))
 
     taste_log = root / "TASTELOG.md"

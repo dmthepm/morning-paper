@@ -53,6 +53,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `voice`, `prior`, `checks`, `the-read`, `front-page`, and `reading`, so
   stable notes can land in `preferences/` and `specs/` instead of being forced
   into broad desk files.
+- Feedback recorded to YAML targets (`prior` and `checks`) is appended as YAML
+  comments, keeping `preferences/algorithm-prior.yaml` and
+  `preferences/checks.yaml` parseable until an agent promotes the note into a
+  concrete setting.
 - **Source vocabulary cleanup.** CLI help, generated config comments, source
   inventory JSON, setup guidance, roadmap, and demo copy now say source stack,
   entry points, and reader-owned sources instead of teaching a feed-first

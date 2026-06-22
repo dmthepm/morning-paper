@@ -96,6 +96,7 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("TASTELOG.md", feedback_plan)
             self.assertIn("Applied Feedback", feedback_plan)
             self.assertIn("Do not overfit", feedback_plan)
+            self.assertIn("YAML targets", feedback_plan)
             self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
             self.assertIn("feedback-plan.md", payload["next_action"])
 
@@ -270,6 +271,65 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("the-read", feedback_plan)
             self.assertIn("preferences/voice.md", feedback_plan)
             self.assertIn("specs/the-read.md", feedback_plan)
+
+    def test_apply_feedback_keeps_yaml_targets_parseable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+
+            for route, phrase in (
+                ("prior", "Dampen pure viral velocity."),
+                ("checks", "Mute headline-length nudges for the Field Notes section."),
+            ):
+                stdout = io.StringIO()
+                with redirect_stdout(stdout):
+                    rc = cli.main(
+                        [
+                            "edition",
+                            "apply-feedback",
+                            str(newsroom),
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-06-22",
+                            "--route",
+                            route,
+                            "--note",
+                            phrase,
+                        ]
+                    )
+                self.assertEqual(rc, 0)
+
+            prior = newsroom / "preferences" / "algorithm-prior.yaml"
+            checks = newsroom / "preferences" / "checks.yaml"
+            self.assertIsNone(yaml.safe_load(prior.read_text(encoding="utf-8")))
+            self.assertIsNone(yaml.safe_load(checks.read_text(encoding="utf-8")))
+            self.assertIn("# Feedback Notes", prior.read_text(encoding="utf-8"))
+            self.assertIn("# -", prior.read_text(encoding="utf-8"))
+            self.assertIn("Dampen pure viral velocity.", prior.read_text(encoding="utf-8"))
+            self.assertIn("# Feedback Notes", checks.read_text(encoding="utf-8"))
+            self.assertIn("Mute headline-length nudges", checks.read_text(encoding="utf-8"))
+            feedback_plan = (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("preferences/algorithm-prior.yaml", feedback_plan)
+            self.assertIn("preferences/checks.yaml", feedback_plan)
 
     def test_apply_feedback_rejects_missing_route_or_note(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
