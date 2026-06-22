@@ -1,7 +1,7 @@
 # Morning Paper 0.8 Product Readiness
 
 Status: shipped source of truth for the 0.8 hardening pass. Current live
-release: 0.8.1.
+release: 0.8.1. Current release candidate: 0.8.2.
 
 ## Mission
 
@@ -23,10 +23,11 @@ The product promise stays narrow:
 ## Current Truth
 
 - `morning-paper` 0.8.1 is live on PyPI and GitHub Releases; the current repo
-  carries one skill tree for Claude Code and Codex.
+  is prepared as release candidate 0.8.2 and carries one skill tree for Claude
+  Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
-  host manifests carry the same 0.8.1 semver.
+  host manifests carry the same 0.8.2 semver.
 - The public README now has the owned-algorithm mission and a copyable agent
   install prompt.
 - The setup skill writes a real newsroom scaffold instead of empty folders and
@@ -263,6 +264,14 @@ print path in CI before shipping.
 0.8.2 candidate hardening: `doctor --strict` now checks the installed
 WeasyPrint version against that supported range before running the render
 self-test. An older renderer that imports is still not enough proof.
+
+2026-06-22 release-candidate artifact proof for `0.8.2`: build from a clean
+source copy, verify one semver across `pyproject.toml`, `__version__`, the
+Claude Code manifest, and the Codex manifest, inspect the wheel/sdist for the
+new feedback-plan/source-framing code, then install both wheel and sdist with
+`[pretty]`. Both artifacts printed `morning-paper --version` as `0.8.2`,
+resolved WeasyPrint `69.0`, passed `doctor --strict --json`, and rendered
+`demo --output <tmp>/demo.pdf` as a real two-page PDF with JSON-only stdout.
 
 2026-06-22 release-candidate artifact proof: build `0.8.1` from a clean source
 copy, not an in-place tree with ignored `build/` residue. A dirty in-place

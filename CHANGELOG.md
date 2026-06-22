@@ -6,13 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-06-22
+
+### Added
+- **Durable feedback plans.** `morning-paper edition prepare` now writes
+  `feedback-plan.md` beside `operator-answers.md`, giving agents a
+  compaction-safe route from reader notes to the smallest durable newsroom file
+  (`EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `specs/`,
+  `preferences/`, collectors, staging, or `TASTELOG.md`). The edition skill and
+  scaffolded newsroom constitution now require the agent to record Applied
+  Feedback with paths changed.
+- **Source-stack-first onboarding.** Current-facing setup/source guidance now
+  frames sources as work streams, personal feeds, local knowledge, exports,
+  folders, and tool/agent outputs instead of centering any one public feed.
+- **Visual integration guardrails.** Shared figure/image CSS, source-note
+  primitives, visual-grid support, field-card chart styling, and visual QA
+  instructions make agent-created charts and illustrations fit the surrounding
+  page instead of floating awkwardly.
+
 ### Changed
-- Thinned the README and source/routine docs around the real product contract:
-  sources should start from the reader's work streams, personal feeds, local
-  knowledge, exports, folders, and tools; extractor backends are replaceable
-  plumbing; and recurring runs should prefer host-native primitives (Codex
-  Automations, Claude Code routines, ChatGPT scheduled tasks) with the CLI
-  routine kept as an explicit local fallback.
+- `sources list` / `sources check` now suggest concrete reader-owned source
+  classes such as email/newsletters, Slack, GitHub, Linear, local folders,
+  social exports, video feeds, RSS/feed URLs, and saved files when no source is
+  configured.
+- Package/plugin metadata, README, collector docs, scaffolded newsroom files,
+  and smoke tests now use the broader personal-newsroom source model.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when
@@ -20,6 +38,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   (`>=69.0,<70`). Casual `doctor` still reports the situation with install
   guidance, but the strict proof gate no longer treats an old native print
   stack as production-ready.
+
+### Verified
+- Current local release-candidate checks pass: unit tests, Codex plugin
+  validation, Claude Code plugin validation, host plugin smoke, setup scaffold
+  smoke, fresh-friend persona simulations, and clean wheel/sdist install checks
+  with WeasyPrint 69.0 and a rendered demo PDF.
 
 ## [0.8.1] - 2026-06-22
 

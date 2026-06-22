@@ -139,6 +139,9 @@
   (Arimo) are vendored and wired through `@font-face`, charts lead with
   vendored Courier Prime, and WeasyPrint gets the correct OTF/TTF `format()`
   hint so the same paper uses the same glyphs on macOS and Linux
+- `v0.8.2` candidate — reader-stack-first source framing, durable
+  `feedback-plan.md` artifacts, visual integration guardrails, and stricter
+  release-candidate artifact checks
 - next skill architecture is banked in `docs/newsroom-skill-suite.md`: grow
   from the current setup/edition/writing proof into narrow newsroom desks
   without breaking the friend path
@@ -150,13 +153,12 @@
 
 ## Next
 
-- published package/plugin live-agent pass after the manifests are bumped for
-  the 0.8 release
+- publish `v0.8.2`, then run the published package/plugin live-agent pass from
+  the installed artifact
 - first-edition acceptance test proving a real agent uses the prepared
   workspace, overwrites pending render/review artifacts, and ends by asking
   for natural-language feedback
-- visual QA guardrails for arbitrary agent-created raw HTML/SVG/images:
-  geometry checks, asset provenance, and image sizing
+- visual geometry checks for arbitrary agent-created raw HTML/SVG/images
 - style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
 - source plugins for YouTube transcripts and X/Twitter thread workflows

@@ -19,6 +19,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import venv
 import zipfile
@@ -44,6 +45,10 @@ EXPECTED_MODULES = (
     "morning_paper/edition_workspace.py",
     "morning_paper/page_count_worker.py",
 )
+EXPECTED_SNIPPETS = {
+    "morning_paper/edition_workspace.py": ("feedback_plan_template", "feedback-plan.md", "Applied Feedback"),
+    "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md"),
+}
 STALE_RESOURCE_MARKERS = ("typewriter.md", "typewriter-v5.md")
 
 
@@ -85,6 +90,38 @@ def _project_version(repo: Path) -> str:
     return match.group(1)
 
 
+def _module_version(repo: Path) -> str:
+    text = (repo / "src" / "morning_paper" / "__init__.py").read_text(encoding="utf-8")
+    match = re.search(r'^__version__\s*=\s*"([^"]+)"', text, re.MULTILINE)
+    if not match:
+        raise RuntimeError("src/morning_paper/__init__.py has no __version__")
+    return match.group(1)
+
+
+def _json_version(path: Path) -> str:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    version = payload.get("version")
+    if not isinstance(version, str) or not version:
+        raise RuntimeError(f"{path} has no JSON version")
+    return version
+
+
+def _validate_repo_versions(repo: Path, version: str) -> dict[str, str]:
+    versions = {
+        "pyproject": version,
+        "module": _module_version(repo),
+        "claude_manifest": _json_version(repo / ".claude-plugin" / "plugin.json"),
+        "codex_manifest": _json_version(repo / "plugins" / "morning-paper" / ".codex-plugin" / "plugin.json"),
+    }
+    mismatched = {name: value for name, value in versions.items() if value != version}
+    if mismatched:
+        raise RuntimeError(f"version drift: expected {version}, got {mismatched}")
+    changelog = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
+    if f"## [{version}]" not in changelog:
+        raise RuntimeError(f"CHANGELOG.md has no entry for {version}")
+    return versions
+
+
 def _copy_clean_source(repo: Path, temp_root: Path) -> Path:
     source = temp_root / "source"
     shutil.copytree(repo, source, ignore=_ignore)
@@ -107,6 +144,10 @@ def _inspect_wheel(wheel: Path, version: str) -> dict[str, object]:
         names = sorted(zf.namelist())
         metadata_name = f"morning_paper-{version}.dist-info/METADATA"
         metadata = zf.read(metadata_name).decode("utf-8") if metadata_name in names else ""
+        module_text = {
+            module: zf.read(module).decode("utf-8") if module in names else ""
+            for module in EXPECTED_SNIPPETS
+        }
 
     errors: list[str] = []
     if f"Version: {version}" not in metadata:
@@ -114,6 +155,11 @@ def _inspect_wheel(wheel: Path, version: str) -> dict[str, object]:
     for module in EXPECTED_MODULES:
         if module not in names:
             errors.append(f"wheel missing {module}")
+    for module, snippets in EXPECTED_SNIPPETS.items():
+        text = module_text.get(module, "")
+        for snippet in snippets:
+            if snippet not in text:
+                errors.append(f"wheel `{module}` missing expected snippet `{snippet}`")
     stale = [name for name in names if any(marker in name for marker in STALE_RESOURCE_MARKERS)]
     if stale:
         errors.append(f"wheel contains stale resources: {stale}")
@@ -132,6 +178,39 @@ def _inspect_wheel(wheel: Path, version: str) -> dict[str, object]:
         "module_count": len([name for name in names if name.endswith(".py")]),
         "stale_resources": stale,
     }
+
+
+def _inspect_sdist(sdist: Path, version: str) -> dict[str, object]:
+    errors: list[str] = []
+    expected_prefix = f"morning_paper-{version}/"
+    with tarfile.open(sdist, "r:gz") as tf:
+        names = sorted(tf.getnames())
+        payload_names = [name for name in names if name and name != "pax_global_header"]
+        root_name = expected_prefix.rstrip("/")
+        if not all(name == root_name or name.startswith(expected_prefix) for name in payload_names):
+            errors.append("sdist root directory does not match package version")
+        required = [
+            f"{expected_prefix}pyproject.toml",
+            f"{expected_prefix}README.md",
+            f"{expected_prefix}LICENSE",
+        ]
+        for name in required:
+            if name not in names:
+                errors.append(f"sdist missing {name}")
+        for module, snippets in EXPECTED_SNIPPETS.items():
+            member_name = f"{expected_prefix}src/{module}"
+            try:
+                member = tf.extractfile(member_name)
+                text = member.read().decode("utf-8") if member else ""
+            except KeyError:
+                errors.append(f"sdist missing {member_name}")
+                continue
+            for snippet in snippets:
+                if snippet not in text:
+                    errors.append(f"sdist `{module}` missing expected snippet `{snippet}`")
+    if errors:
+        raise RuntimeError("; ".join(errors))
+    return {"path": str(sdist), "size": sdist.stat().st_size}
 
 
 def _venv_python(root: Path) -> Path:
@@ -203,6 +282,7 @@ def main() -> int:
     repo = args.repo.resolve()
     outdir = args.outdir.resolve()
     version = _project_version(repo)
+    versions = _validate_repo_versions(repo, version)
 
     with tempfile.TemporaryDirectory(prefix="morning-paper-release-check-") as temp:
         temp_root = Path(temp)
@@ -211,10 +291,11 @@ def main() -> int:
         summary: dict[str, object] = {
             "ok": True,
             "version": version,
+            "versions": versions,
             "source": str(source),
             "outdir": str(outdir),
             "wheel": _inspect_wheel(wheel, version),
-            "sdist": {"path": str(sdist), "size": sdist.stat().st_size},
+            "sdist": _inspect_sdist(sdist, version),
         }
         if args.install_check:
             summary["install_checks"] = [

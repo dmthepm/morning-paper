@@ -85,8 +85,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
     assert "Friend-ready personal newsroom setup" in changelog
-    assert f"Current live\nrelease: {version}" in readiness
-    assert f"`morning-paper` {version} is live" in readiness
+    assert f"Current release candidate: {version}" in readiness
+    assert f"release candidate {version}" in readiness
     assert f"same {version} semver" in readiness
     assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
     assert "skills as newsroom desks" in readiness
