@@ -43,15 +43,17 @@ install. Do this end to end and verify each step:
 2. Confirm `morning-paper --version` matches the latest version on PyPI.
 3. Run `morning-paper doctor` and fix what it flags until the typewriter
    renderer is ready (macOS may need `brew install pango gdk-pixbuf`).
-4. Run `morning-paper demo` and confirm the PDF it names exists on disk.
+4. Run `morning-paper demo --open` and confirm the PDF it names exists on disk
+   and opens on screen.
 5. If `uv tool install` resolves an old version or the wrong Python,
    diagnose it — prefer `uv tool install --python 3.13 "morning-paper[pretty]"`,
    else pipx or a clean venv.
-6. Open the demo PDF so it is visible — macOS `open <pdf-path>`, Windows
-   `start <pdf-path>`, Linux `xdg-open <pdf-path>`.
+6. If the PDF did not open automatically, open the `outputs.pdf` path from the
+   JSON payload.
 
 Stop when the demo PDF exists and is open on my screen. Show me the exact
-commands that worked, the installed version, and the PDF path.
+commands that worked, the installed version, the PDF path, and the `opened`
+status from the JSON payload.
 
 Do not set up my private newsroom yet — first prove the engine prints.
 ```
@@ -75,7 +77,7 @@ files you own. The `edition` skill composes and prints each day's paper.
 uv tool install --python 3.13 "morning-paper[pretty]"   # pin the interpreter
 morning-paper --version    # should match the latest on PyPI
 morning-paper doctor       # must say: typewriter ready
-morning-paper demo         # renders the sample PDF and prints its path
+morning-paper demo --open  # renders the sample PDF, prints its path, opens it
 ```
 
 > macOS first: `brew install pango gdk-pixbuf` (WeasyPrint needs Pango).
@@ -108,13 +110,24 @@ newsroom repo, first edition, daily loop). The repo-level contract is
    (preferences as files: the owned algorithm), and wires a morning routine. The
    `edition` skill composes and renders each day's paper.
 3. The CLI speaks JSON. The verbs you need:
+   - `morning-paper sources list --newsroom <path>` / `sources check
+     --newsroom <path>` -> what built-in feeds and private newsroom collectors
+     exist, whether they work, and whether feeds are full-text or summary only
+   - `morning-paper newsroom init <path>` -> scaffold the private newsroom repo
+     with setup state, specs, preferences, collectors, memory, and edition
+     templates
+   - `morning-paper newsroom state <path> --set key=value` -> update
+     `setup-state.json` and refresh `SETUP.md` as setup progresses
    - `morning-paper stage <url>` -> stages it for tomorrow and answers with a
      page estimate ("that adds ~5 pages")
    - `morning-paper inbox` -> poll the contributor inbox: mail from the
      configured masthead (an allowlist of trusted senders) becomes staged
      pages and the sender gets a confirmation; `--dry-run` previews
      ([docs/inbox.md](docs/inbox.md))
-   - `morning-paper queue` -> what's staged vs the page budget
+   - `morning-paper queue list|show|remove` -> inspect or prune what's staged
+     vs the page budget
+   - `morning-paper edition prepare <newsroom>` -> create the durable edition
+     files an agent can resume from before composing
    - `morning-paper estimate <file.md>` -> page count, nothing written
    - `morning-paper render <file.md> --style <s> --palette <p>` -> the PDF
    - `morning-paper review <edition>` -> editorial QC on a finished edition
@@ -166,6 +179,8 @@ prints a newspaper.
 ```bash
 uv tool install --python 3.13 "morning-paper[pretty]"
 morning-paper init      # starter config
+morning-paper newsroom init ~/Newsroom
+morning-paper edition prepare ~/Newsroom
 morning-paper doctor    # must say: typewriter ready
 morning-paper build     # today's edition
 ```
@@ -228,7 +243,7 @@ can run anywhere — the paper still lands on your desk.
 
 | Source | Auth needed? | Status |
 | --- | --- | --- |
-| Hacker News | No | Included |
+| Hacker News | No | Included as an optional starter source |
 | RSS feeds | No | Included |
 | Article URLs | No | Included via `print` / `stage` |
 
@@ -236,6 +251,11 @@ Everything else — a subreddit digest, your GitHub activity, an X radar, a
 weekly research roundup — is a *collector*: a small script you run before
 composing that stages markdown into the queue. See
 [docs/collectors.md](docs/collectors.md) for the contract.
+
+Use `morning-paper sources list --newsroom ~/Newsroom` to see configured
+sources and local collector scripts. Use `morning-paper sources check
+--newsroom ~/Newsroom` to verify reachability, collector syntax, and whether
+each RSS feed is full-text or summary-only.
 
 ## Four styles, two palettes
 
@@ -325,9 +345,12 @@ you are on the real print path.
 ```bash
 git clone https://github.com/dmthepm/morning-paper.git
 cd morning-paper
-pip install -e ".[dev]"
+pip install -e ".[dev,pretty]"
 python -m pytest tests/
-morning-paper doctor
+python scripts/setup_scaffold_smoke.py
+python scripts/fresh_friend_smoke.py
+python scripts/host_plugin_smoke.py  # requires local claude + codex CLIs
+morning-paper doctor --strict
 ```
 
 ## Community

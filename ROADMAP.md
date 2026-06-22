@@ -75,11 +75,71 @@
   contract with worked examples, and an editions dir) instead of empty folders
 - removed the thin shadowing skill stub; doc tightening + version re-baseline
 
+## In progress (`v0.8.0` friend-ready newsroom)
+
+- WeasyPrint is treated as the production renderer, not an implementation
+  detail: `doctor --strict` runs a real layout self-test and `doctor --json`
+  reports Python, WeasyPrint, tinycss2, cssselect2, pydyf, cffi, Pillow,
+  fontTools, and detectable native Pango status
+- the `[pretty]` extra is bounded to the current supported WeasyPrint major
+  line and a clean virtualenv install has proved WeasyPrint 69.0 can run the
+  doctor self-test and demo render
+- pretty-renderer CI exercises the WeasyPrint path on Python 3.13 for macOS
+  and Ubuntu
+- `morning-paper newsroom init <path>` scaffolds a private newsroom repo with
+  `setup-state.json`, `SETUP.md`, `CLAUDE.md`, specs, preferences, collectors,
+  memory files, an inbox drop folder, and edition templates; reruns skip
+  user-edited files unless `--force` is explicit
+- `morning-paper newsroom state <path> --set key=value` updates setup state
+  and refreshes `SETUP.md` so install proof, source choices, printer choices,
+  plugin state, pending questions, and next action stay durable
+- `morning-paper sources list|check` inventories built-in and RSS sources and
+  labels checked RSS feeds as full-text or summary-only; with `--newsroom
+  <path>` it also inventories local collector scripts and checks shell syntax
+- `morning-paper queue list|show|remove` makes the staged edition queue
+  inspectable and editable by agents
+- `morning-paper edition prepare <newsroom>` writes the compaction-safe edition
+  workspace: source inventory, collector report, queue snapshot, draft,
+  render/review placeholders, and operator answers
+- `scripts/setup_scaffold_smoke.py` runs the setup path from a temporary home:
+  default config, `doctor --strict --json`, demo PDF, newsroom scaffold,
+  setup-state refresh, local-drop collector, edition prepare, render, review,
+  and feedback artifact without touching real user config or routines
+- `scripts/fresh_friend_smoke.py` runs deterministic local simulations for the
+  creator/news reader, business owner/Main Branch, technical agent,
+  nontechnical RSS/newsletter, and local-folder/source-dump personas; each now
+  reaches a rendered PDF, complete edition artifact set, and clean review
+- `scripts/host_plugin_smoke.py` installs the current worktree through real
+  Claude Code and Codex plugin hosts using temporary homes, proving clean host
+  discovery and the shared setup/edition/writing skills without mutating the
+  reader's installed plugin state
+- a live Codex agent, running from temporary `CODEX_HOME`, `HOME`, and
+  `XDG_CONFIG_HOME` with the local plugin installed, used the
+  setup/edition/writing skill path to create a fresh newsroom, stage a
+  synthetic local source through the scaffolded local-drop collector, render a
+  one-page PDF, accept reviewer feedback, and finish with clean review; no
+  real config or routine was touched
+- a live authenticated Claude Code session ran the demo, produced a real
+  two-page PDF, and opened it on screen; full interactive setup against the
+  real home directory remains intentionally unforced because it can install a
+  routine and write user config
+- chart directives now have a print-layout guardrail: built-in `mp-bars` and
+  `mp-spark` visuals use the full available measure so demo/newsroom visuals
+  align with surrounding sections instead of floating as narrow inserts
+- collector date semantics are explicit: edition collectors target the
+  edition date, ad hoc `stage` remains "read this later" and defaults to
+  tomorrow
+- setup and edition skills now require durable state files so a compacted or
+  fresh agent can resume from disk
+
 ## Next
 
-- queue management verbs: `morning-paper remove`, `morning-paper list`
-- `doctor` render self-test (actually lay out a page, not just import checks)
-- CI job that exercises the WeasyPrint path + a (style × palette) snapshot matrix
+- published package/plugin live-agent pass after the manifests are bumped for
+  the 0.8 release
+- first-edition acceptance test proving a real agent uses the prepared
+  workspace, overwrites pending render/review artifacts, and ends by asking
+  for natural-language feedback
+- style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
 - source plugins for YouTube transcripts and X/Twitter thread workflows
 - optional LLM scoring via OpenRouter / Anthropic / OpenAI

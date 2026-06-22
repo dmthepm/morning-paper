@@ -22,13 +22,30 @@ The Read, an empty reads-ledger, a voice template, an editions dir, and a
 collector contract with worked examples — everything the `edition` skill reads.
 A scaffold of empty folders is a failed setup.
 
+Resumability rule: as soon as the newsroom path exists, create and keep current
+`setup-state.json` and `SETUP.md`. After every major step, update them before
+continuing. If setup resumes after compaction or a fresh agent picks it up,
+read those two files first and continue from `next_action`.
+
+Use the CLI to update setup state rather than hand-editing JSON:
+
+```bash
+morning-paper newsroom state /path/to/newsroom \
+  --set demo.pdf_path="/absolute/path/demo.pdf" \
+  --set demo.opened_on_screen=true \
+  --set doctor.strict_passed=true \
+  --pending "Which RSS feeds should I add?"
+```
+
 ## 1. Engine
 
 ```bash
-uv tool install "morning-paper[pretty]"   # canonical; pipx install also works.
-                                           # Use bare pip only inside a venv —
-                                           # PEP 668 blocks it on brew/system Python.
-morning-paper doctor   # must report: typewriter ready (macOS may need: brew install pango gdk-pixbuf)
+uv tool install --python 3.13 "morning-paper[pretty]"   # canonical; pipx install also works.
+                                                         # Use bare pip only inside a venv —
+                                                         # PEP 668 blocks it on brew/system Python.
+morning-paper --version
+morning-paper doctor --strict   # must report: typewriter ready and renderer self-test passed
+morning-paper demo --output ./morning-paper-demo --open
 morning-paper init
 ```
 
@@ -68,7 +85,7 @@ generic stage/inbox contract any script can write to. Everything below is a
 **collector**: a small script the operator (or their agent) authors and runs at
 compose time, dropping markdown into the staging queue. None of these ship in
 the engine; they are recipes to build in the newsroom's `collectors/` (which
-§5 scaffolds with the contract and two worked examples). See
+§5 scaffolds with the contract and three worked examples). See
 [docs/collectors.md](https://github.com/dmthepm/morning-paper/blob/main/docs/collectors.md)
 for the contract.
 
@@ -79,6 +96,9 @@ for the contract.
   for a weekly trends page.
 - **gh CLI**: a collector that builds a "shipped while you slept" section from
   their repos (scaffolded as `collectors/shipped.sh` in §5).
+- **Local drop folder**: a collector that stages `.md`, `.txt`, and `.url`
+  files from a folder the user already owns: Obsidian exports, synced folders,
+  agent-produced files, or manual dumps.
 Each collector they skip = a section that prints "not configured", never fake data.
 
 ## 4. The masthead (the contributor inbox)
@@ -111,14 +131,30 @@ If yes:
 
 ## 5. The newsroom repo — scaffold the contracts (the keystone)
 
-Create a PRIVATE repo (suggest `<user>/newsroom`) and **write the files below
-into it.** Do not stop at `mkdir`: the `edition` skill reads these files; empty
-folders make it improvise. Personalize the placeholders from the interview, but
-ship every file. None of this is the engine's content — it is the reader's
-owned algorithm, in files they can edit.
+Create a PRIVATE repo (suggest `<user>/newsroom`) by running the engine's
+deterministic scaffold, then personalize it from the interview:
+
+```bash
+morning-paper newsroom init /path/to/newsroom --name "<paper name>"
+cd /path/to/newsroom
+git init
+```
+
+Do not stop at `mkdir`: the `edition` skill reads these files; empty folders
+make it improvise. The CLI scaffold writes the contract below and safely skips
+existing files on rerun unless `--force` is passed. Personalize the placeholders
+from the interview, but ship every file. None of this is the engine's content -
+it is the reader's owned algorithm, in files they can edit.
+After each personalization step, run `morning-paper newsroom state . --set ...`
+so `SETUP.md` and `setup-state.json` stay true.
+Use `morning-paper sources list --newsroom .` after scaffolding, and
+`morning-paper sources check --newsroom .` when the reader is ready to verify
+feeds and collector syntax.
 
 ```
 newsroom/
+  SETUP.md                   # resumable setup journal for humans and agents
+  setup-state.json           # resumable setup state, updated after each step
   CLAUDE.md                  # the operating constitution (the keystone)
   specs/
     _template.md             # the five-field section contract
@@ -134,6 +170,7 @@ newsroom/
     run_all.sh               # run every collector, write a status report
     shipped.sh               # example: "shipped while you slept" (gh)
     read.sh                  # example: stage a URL as tomorrow's read
+    local-drop.sh            # example: stage files from inbox/
   memory/
     reads-ledger.md          # empty; one line per printed read
     MEMORY.md                # empty thread index
@@ -146,6 +183,75 @@ newsroom/
 
 Explain the point in one line: *your feed has an algorithm you can't see; your
 paper's algorithm is files you can read and edit.*
+
+### Resumable setup files
+
+Write these first, then keep them current.
+
+**`setup-state.json`**:
+
+```json
+{
+  "status": "in_progress",
+  "updated_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "newsroom_path": "/absolute/path/to/newsroom",
+  "installed_version": "",
+  "engine_install_command": "uv tool install --python 3.13 \"morning-paper[pretty]\"",
+  "doctor": {
+    "strict_passed": false,
+    "renderer_self_test_passed": false,
+    "python": "",
+    "weasyprint": ""
+  },
+  "demo": {
+    "pdf_path": "",
+    "opened_on_screen": false
+  },
+  "plugin_state": {
+    "claude_code": "unknown",
+    "codex": "unknown"
+  },
+  "source_choices": {
+    "hacker_news": "ask",
+    "rss": [],
+    "collectors": [],
+    "inbox": "ask"
+  },
+  "printer_choice": {
+    "mode": "ask",
+    "command": ""
+  },
+  "pending_questions": [],
+  "next_action": "finish interview and write config"
+}
+```
+
+**`SETUP.md`**:
+
+```markdown
+# Morning Paper Setup
+
+## Current Status
+- Status: in progress
+- Installed version:
+- Demo PDF:
+- Demo opened on screen: no
+- Newsroom path:
+- Next action:
+
+## Source Choices
+- Hacker News:
+- RSS:
+- Collectors:
+- Inbox:
+
+## Printer
+- Mode:
+- Command:
+
+## Pending Questions
+- None yet.
+```
 
 ### The contracts to write
 
@@ -371,9 +477,10 @@ not what the engine reads):
 
 set -euo pipefail
 
-# The edition we're collecting FOR. Material gathered today is for TOMORROW's
-# paper, which is also `morning-paper stage`'s default; pass $1 to override.
-EDITION_DATE="${1:-$(date -v+1d +%F 2>/dev/null || date -d tomorrow +%F)}"
+# The edition we're collecting FOR. Edition collectors run as part of today's
+# compose pass, so their default is today's edition date. Ad hoc `stage`
+# calls without --date are still "read this later" and target tomorrow.
+EDITION_DATE="${1:-$(date +%F)}"
 
 # stage_markdown <title> <file.md> — stage a markdown file you produced.
 stage_markdown() {
@@ -398,12 +505,12 @@ unavailable() { echo "unavailable: $1 — ${2:-not configured}"; }
 
 ```bash
 #!/usr/bin/env bash
-# run_all.sh — run every collector for tomorrow's edition, print a status line
+# run_all.sh — run every collector for the edition date, print a status line
 # each. The edition skill runs this in the Collect step, then reads the queue.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-EDITION_DATE="${1:-$(date -v+1d +%F 2>/dev/null || date -d tomorrow +%F)}"
+EDITION_DATE="${1:-$(date +%F)}"
 echo "collectors for $EDITION_DATE:"
 for c in *.sh; do
   case "$c" in _lib.sh|run_all.sh) continue ;; esac
@@ -411,7 +518,7 @@ for c in *.sh; do
   bash "$c" "$EDITION_DATE" || echo "unavailable: $c — exited nonzero"
 done
 echo "queue:"
-morning-paper queue --date "$EDITION_DATE"
+morning-paper queue list --date "$EDITION_DATE"
 ```
 
 **`collectors/shipped.sh`** — the "shipped while you slept" worked example:
@@ -443,12 +550,12 @@ fi
 rm -f "$tmp"
 ```
 
-**`collectors/read.sh`** — the simplest collector: stage one URL as a read.
-Edit the URL, or wrap it to read a list from a file:
+**`collectors/read.sh`** — the simplest collector: stage one URL as a read for
+the current edition date. Edit the URL, or wrap it to read a list from a file:
 
 ```bash
 #!/usr/bin/env bash
-# read.sh — stage a single URL as a full read for tomorrow. The bring-your-own
+# read.sh — stage a single URL as a full read for the current edition. The bring-your-own
 # pattern: the engine fetches and extracts exactly like `print`.
 set -euo pipefail
 source "$(dirname "$0")/_lib.sh" "${1:-}"
@@ -458,6 +565,51 @@ case "$URL" in
   *replace-with-*) unavailable "Read" "no URL set — edit collectors/read.sh"; exit 0 ;;
 esac
 stage_url "Today's read" "$URL" && ok "Read"
+```
+
+**`collectors/local-drop.sh`** — stage markdown/text/URL files from a folder
+the reader already owns. This is the gentle path for Obsidian exports, synced
+folders, agent-produced files, and manual source dumps:
+
+```bash
+#!/usr/bin/env bash
+# local-drop.sh — stage files from inbox/ for the current edition.
+set -euo pipefail
+source "$(dirname "$0")/_lib.sh" "${1:-}"
+
+DROP_DIR="${MORNING_PAPER_DROP_DIR:-$(dirname "$0")/../inbox}"
+mkdir -p "$DROP_DIR"
+shopt -s nullglob
+
+count=0
+for file in "$DROP_DIR"/*; do
+  [ -f "$file" ] || continue
+  base="$(basename "$file")"
+  case "$base" in .* ) continue ;; esac
+  case "$file" in
+    *.md|*.markdown)
+      stage_markdown "${base%.*}" "$file" && count=$((count + 1))
+      ;;
+    *.txt)
+      tmp="$(mktemp -t morning-paper-drop.XXXXXX).md"
+      { echo "# ${base%.*}"; echo; cat "$file"; } > "$tmp"
+      stage_markdown "${base%.*}" "$tmp" && count=$((count + 1))
+      rm -f "$tmp"
+      ;;
+    *.url)
+      url="$(grep -Eo 'https?://[^[:space:]]+' "$file" | head -1 || true)"
+      if [ -n "$url" ]; then
+        stage_url "${base%.*}" "$url" && count=$((count + 1))
+      fi
+      ;;
+  esac
+done
+
+if [ "$count" -gt 0 ]; then
+  ok "Local drop ($count)"
+else
+  unavailable "Local drop" "put .md, .txt, or .url files in $DROP_DIR"
+fi
 ```
 
 **`editions/.gitignore`** — one line: `*.pdf`. The `edition` skill writes
@@ -471,7 +623,7 @@ and write a copy
 into the newsroom they can edit. It is fully synthetic (Port Anselm) — replace
 the place and the prose with their own.
 
-After writing the files, `git init` the newsroom and make the first commit.
+After personalizing the scaffold, make the first commit.
 
 ## 6. The morning routine (offer the ladder)
 

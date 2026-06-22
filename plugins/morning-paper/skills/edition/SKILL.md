@@ -13,19 +13,47 @@ yours. The binding lesson from this project's history: the agent composes
 against a good stylesheet; code renders it faithfully; code never writes the
 paper.
 
+Resumability rule: before substantive work, run:
+
+```bash
+morning-paper edition prepare . --date <edition-date>
+```
+
+from the newsroom root. It creates `editions/<date>/` and the required durable
+files. If the run resumes after compaction, read the files in that folder first
+and continue from the latest complete artifact instead of starting over.
+
+Required durable artifacts:
+
+- `source-inventory.json` — `morning-paper sources list/check --newsroom .`
+  result, including built-in feeds and local collector scripts.
+- `collector-report.md` — commands run, status lines, failures, and skips.
+- `queue-snapshot.json` — `morning-paper queue list --date <date>` after
+  collectors and any pruning.
+- `draft.md` — current composed edition, written before estimating.
+- `render-result.json` — JSON output from `morning-paper render`.
+- `review.json` — JSON output from `morning-paper review`.
+- `operator-answers.md` — a short feedback sheet for the reader to mark up or
+  answer in chat.
+
 ## The pass
 
 1. **Collect.** If the contributor inbox is configured, poll it first:
    `morning-paper inbox` — mail from the masthead becomes staged items and
    the senders get their confirmations. Then run the user's collectors: the
    scaffolded newsroom has `collectors/run_all.sh` (it runs every collector
-   for the edition date, then prints `morning-paper queue`); a bare-bones
+   for the edition date, then prints `morning-paper queue list`); a bare-bones
    newsroom may just have the engine's `morning-paper build` for HN/RSS.
    Collectors stage via `morning-paper stage`, so check the staged queue:
-   `morning-paper queue` — anything staged via `stage` or the inbox belongs in
-   today's paper (a human or another agent put it there on purpose). Staged
-   items with a `contributor` name render with a FROM <NAME> kicker — the
-   paper says who sent it in.
+   `morning-paper queue list --date <edition-date>` and inspect uncertain
+   items with `morning-paper queue show <slug> --date <edition-date> --content`.
+   Anything staged via `stage` or the inbox belongs in today's paper unless you
+   intentionally remove it with `queue remove` (a human or another agent put it
+   there on purpose). Staged items with a `contributor` name render with a FROM
+   <NAME> kicker — the paper says who sent it in.
+   Refresh `source-inventory.json` with `morning-paper sources check --newsroom .`
+   when useful, then write `collector-report.md` and
+   `queue-snapshot.json` before composing.
 2. **Read the newsroom.** `specs/*` (section contracts) and `preferences/*`
    (reading weights, style notes). These outrank your taste. Also read, when
    present: `memory/reads-ledger.md` — the cumulative record of everything
@@ -37,8 +65,8 @@ paper.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
    docs/composing.md for the class vocabulary and `mp-bars`/`mp-spark`/
    `mp-stats` chart directives). The newsroom's `examples/edition-skeleton.md`
-   (scaffolded by setup from the engine's `examples/brief.example.md`) is the
-   masthead/strip/section furniture to start from — lead with The Read:
+   is the masthead/strip/section furniture setup scaffolded for this reader —
+   lead with The Read:
    - A front synthesis: the single thing that matters today, as a judgment.
    - The operator/work sections their specs define.
    - Full reads from the staged queue and configured feeds — entire articles,
@@ -56,13 +84,15 @@ paper.
 5. **Budget.** `morning-paper estimate draft.md` — fit `page_budget` ±2 by
    cutting the weakest material, never by shrinking type.
 6. **Render.** `morning-paper render draft.md --style <their style> --palette
-   <their palette> --date <today> --slug edition`.
+   <their palette> --date <today> --slug edition`. Save the command's JSON as
+   `render-result.json`.
 7. **QA.** Rasterize page 1 + one inner page (`pdftoppm -png -r 60`) and look:
    no overflow, no missing glyphs (tofu), footers present.
 8. **Editorial review.** Run the copy desk over the finished edition before it
-   ships: `morning-paper review <edition-dir> --json`. It reads the composed
-   artifacts and returns editorial findings (long/label headlines, lopsided or
-   dead sections, duplicate stories, stale leads) with `location` + `hint`. It
+   ships: `morning-paper review <edition-dir> --json`. Save the output as
+   `review.json`. It reads the composed artifacts and returns editorial
+   findings (long/label headlines, lopsided or dead sections, duplicate
+   stories, stale leads) with `location` + `hint`. It
    never fails the build — exit is always 0; the JSON `status` is the signal:
    - `clean` → ship.
    - `notes` (only info/nudge) → ship; you may fold the one-line nudge summary
@@ -74,7 +104,32 @@ paper.
      `preferences/checks.yaml`, when present, already tunes thresholds and
      mutes; `review` reads it automatically.
 9. **Deliver.** Their saved print command (duplex flag and all), or just hand
-   back the PDF path. Archive markdown + html into `editions/<date>/`.
+   back the PDF path. Archive markdown + html into `editions/<date>/`. End by
+   pointing at `operator-answers.md` and asking for natural-language feedback:
+   what to keep, cut, expand, add as a source, or print tomorrow.
+
+Write `operator-answers.md` like this:
+
+```markdown
+# Operator Answers — <date>
+
+Read the paper with a pen. Reply in chat or mark this file up.
+
+## Keep
+- What should continue?
+
+## Cut
+- What felt low-signal, too long, too repetitive, or not yours?
+
+## More
+- What should get more pages, deeper reporting, or a recurring section?
+
+## Sources To Add
+- Feeds, folders, newsletters, repos, people, searches, exports, or tools.
+
+## Print Tomorrow
+- URLs or files to stage for tomorrow's paper.
+```
 
 ## Voice
 

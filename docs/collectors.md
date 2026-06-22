@@ -36,8 +36,10 @@ directory (`outputs.directory` in your config, default
 <outputs.directory>/staging/<YYYY-MM-DD>/<slug>.md      # one file per item
 ```
 
-The date is **the edition the item is for**. Material collected during the day
-is for *tomorrow's* paper, so most collectors target tomorrow's date.
+The date is **the edition the item is for**. Edition collectors run as part of
+today's compose pass, so they should target today's edition date explicitly.
+Ad hoc "read this later" staging still defaults to tomorrow when you call
+`morning-paper stage` without `--date`.
 
 You have two ways to write into it.
 
@@ -105,12 +107,17 @@ Whatever wrote it, the editor reads the same queue:
 ```bash
 morning-paper queue                  # what's staged vs the page budget (JSON)
 morning-paper queue --date 2026-06-14
+morning-paper queue list --date 2026-06-14
+morning-paper queue show <slug> --date 2026-06-14 --content
+morning-paper queue remove <slug> --date 2026-06-14
 ```
 
 `queue` reports the item list, total estimated pages, your `page_budget`, and
-how many pages remain — so the compose step knows what fits before it lays a
+how many pages remain; `show` reads the staged markdown; `remove` drops an item
+and its staged file. The compose step can know what fits before it lays a
 single column. Anything in the queue was put there on purpose (by you, a
-collector, or a trusted contributor) and is treated as belonging in the paper.
+collector, or a trusted contributor) and is treated as belonging in the paper
+unless the editor removes it.
 
 ## Output formats
 
@@ -144,7 +151,7 @@ twelve-page budget has not broken anything — it has given the editor choices.
 # collectors/shipped.sh — a "shipped while you slept" section.
 set -euo pipefail
 
-tomorrow="$(date -v+1d +%F 2>/dev/null || date -d tomorrow +%F)"
+edition_date="${1:-$(date +%F)}"
 tmp="$(mktemp -t shipped.XXXXXX).md"
 
 {
@@ -159,7 +166,7 @@ tmp="$(mktemp -t shipped.XXXXXX).md"
 # `stage` takes a real file or a URL; write a temp file rather than piping into
 # it (the CLI checks for a regular file, so /dev/stdin and `<(...)` don't work).
 if [ "$(grep -c '^- ' "$tmp")" -gt 0 ]; then
-  morning-paper stage "$tmp" --title "Shipped" --date "$tomorrow"
+  morning-paper stage "$tmp" --title "Shipped" --date "$edition_date"
 fi
 rm -f "$tmp"
 ```
@@ -167,8 +174,56 @@ rm -f "$tmp"
 That is the whole idea: a script that produces markdown and stages it. The
 engine prints HN and RSS for free; collectors are how the paper becomes yours.
 
+## Local drop-folder collector
+
+Use this when the reader already has files somewhere: an Obsidian export, a
+synced folder, a generated report directory, or source dumps from another
+agent. It does not move the source files; it stages copies into the edition
+queue.
+
+```bash
+#!/usr/bin/env bash
+# collectors/local-drop.sh — stage files from inbox/ for the current edition.
+set -euo pipefail
+source "$(dirname "$0")/_lib.sh" "${1:-$(date +%F)}"
+
+DROP_DIR="${MORNING_PAPER_DROP_DIR:-$(dirname "$0")/../inbox}"
+mkdir -p "$DROP_DIR"
+shopt -s nullglob
+
+count=0
+for file in "$DROP_DIR"/*; do
+  [ -f "$file" ] || continue
+  base="$(basename "$file")"
+  case "$base" in .* ) continue ;; esac
+  case "$file" in
+    *.md|*.markdown)
+      stage_markdown "${base%.*}" "$file" && count=$((count + 1))
+      ;;
+    *.txt)
+      tmp="$(mktemp -t morning-paper-drop.XXXXXX).md"
+      { echo "# ${base%.*}"; echo; cat "$file"; } > "$tmp"
+      stage_markdown "${base%.*}" "$tmp" && count=$((count + 1))
+      rm -f "$tmp"
+      ;;
+    *.url)
+      url="$(grep -Eo 'https?://[^[:space:]]+' "$file" | head -1 || true)"
+      if [ -n "$url" ]; then
+        stage_url "${base%.*}" "$url" && count=$((count + 1))
+      fi
+      ;;
+  esac
+done
+
+if [ "$count" -gt 0 ]; then
+  ok "Local drop ($count)"
+else
+  unavailable "Local drop" "put .md, .txt, or .url files in $DROP_DIR"
+fi
+```
+
 The `setup` skill scaffolds this exact pattern into your newsroom's
 `collectors/` directory — `_lib.sh` (the shared `stage`-based helpers),
-`run_all.sh` (run every collector, then print the queue), and two worked
-examples (`shipped.sh` above, and `read.sh`, which stages a single URL). Start
-from those rather than from a blank file.
+`run_all.sh` (run every collector, then print the queue), and worked examples
+(`shipped.sh`, `read.sh`, and `local-drop.sh`). Start from those rather than
+from a blank file.

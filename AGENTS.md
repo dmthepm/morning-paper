@@ -45,12 +45,18 @@ anyway, so check each step against reality:
 2. `morning-paper --version` — confirm it matches the latest on PyPI.
 3. `morning-paper doctor` — fix until it reports the typewriter renderer ready
    (macOS may need `brew install pango gdk-pixbuf`).
-4. `morning-paper demo` — confirm the PDF exists on disk. That is the proof.
+4. `morning-paper demo --open` — confirm the PDF exists on disk and opens on
+   screen. That is the proof.
 
 The CLI speaks JSON. `morning-paper doctor --json` reports install status;
-`stage`, `queue`, `estimate`, `render`, `review`, and `routine` are the verbs
-the edition skill drives. `stage` takes a real file path, never `/dev/stdin` —
-write a temp file first.
+`newsroom`, `edition`, `sources`, `stage`, `queue`, `estimate`, `render`,
+`review`, and `routine` are the verbs the edition skill drives. `newsroom init
+<path>` scaffolds the private repo; `newsroom state <path> --set key=value`
+keeps setup-state/SETUP current; `edition prepare <path>` creates the durable
+files an agent can resume from; `sources check` inventories configured sources;
+`sources check --newsroom <path>` also inventories local collector scripts;
+`queue list|show|remove` inspects and prunes staged material. `stage` takes a
+real file path, never `/dev/stdin` — write a temp file first.
 
 ## The single-source rule (hold it forever)
 
