@@ -74,6 +74,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
+    readiness = _read("docs/product-readiness-0.8.md")
+    roadmap = _read("ROADMAP.md")
 
     summary = _pyproject_field("description")
     version = _pyproject_field("version")
@@ -82,7 +84,10 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
     assert "Friend-ready personal newsroom setup" in changelog
-    assert "release-candidate checks pass" in changelog
+    assert f"Current live\nrelease: {version}" in readiness
+    assert f"`morning-paper` {version} is live" in readiness
+    assert f"same {version} semver" in readiness
+    assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
 
     for manifest in (claude_manifest, codex_manifest):
         description = manifest["description"]

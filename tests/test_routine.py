@@ -492,7 +492,7 @@ class DoctorRoutineTests(RoutineHomeTestCase):
         self.assertFalse(payload["routine"]["installed"])
         self.assertIsNone(payload["routine"]["scheduler"])
         # absence must not break doctor: status reflects renderer/modules only
-        self.assertIn(payload["status"], {"ok", "fallback-only", "broken"})
+        self.assertIn(payload["status"], {"ok", "fallback-only", "unsupported-renderer", "broken"})
         self.assertIn(rc, {0, 1})
 
     def test_doctor_json_reports_routine_installed(self) -> None:

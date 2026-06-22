@@ -1,6 +1,7 @@
 # Morning Paper 0.8 Product Readiness
 
-Status: release-candidate source of truth for the 0.8 hardening pass.
+Status: shipped source of truth for the 0.8 hardening pass. Current live
+release: 0.8.1.
 
 ## Mission
 
@@ -20,12 +21,11 @@ The product promise stays narrow:
 
 ## Current Truth
 
-- `morning-paper` 0.7.1 is live on PyPI and GitHub Releases; the current repo
-  is prepared as the 0.8.0 release candidate and carries one skill tree for
-  Claude Code and Codex.
+- `morning-paper` 0.8.1 is live on PyPI and GitHub Releases; the current repo
+  carries one skill tree for Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
-  host manifests carry the same 0.8.0 semver.
+  host manifests carry the same 0.8.1 semver.
 - The public README now has the owned-algorithm mission and a copyable agent
   install prompt.
 - The setup skill writes a real newsroom scaffold instead of empty folders and
@@ -46,6 +46,10 @@ The product promise stays narrow:
   `mp-spark`, and `mp-stats` align with the available measure, cap print
   density, clip labels, and add honest overflow notes instead of colliding or
   floating as narrow inserts.
+- The print stack is deterministic across machines: broadsheet serif/sans
+  faces now lead with vendored MP Serif (TeX Gyre Pagella) and MP Sans (Arimo),
+  charts lead with vendored Courier Prime, and `@font-face` emits the correct
+  format hint for OTF vs TTF files.
 
 ## User Stories
 
@@ -153,7 +157,8 @@ Morning Paper owns:
   and is advanced deliberately after a clean install/render smoke;
 - `doctor --strict` performs a real layout pass, not just import checks;
 - `doctor --json` reports Python, WeasyPrint, tinycss2, cssselect2, pydyf,
-  cffi, Pillow, and native dependency status where detectable;
+  cffi, Pillow, the enforced WeasyPrint support range, and native dependency
+  status where detectable;
 - CI exercises the pretty renderer path on supported platforms;
 - docs and skills agree on Python, uv/pipx, native libraries, and fail-loud
   behavior.
@@ -230,18 +235,28 @@ contract: readers should not need to know WeasyPrint exists, but Morning Paper
 must track its releases, constrain the supported major line, and prove the
 print path in CI before shipping.
 
-2026-06-22 release-candidate artifact proof: build `0.8.0` from a clean source
+0.8.2 candidate hardening: `doctor --strict` now checks the installed
+WeasyPrint version against that supported range before running the render
+self-test. An older renderer that imports is still not enough proof.
+
+2026-06-22 release-candidate artifact proof: build `0.8.1` from a clean source
 copy, not an in-place tree with ignored `build/` residue. A dirty in-place
 build can copy stale generated files into the wheel because setuptools reuses
-`build/lib`; the clean-source build produced `morning_paper-0.8.0.tar.gz` and
-`morning_paper-0.8.0-py3-none-any.whl` with no stale `typewriter` resources.
+`build/lib`; the clean-source build produced `morning_paper-0.8.1.tar.gz` and
+`morning_paper-0.8.1-py3-none-any.whl` with no stale `typewriter` resources.
 Both the wheel and sdist installed in fresh virtualenvs with `[pretty]`, printed
-`morning-paper --version` as `0.8.0`, resolved WeasyPrint `69.0`, passed
+`morning-paper --version` as `0.8.1`, resolved WeasyPrint `69.0`, passed
 `doctor --strict --json`, and rendered `demo --output <tmp>/demo.pdf` as a
 real two-page PDF with JSON-only stdout.
 This proof is now executable as
 `python3 scripts/release_candidate_check.py --outdir dist --install-check`, and
 the PyPI publish workflow runs that command before upload.
+
+2026-06-22 typography proof: `0.8.1` vendors MP Serif and MP Sans so the
+product no longer depends on Palatino, Helvetica, or Courier New being present
+on the reader's machine. The front-page visual snapshot was regenerated against
+the bundled fonts, and release checks confirm the font files and licenses ship
+inside the wheel.
 
 ## Live Acceptance Notes
 

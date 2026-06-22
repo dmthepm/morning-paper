@@ -37,6 +37,9 @@ DOCS_URL = "https://github.com/dmthepm/morning-paper"
 ROADMAP_URL = f"{DOCS_URL}/blob/main/ROADMAP.md"
 PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
 ROADMAP_COMMANDS = {"remove", "list"}
+SUPPORTED_WEASYPRINT_RANGE = ">=69.0,<70"
+_SUPPORTED_WEASYPRINT_MIN = (69, 0, 0)
+_SUPPORTED_WEASYPRINT_MAX = (70, 0, 0)
 HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own sources.
 
 Commands:
@@ -77,6 +80,34 @@ Docs:   {DOCS_URL}
 def _version_key(value: str) -> tuple[int, ...]:
     parts = re.findall(r"\d+", value or "")
     return tuple(int(part) for part in parts) or (0,)
+
+
+def _version_tuple(value: str | None) -> tuple[int, int, int]:
+    parts = list(_version_key(value or "0"))[:3]
+    while len(parts) < 3:
+        parts.append(0)
+    major, minor, patch = parts
+    return major, minor, patch
+
+
+def _weasyprint_support_report(version: str | None) -> dict[str, object]:
+    if not version:
+        return {
+            "version": None,
+            "supported": False,
+            "requires": SUPPORTED_WEASYPRINT_RANGE,
+            "error": f"WeasyPrint is not installed; install morning-paper[pretty] ({SUPPORTED_WEASYPRINT_RANGE})",
+        }
+    parsed = _version_tuple(version)
+    supported = _SUPPORTED_WEASYPRINT_MIN <= parsed < _SUPPORTED_WEASYPRINT_MAX
+    return {
+        "version": version,
+        "supported": supported,
+        "requires": SUPPORTED_WEASYPRINT_RANGE,
+        "error": ""
+        if supported
+        else f"installed WeasyPrint {version} is outside supported range {SUPPORTED_WEASYPRINT_RANGE}",
+    }
 
 
 def _fetch_latest_pypi_version() -> str | None:
@@ -140,6 +171,7 @@ def _dependency_report() -> dict[str, object]:
             versions[package] = metadata.version(package)
         except metadata.PackageNotFoundError:
             versions[package] = None
+    weasyprint_support = _weasyprint_support_report(versions.get("weasyprint"))
     return {
         "python": {
             "version": platform.python_version(),
@@ -147,6 +179,7 @@ def _dependency_report() -> dict[str, object]:
             "executable": sys.executable,
         },
         "packages": versions,
+        "weasyprint": weasyprint_support,
         "native": {
             "pango": _native_tool_version("pango-view", "--version"),
         },
@@ -177,9 +210,9 @@ def _native_tool_version(command: str, *args: str) -> dict[str, object]:
     }
 
 
-def _render_self_test(enabled: bool, typewriter_ready: bool) -> dict[str, object]:
+def _render_self_test(enabled: bool, typewriter_ready: bool, skip_reason: str = "") -> dict[str, object]:
     if not enabled:
-        return {"run": False, "ok": None, "pages": None, "error": ""}
+        return {"run": False, "ok": False if skip_reason else None, "pages": None, "error": skip_reason}
     if not typewriter_ready:
         return {"run": False, "ok": False, "pages": None, "error": "typewriter renderer unavailable"}
     sample = """---
@@ -252,17 +285,27 @@ def doctor(args: list[str] | None = None) -> int:
         except Exception:
             checks.append({"name": resource_check, "ok": False})
     missing = [str(check["name"]) for check in checks if not check["ok"]]
+    dependency_report = _dependency_report()
+    weasyprint_support = dependency_report["weasyprint"] if isinstance(dependency_report["weasyprint"], dict) else {}
+    weasyprint_supported = bool(weasyprint_support.get("supported"))
+    unsupported_renderer_error = str(weasyprint_support.get("error") or "")
     _, renderer_error = _load_weasyprint()
     typewriter_ready = renderer_error is None
-    hints = [] if typewriter_ready else _renderer_hint_lines(renderer_error)
-    render_self_test = _render_self_test(strict, typewriter_ready)
-    dependency_report = _dependency_report()
+    unsupported_typewriter = typewriter_ready and not weasyprint_supported
+    hints = [] if typewriter_ready and not unsupported_typewriter else _renderer_hint_lines(renderer_error)
+    render_self_test = _render_self_test(
+        strict and not unsupported_typewriter,
+        typewriter_ready,
+        unsupported_renderer_error if strict and unsupported_typewriter else "",
+    )
     # The routine is optional: report installed/not, never an error when absent.
     from .routine import routine_doctor_summary
 
     routine_info = routine_doctor_summary()
     if missing:
         status = "broken"
+    elif unsupported_typewriter:
+        status = "unsupported-renderer"
     elif render_self_test.get("run") and not render_self_test.get("ok"):
         status = "render-broken"
     elif typewriter_ready:
@@ -270,7 +313,7 @@ def doctor(args: list[str] | None = None) -> int:
     else:
         status = "fallback-only"
     exit_code = 0
-    if missing or (strict and (not typewriter_ready or not render_self_test.get("ok"))):
+    if missing or (strict and (not typewriter_ready or unsupported_typewriter or not render_self_test.get("ok"))):
         exit_code = 1
     if as_json:
         payload: dict[str, object] = {
@@ -303,14 +346,25 @@ def doctor(args: list[str] | None = None) -> int:
         return exit_code
     print("doctor: ok")
     print("renderer: typewriter ready")
+    if unsupported_typewriter:
+        print(
+            "renderer dependency: unsupported WeasyPrint "
+            f"{weasyprint_support.get('version')} (requires {SUPPORTED_WEASYPRINT_RANGE})"
+        )
     if render_self_test.get("run"):
         if render_self_test.get("ok"):
             print(f"renderer self-test: passed ({render_self_test.get('pages')} page(s))")
         else:
             print(f"renderer self-test: failed ({render_self_test.get('error')})")
+    elif render_self_test.get("error"):
+        print(f"renderer self-test: skipped ({render_self_test.get('error')})")
     print(_routine_status_line(routine_info))
     if status == "render-broken":
         print("status: typewriter imported, but the layout self-test failed")
+    elif status == "unsupported-renderer":
+        print("status: typewriter imported, but the installed WeasyPrint is outside the supported range")
+        for line in hints:
+            print(line)
     else:
         print("status: high-quality print path available")
     _print_update_notice()

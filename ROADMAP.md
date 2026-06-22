@@ -75,12 +75,13 @@
   contract with worked examples, and an editions dir) instead of empty folders
 - removed the thin shadowing skill stub; doc tightening + version re-baseline
 
-## In progress (`v0.8.0` friend-ready newsroom)
+## Shipped (`v0.8.x` friend-ready newsroom)
 
 - WeasyPrint is treated as the production renderer, not an implementation
   detail: `doctor --strict` runs a real layout self-test and `doctor --json`
   reports Python, WeasyPrint, tinycss2, cssselect2, pydyf, cffi, Pillow,
-  fontTools, and detectable native Pango status
+  fontTools, the enforced WeasyPrint support range, and detectable native Pango
+  status
 - the `[pretty]` extra is bounded to the current supported WeasyPrint major
   line and a clean virtualenv install has proved WeasyPrint 69.0 can run the
   doctor self-test and demo render
@@ -134,6 +135,10 @@
   `mp-spark`, and `mp-stats` align with surrounding sections, cap density,
   clip labels, and add honest overflow notes instead of colliding or floating
   as narrow inserts
+- `v0.8.1` — deterministic typography: MP Serif (TeX Gyre Pagella) and MP Sans
+  (Arimo) are vendored and wired through `@font-face`, charts lead with
+  vendored Courier Prime, and WeasyPrint gets the correct OTF/TTF `format()`
+  hint so the same paper uses the same glyphs on macOS and Linux
 - collector date semantics are explicit: edition collectors target the
   edition date, ad hoc `stage` remains "read this later" and defaults to
   tomorrow

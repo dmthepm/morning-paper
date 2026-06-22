@@ -145,6 +145,19 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
     )
 
 
+def _supported_metadata_version(package: str) -> str:
+    versions = {
+        "weasyprint": "69.0",
+        "tinycss2": "1.4.0",
+        "cssselect2": "0.8.0",
+        "pydyf": "0.11.0",
+        "cffi": "1.17.1",
+        "Pillow": "11.3.0",
+        "fontTools": "4.59.0",
+    }
+    return versions.get(package, "1.0")
+
+
 class BuildFlowTest(unittest.TestCase):
     def test_init_then_build_writes_all_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -698,8 +711,9 @@ class CliSurfaceTest(unittest.TestCase):
     def test_doctor_json_reports_renderer_and_checks(self) -> None:
         stdout = io.StringIO()
         with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
-            with redirect_stdout(stdout):
-                rc = cli.main(["doctor", "--json"])
+            with patch("morning_paper.cli.metadata.version", side_effect=_supported_metadata_version):
+                with redirect_stdout(stdout):
+                    rc = cli.main(["doctor", "--json"])
         self.assertEqual(rc, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["status"], "ok")
@@ -709,18 +723,61 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("dependencies", payload)
         self.assertIn("python", payload["dependencies"])
         self.assertIn("weasyprint", payload["dependencies"]["packages"])
+        self.assertEqual(
+            payload["dependencies"]["weasyprint"],
+            {"version": "69.0", "supported": True, "requires": ">=69.0,<70", "error": ""},
+        )
         check_names = {check["name"] for check in payload["checks"]}
         self.assertIn("morning_paper.renderers", check_names)
         self.assertIn("morning_paper/resources/broadsheet-build.md", check_names)
         self.assertTrue(all(check["ok"] for check in payload["checks"]))
 
+    def test_doctor_strict_rejects_unsupported_weasyprint(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
+            with patch(
+                "morning_paper.cli.metadata.version",
+                side_effect=lambda package: "68.1" if package == "weasyprint" else _supported_metadata_version(package),
+            ):
+                with patch("morning_paper.cli.count_pages") as count_pages:
+                    with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                        with redirect_stdout(stdout):
+                            rc = cli.main(["doctor", "--strict"])
+        self.assertEqual(rc, 1)
+        count_pages.assert_not_called()
+        output = stdout.getvalue()
+        self.assertIn("renderer: typewriter ready", output)
+        self.assertIn("unsupported WeasyPrint 68.1", output)
+        self.assertIn("requires >=69.0,<70", output)
+        self.assertIn("renderer self-test: skipped", output)
+        self.assertIn("outside the supported range", output)
+
+    def test_doctor_json_reports_unsupported_weasyprint(self) -> None:
+        stdout = io.StringIO()
+        with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
+            with patch(
+                "morning_paper.cli.metadata.version",
+                side_effect=lambda package: "68.1" if package == "weasyprint" else _supported_metadata_version(package),
+            ):
+                with redirect_stdout(stdout):
+                    rc = cli.main(["doctor", "--json"])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "unsupported-renderer")
+        self.assertTrue(payload["renderer"]["typewriter"])
+        self.assertFalse(payload["renderer"]["render_self_test"]["run"])
+        self.assertEqual(payload["dependencies"]["weasyprint"]["version"], "68.1")
+        self.assertFalse(payload["dependencies"]["weasyprint"]["supported"])
+        self.assertIn(">=69.0,<70", payload["dependencies"]["weasyprint"]["requires"])
+
     def test_doctor_strict_runs_render_self_test(self) -> None:
         stdout = io.StringIO()
         with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
-            with patch("morning_paper.cli.count_pages", return_value=1) as count_pages:
-                with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
-                    with redirect_stdout(stdout):
-                        rc = cli.main(["doctor", "--strict"])
+            with patch("morning_paper.cli.metadata.version", side_effect=_supported_metadata_version):
+                with patch("morning_paper.cli.count_pages", return_value=1) as count_pages:
+                    with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                        with redirect_stdout(stdout):
+                            rc = cli.main(["doctor", "--strict"])
         self.assertEqual(rc, 0)
         count_pages.assert_called_once()
         output = stdout.getvalue()
@@ -730,9 +787,10 @@ class CliSurfaceTest(unittest.TestCase):
     def test_doctor_json_strict_reports_render_self_test(self) -> None:
         stdout = io.StringIO()
         with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
-            with patch("morning_paper.cli.count_pages", return_value=2):
-                with redirect_stdout(stdout):
-                    rc = cli.main(["doctor", "--json", "--strict"])
+            with patch("morning_paper.cli.metadata.version", side_effect=_supported_metadata_version):
+                with patch("morning_paper.cli.count_pages", return_value=2):
+                    with redirect_stdout(stdout):
+                        rc = cli.main(["doctor", "--json", "--strict"])
         self.assertEqual(rc, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["status"], "ok")
@@ -741,10 +799,11 @@ class CliSurfaceTest(unittest.TestCase):
     def test_doctor_strict_fails_when_render_self_test_fails(self) -> None:
         stdout = io.StringIO()
         with patch("morning_paper.cli._load_weasyprint", return_value=(object(), None)):
-            with patch("morning_paper.cli.count_pages", side_effect=RuntimeError("layout crashed")):
-                with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
-                    with redirect_stdout(stdout):
-                        rc = cli.main(["doctor", "--strict"])
+            with patch("morning_paper.cli.metadata.version", side_effect=_supported_metadata_version):
+                with patch("morning_paper.cli.count_pages", side_effect=RuntimeError("layout crashed")):
+                    with patch("morning_paper.cli.requests.get", side_effect=requests.RequestException("offline")):
+                        with redirect_stdout(stdout):
+                            rc = cli.main(["doctor", "--strict"])
         self.assertEqual(rc, 1)
         output = stdout.getvalue()
         self.assertIn("renderer: typewriter ready", output)

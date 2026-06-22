@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+- `doctor --strict` now refuses to certify an imported WeasyPrint renderer when
+  the installed version is outside Morning Paper's supported range
+  (`>=69.0,<70`). Casual `doctor` still reports the situation with install
+  guidance, but the strict proof gate no longer treats an old native print
+  stack as production-ready.
+
 ## [0.8.1] - 2026-06-22
 
 ### Fixed
