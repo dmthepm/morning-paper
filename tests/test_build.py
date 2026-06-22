@@ -670,7 +670,7 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("renderer: typewriter unavailable", output)
         self.assertIn("fallback-only install", output)
         self.assertIn(f"update available: {newer} (you have {__version__})", output)
-        self.assertIn("pip install --upgrade morning-paper", output)
+        self.assertIn("uv tool upgrade morning-paper", output)
 
     def test_doctor_skips_update_notice_when_offline(self) -> None:
         stdout = io.StringIO()

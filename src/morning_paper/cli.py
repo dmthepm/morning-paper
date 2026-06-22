@@ -88,7 +88,7 @@ def _print_update_notice() -> None:
     if not latest or _version_key(latest) <= _version_key(__version__):
         return
     print(f"update available: {latest} (you have {__version__})")
-    print("run: pip install --upgrade morning-paper")
+    print("run: uv tool upgrade morning-paper  (or: pipx upgrade morning-paper)")
 
 
 def _pretty_install_hint_lines() -> list[str]:

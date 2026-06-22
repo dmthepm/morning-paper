@@ -6,7 +6,8 @@
 - Hacker News and RSS sources
 - `typewriter` renderer with `WeasyPrint`
 - `portable` PDF fallback with `fpdf2`
-- Article extraction via Jina Reader with inline image handling
+- Article extraction with inline image handling (Jina Reader; local trafilatura
+  became the default in 0.4.2)
 - X/Twitter metadata via FxTwitter
 - Content validation gate so bad extractions do not print garbage
 - Pluggable extractor architecture
@@ -48,12 +49,33 @@
 
 - the style family: four packs named for the job — `broadsheet` (was
   `editorial`, absorbing `magazine`), `brief` (was `flow`, absorbing
-  `typewriter`'s link-card grid), `field-card` (was `ops-card`), and `zine`
-  v2 (the photocopier field zine: paste-up cover plate, halftone bands,
-  rubber stamp, command bars). Old names are deprecated aliases for one
+  `typewriter`'s link-card grid), `field-card` (was `ops-card`), and the
+  rebuilt `zine` (the photocopier field zine: paste-up cover plate, halftone
+  bands, rubber stamp, command bars). Old names are deprecated aliases for one
   release; the build front page is broadsheet-native for every style
+- `v0.5.1` — `morning-paper routine` (install/status/uninstall): the daily
+  edition as a headless `claude -p` run (launchd / systemd / cron ladder)
+- `v0.5.2` — the scheduled routine pins its working directory to the newsroom
 
-## Next (`v0.4`)
+## Shipped (`v0.6.x`)
+
+- `v0.6.0` — the layout taste layer (keep-together craft, free in every pack)
+  and `morning-paper review`: editorial QC on a finished edition (eight
+  text-only checks, warnings never hard fails; reads `preferences/checks.yaml`)
+- `v0.6.1` — `review` headline-length checks scoped to true headlines, not
+  deck/department titles
+
+## Shipped (`v0.7.0`)
+
+- full-text RSS: feeds that ship the whole article in `content:encoded` print
+  as real reads (a new `body` field on each item), summary feeds stay summaries
+- the setup scaffold: `setup` now WRITES the newsroom's working contracts (an
+  operating `CLAUDE.md`, section specs led by The Read, an empty reads-ledger,
+  voice + algorithm-prior + checks templates, a `stage`-based collector
+  contract with worked examples, and an editions dir) instead of empty folders
+- removed the thin shadowing skill stub; doc tightening + version re-baseline
+
+## Next
 
 - queue management verbs: `morning-paper remove`, `morning-paper list`
 - `doctor` render self-test (actually lay out a page, not just import checks)
@@ -62,6 +84,7 @@
 - source plugins for YouTube transcripts and X/Twitter thread workflows
 - optional LLM scoring via OpenRouter / Anthropic / OpenAI
 - named sections and better front-page composition
+- a genericized public return-path skill (modeled on the newsroom triage flow)
 
 ## Future
 

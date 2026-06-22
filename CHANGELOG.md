@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-22
+
+### Added
+- **Full-text RSS — feeds that ship the whole article now print as real reads.** `fetch_rss_feeds` reads `content:encoded` (feedparser's `entry.content`) into a new `SourceItem.body` field, kept whole (never truncated). `summary` stays the short blurb, still capped at 280 chars. The broadsheet build reads (`_render_broadsheet_reads`) and the markdown render print the full `body` when present, falling back to the capped summary for summary-only feeds — so a full-text feed (Substack/Atom full, paid full-text feeds) prints the essay, not a 280-char clip, while summary feeds are unchanged. The build JSON carries `body` automatically. The engine learns nothing about any specific feed: it just stops mangling full-text RSS
+- **The setup scaffold — `setup` writes the newsroom's working contracts, not empty folders.** The `setup` skill's §5 now generates a genericized, fully working newsroom: an operating constitution (`CLAUDE.md`) with the ordered LAW input list and the honesty rule; section specs led by `specs/the-read.md` (the four moves: GAPS / CONNECTIONS / ALIGNMENT-DRIFT / NEXT MOVE; the NO-MIRRORING / OUTSIDE-IN / SURPRISE-ONCE rules) plus `front-page.md`, `reading.md`, and a five-field `_template.md`; `preferences/` (voice template, commented `algorithm-prior.yaml` — the installable artifact behind "own your algorithm" — and a commented `checks.yaml`); `memory/` (an EMPTY `reads-ledger.md`, an empty `MEMORY.md` index, a `threads/` README); an `editions/` dir with a `*.pdf` gitignore; and a `collectors/` contract (`_lib.sh`, `run_all.sh`, and two worked examples) that follows the public `morning-paper stage`/`queue.json` contract — never the old `editions/<date>/data/` path. The result is a paper a fresh friend gets end-to-end, with zero operator-specific content
+- The `examples/brief.example.md` skeleton is now the edition skeleton the scaffold copies into the newsroom and the `edition` skill references
+
+### Changed
+- `setup` install line is uv-first (`uv tool install "morning-paper[pretty]"`), matching the README, and documents `uv tool upgrade morning-paper` as the separate engine-update step; the `edition` skill's Collect step names `collectors/run_all.sh` and the staging contract explicitly; the in-CLI update notice points at `uv tool upgrade` / `pipx upgrade` instead of bare pip
+- Docs tightened and re-baselined: `architecture-decisions.md` §8 (CLI surface refreshed to the real stable verbs), §11/§12 (the 0.4.2 Jina-to-local amendments folded into the base text so the doc stops contradicting itself — local is the default), §16 (skill-distribution path corrected to `skills/`); `docs/collectors.md` fixed the broken `/dev/stdin` collector example (the CLI requires a real file) and points at the scaffolded example collectors; ROADMAP re-baselined through 0.7.0 with the stale `v0.4` "Next" regression removed; the duplicate `### Added` block under 0.4.0 merged
+
+### Removed
+- The thin shadowing skill stub `.claude/skills/morning-paper/SKILL.md` (no frontmatter, never shipped through the plugin loader, claimed jina was the default, and shadowed the real `setup`/`edition`/`writing` skills during local dev) and the now-cut `docs/product-spec.md` (Devon's private brief spec) and `docs/qa-contract.md` (superseded by the `review` verb)
+
 ## [0.6.1] - 2026-06-22
 
 ### Fixed
@@ -120,31 +134,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [0.4.0] - 2026-06-11
 
 ### Added
-- `morning-paper demo` — zero-config, zero-network, zero-key sample edition ("Port Anselm", fully fictional and labeled as such) rendered through the editorial style; ends with the print/make-it-yours/post-it share loop
-- Vendored Courier Prime (OFL) with runtime @font-face injection — offline-deterministic rendering, Google Fonts @import stripped at compose time
+- `morning-paper demo` — zero-config, zero-network, zero-key sample edition ("Port Anselm", fully fictional and labeled as such) rendered through the editorial style; fails honestly with install hints when WeasyPrint is unavailable, and ends with the print/make-it-yours/post-it share loop
+- Vendored Courier Prime Regular/Bold/Italic (SIL OFL 1.1, license shipped alongside) with runtime @font-face injection — offline-deterministic typesetting, Google Fonts @import stripped at compose time
 - Ref-codes: kickers may carry a short code (`<span class="ref-code">R2</span>`) that runs in the page footer next to the folio — cite an article from anywhere in the paper
 - Desk-sheet component family (`ds-*`) in the editorial pack: ruled writing lines, zone heads, registration marks, pen-scale checkboxes
-- `.claude-plugin/marketplace.json` + hero README storefront (sample render above the fold, uvx try-it path, plugin install)
-- `doctor --json` and `doctor --strict`, with specific macOS pango failure detection and the exact fix printed
-
-### Changed
-- Honesty sweep: roadmap-command message tells the truth; unwired extras removed; Funding entry removed; defaults de-personalized (system timezone auto-detected, generic profile, sample feeds labeled)
-- docs/composing.md documents editorial, ref-codes, and desk-sheet vocabulary
-
-
-### Added
-- `morning-paper demo` — typeset the bundled fully synthetic sample edition (editorial style, color palette) with zero config, network, or keys; fails honestly with install hints when WeasyPrint is unavailable
-- Vendored Courier Prime Regular/Bold/Italic (SIL OFL 1.1, license shipped alongside) so typewriter typesetting is offline-deterministic — no Google Fonts fetch at render time
-- `.claude-plugin/marketplace.json` — the repo is now a one-plugin Claude Code marketplace: `/plugin marketplace add dmthepm/morning-paper`, then `/plugin install morning-paper@morning-paper`
-- `doctor --json` — machine-readable `{checks, renderer, status}` output for agents
-- `doctor --strict` — nonzero exit when the typewriter renderer is unavailable
-- `doctor` and `demo` now detect the macOS Pango load failure specifically and print the exact fix (`brew install pango gdk-pixbuf` plus the `DYLD_FALLBACK_LIBRARY_PATH` hint)
+- `.claude-plugin/marketplace.json` + hero README storefront — the repo is now a one-plugin Claude Code marketplace (`/plugin marketplace add dmthepm/morning-paper`, then `/plugin install morning-paper@morning-paper`), with the sample render above the fold and the uvx try-it path
+- `doctor --json` and `doctor --strict`, with specific macOS Pango failure detection and the exact fix printed (`brew install pango gdk-pixbuf` plus the `DYLD_FALLBACK_LIBRARY_PATH` hint)
 - `init` now detects the machine's timezone from `/etc/localtime` instead of assuming the author's
 
 ### Changed
-- README rebuilt as the storefront: hero edition image, try-it demo block (`uvx`), plugin install instructions, and a styles table
-- Reserved-command message (`remove`, `list`) now says plainly the verb is not implemented yet and links the roadmap, instead of citing a stale version
-- README documents the `jina` extractor's limits (anonymous tier, 40-second timeout, unsupported domains) and the pretty-stack requirement behind `stage`/`estimate` page numbers
+- Honesty sweep: roadmap-command message tells the truth (`remove`/`list` say plainly the verb is not implemented and link the roadmap); unwired extras removed; Funding entry removed; defaults de-personalized (system timezone auto-detected, generic profile, sample feeds labeled)
+- README rebuilt as the storefront: hero edition image, try-it demo block (`uvx`), plugin install instructions, and a styles table; documents the `jina` extractor's limits (anonymous tier, 40-second timeout, unsupported domains) and the pretty-stack requirement behind `stage`/`estimate` page numbers
+- docs/composing.md documents editorial, ref-codes, and desk-sheet vocabulary
 - ROADMAP marks `stage`/`add`, `queue`/`status`, `estimate`, vendored Courier Prime, and `doctor --json` as shipped
 
 ### Removed

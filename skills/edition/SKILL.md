@@ -17,12 +17,15 @@ paper.
 
 1. **Collect.** If the contributor inbox is configured, poll it first:
    `morning-paper inbox` — mail from the masthead becomes staged items and
-   the senders get their confirmations. Then run the user's collectors
-   (newsroom `collectors/`, or the engine's `morning-paper build` for
-   HN/RSS). Check the staged queue: `morning-paper queue` — anything staged
-   via `stage` or the inbox belongs in today's paper (a human or another
-   agent put it there on purpose). Staged items with a `contributor` name
-   render with a FROM <NAME> kicker — the paper says who sent it in.
+   the senders get their confirmations. Then run the user's collectors: the
+   scaffolded newsroom has `collectors/run_all.sh` (it runs every collector
+   for the edition date, then prints `morning-paper queue`); a bare-bones
+   newsroom may just have the engine's `morning-paper build` for HN/RSS.
+   Collectors stage via `morning-paper stage`, so check the staged queue:
+   `morning-paper queue` — anything staged via `stage` or the inbox belongs in
+   today's paper (a human or another agent put it there on purpose). Staged
+   items with a `contributor` name render with a FROM <NAME> kicker — the
+   paper says who sent it in.
 2. **Read the newsroom.** `specs/*` (section contracts) and `preferences/*`
    (reading weights, style notes). These outrank your taste. Also read, when
    present: `memory/reads-ledger.md` — the cumulative record of everything
@@ -33,7 +36,9 @@ paper.
    `inbox/scans/` directory, check it for untriaged captures before composing.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
    docs/composing.md for the class vocabulary and `mp-bars`/`mp-spark`/
-   `mp-stats` chart directives):
+   `mp-stats` chart directives). The newsroom's `examples/edition-skeleton.md`
+   (scaffolded by setup from the engine's `examples/brief.example.md`) is the
+   masthead/strip/section furniture to start from — lead with The Read:
    - A front synthesis: the single thing that matters today, as a judgment.
    - The operator/work sections their specs define.
    - Full reads from the staged queue and configured feeds — entire articles,

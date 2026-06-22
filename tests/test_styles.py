@@ -230,7 +230,7 @@ Aliases | 5 | one release of grace
 ```
 """
 
-# The zine v2 sample (abridged from the audited prototype): cover plate with
+# The zine sample (abridged from the audited prototype): cover plate with
 # rotated strips, halftone bands, stamp, spec rows, paste-up scraps, steps,
 # inverted command bars, warning, cut-out card, colophon.
 _ZINE_V2_SAMPLE = """\

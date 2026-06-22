@@ -141,23 +141,34 @@ twelve-page budget has not broken anything — it has given the editor choices.
 
 ```bash
 #!/usr/bin/env bash
-# collectors/github-shipped.sh — a "shipped while you slept" section.
+# collectors/shipped.sh — a "shipped while you slept" section.
 set -euo pipefail
 
 tomorrow="$(date -v+1d +%F 2>/dev/null || date -d tomorrow +%F)"
+tmp="$(mktemp -t shipped.XXXXXX).md"
 
-gh search prs --author=@me --merged --merged-at=">$(date -v-1d +%F)" \
-  --json title,url,repository \
-  | jq -r '.[] | "- [\(.title)](\(.url)) — \(.repository.name)"' \
-  > /tmp/shipped.md
+{
+  echo "# Shipped while you slept"
+  echo
+  gh search prs --author=@me --merged --merged-at=">$(date -v-1d +%F 2>/dev/null || date -d yesterday +%F)" \
+    --json title,url,repository \
+    | jq -r '.[] | "- [\(.title)](\(.url)) — \(.repository.name)"'
+} > "$tmp"
 
-# Only stage if there's anything to show — honest empty beats a fake section.
-if [ -s /tmp/shipped.md ]; then
-  { echo "# Shipped while you slept"; echo; cat /tmp/shipped.md; } \
-    | morning-paper stage /dev/stdin --title "Shipped" --date "$tomorrow" \
-    || morning-paper stage <(cat /tmp/shipped.md) --title "Shipped" --date "$tomorrow"
+# Only stage if there's a body beyond the heading — honest empty beats a fake.
+# `stage` takes a real file or a URL; write a temp file rather than piping into
+# it (the CLI checks for a regular file, so /dev/stdin and `<(...)` don't work).
+if [ "$(grep -c '^- ' "$tmp")" -gt 0 ]; then
+  morning-paper stage "$tmp" --title "Shipped" --date "$tomorrow"
 fi
+rm -f "$tmp"
 ```
 
 That is the whole idea: a script that produces markdown and stages it. The
 engine prints HN and RSS for free; collectors are how the paper becomes yours.
+
+The `setup` skill scaffolds this exact pattern into your newsroom's
+`collectors/` directory — `_lib.sh` (the shared `stage`-based helpers),
+`run_all.sh` (run every collector, then print the queue), and two worked
+examples (`shipped.sh` above, and `read.sh`, which stages a single URL). Start
+from those rather than from a blank file.

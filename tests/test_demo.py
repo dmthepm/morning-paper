@@ -35,7 +35,7 @@ class VendoredFontsTest(unittest.TestCase):
             self.assertIn(filename, css)
 
     def test_zine_advertised_fonts_are_vendored_or_system(self) -> None:
-        # zine v2 (0.5.0): both display and body faces are vendored — the
+        # zine (0.5.0 rebuild): both display and body faces are vendored — the
         # typewriter IS the zine voice; tiny labels fall back to system sans.
         css = compose_css("zine", "color")
         self.assertIn("'Permanent Marker'", css)

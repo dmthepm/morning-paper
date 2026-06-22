@@ -23,11 +23,13 @@ then explore the repo enough to understand the architecture (agent composes,
 code renders; a private newsroom repo holds my preference files; the honesty
 doctrine binds). Then interview me briefly about my sources, page budget, and
 printer. Then: install the engine, run `morning-paper doctor` and fix
-anything it flags, run `morning-paper demo` so I see the product, create my
-private newsroom repo, build my first real edition, and teach me the daily
-loop — including the desk sheet and how my handwritten notes get read back.
-Get me to a printed (or PDF) first edition, then stop and show me what you
-set up.
+anything it flags, run `morning-paper demo` so I see the product, scaffold my
+private newsroom repo (the operating constitution, section specs led by The
+Read, the reads-ledger, voice, and example collectors — real files, not empty
+folders), build my first real edition, and teach me the daily loop and the
+return path (replies I leave in `editions/<date>/operator-answers.md` shape
+tomorrow's paper). Get me to a printed (or PDF) first edition, then stop and
+show me what you set up.
 ```
 
 Prefer to drive it yourself? Everything below is the manual path.
