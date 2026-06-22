@@ -163,6 +163,7 @@ def collect_sources(config: MorningPaperConfig) -> tuple[dict[str, list[SourceIt
 def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, object]:
     root = newsroom.expanduser().resolve()
     collectors_dir = root / "collectors"
+    drop_dir = root / "inbox"
     collectors: list[dict[str, object]] = []
     if collectors_dir.is_dir():
         for script in sorted(collectors_dir.glob("*.sh")):
@@ -173,11 +174,20 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
                 "id": f"collector:{script.stem}",
                 "type": "collector",
                 "name": script.stem.replace("-", " ").title(),
+                "role": "reader_owned",
                 "path": str(script),
                 "enabled": executable,
                 "status": "configured" if executable else "not_executable",
                 "command": f"collectors/{script.name} YYYY-MM-DD",
             }
+            if script.name == "local-drop.sh":
+                item.update(
+                    {
+                        "source_kind": "local_drop_folder",
+                        "drop_dir": str(drop_dir),
+                        "accepts": [".md", ".markdown", ".txt", ".url"],
+                    }
+                )
             if check:
                 if shutil.which("bash") is None:
                     item.update({"status": "unchecked", "error": "bash not found"})
@@ -200,13 +210,50 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
                             }
                         )
             collectors.append(item)
+    drop_files = []
+    if drop_dir.is_dir():
+        drop_files = [
+            item.name
+            for item in sorted(drop_dir.iterdir())
+            if item.is_file() and not item.name.startswith(".") and item.name != "README.md"
+        ]
     return {
         "newsroom_path": str(root),
         "collectors_dir": str(collectors_dir),
         "collectors": collectors,
         "count": len(collectors),
         "status": "configured" if collectors_dir.is_dir() else "not_found",
+        "local_drop": {
+            "path": str(drop_dir),
+            "status": "configured" if drop_dir.is_dir() else "not_found",
+            "file_count": len(drop_files),
+            "candidate_count": len(drop_files),
+            "sample_files": drop_files[:10],
+            "accepts": [".md", ".markdown", ".txt", ".url"],
+            "next_action": f"put .md, .txt, or .url files in {drop_dir}",
+        },
     }
+
+
+def _source_next_actions(sources: list[dict[str, object]], newsroom_info: dict[str, object] | None) -> list[str]:
+    actions: list[str] = []
+    enabled_rss = [item for item in sources if item.get("type") == "rss" and item.get("enabled")]
+    hacker_news = next((item for item in sources if item.get("id") == "hacker_news"), None)
+    if not enabled_rss:
+        actions.append("Add one RSS or newsletter feed if the reader already has one.")
+    if hacker_news and not hacker_news.get("enabled"):
+        actions.append("Leave Hacker News disabled unless the reader asks for a technical radar.")
+    if newsroom_info is None:
+        actions.append("Pass --newsroom <path> to inventory private collectors and the local drop folder.")
+        return actions
+
+    local_drop = newsroom_info.get("local_drop") if isinstance(newsroom_info.get("local_drop"), dict) else {}
+    if local_drop.get("status") == "configured":
+        actions.append(str(local_drop.get("next_action") or "Put local files in the newsroom inbox."))
+    collectors = newsroom_info.get("collectors") if isinstance(newsroom_info.get("collectors"), list) else []
+    if not collectors:
+        actions.append("Create a collector script when the reader names a source that is not a feed or local file.")
+    return actions
 
 
 def source_inventory(
@@ -225,6 +272,8 @@ def source_inventory(
         "id": "hacker_news",
         "type": "built_in",
         "name": "Hacker News",
+        "role": "optional_starter",
+        "purpose": "technical radar only when the reader asks for it",
         "enabled": bool(config.sources.hacker_news.enabled),
         "limit": int(config.sources.hacker_news.limit),
         "status": "configured" if config.sources.hacker_news.enabled else "disabled",
@@ -242,6 +291,8 @@ def source_inventory(
             "id": f"rss:{feed.name}",
             "type": "rss",
             "name": feed.name,
+            "role": "reader_owned",
+            "purpose": "reader-supplied feed or newsletter",
             "url": feed.url,
             "enabled": True,
             "limit": int(feed.limit),
@@ -275,14 +326,22 @@ def source_inventory(
                 )
         sources.append(item)
 
+    newsroom_info = _collector_inventory(newsroom, check=check) if newsroom is not None else None
     payload: dict[str, object] = {
         "sources": sources,
         "count": len(sources),
+        "source_model": {
+            "posture": "reader_stack_first",
+            "starter_inputs": ["rss", "hacker_news"],
+            "reader_owned_inputs": ["local_drop", "collectors", "stage", "inbox"],
+            "rule": "meet sources where they already live; do not force the reader into a new system",
+        },
         "collector_contract": {
             "command": "morning-paper stage <url|file> --date YYYY-MM-DD",
             "meaning": "anything not built in should arrive as staged markdown for a specific edition date",
         },
+        "next_actions": _source_next_actions(sources, newsroom_info),
     }
-    if newsroom is not None:
-        payload["newsroom"] = _collector_inventory(newsroom, check=check)
+    if newsroom_info is not None:
+        payload["newsroom"] = newsroom_info
     return payload

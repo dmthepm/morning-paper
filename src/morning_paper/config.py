@@ -19,7 +19,7 @@ class ConfigError(ValueError):
 
 @dataclass(slots=True)
 class HackerNewsConfig:
-    enabled: bool = True
+    enabled: bool = False
     limit: int = 20
 
 
@@ -295,19 +295,17 @@ page_budget: 20
 
 sources:
   hacker_news:
-    enabled: true
+    # Optional starter technical radar. Leave off unless the reader asks for it.
+    enabled: false
     limit: 20
-  # sample feeds — replace with yours. Full-text feeds (those that ship the
-  # whole article in `content:encoded`) print as real reads; the build JSON
-  # carries the full article in each item's `body` field, with `summary` kept
-  # as the short blurb. Summary-only feeds stay summary-only.
-  rss:
-    - name: Simon Willison
-      url: https://simonwillison.net/atom/everything/
-      limit: 5
-    - name: Lenny's Newsletter
-      url: https://www.lennysnewsletter.com/feed
-      limit: 5
+  # Add feeds the reader already follows. Full-text feeds (those that ship the
+  # whole article in `content:encoded`) print as real reads. Summary-only feeds
+  # stay summary-only. Example:
+  # rss:
+  #   - name: Example Feed
+  #     url: https://example.com/feed.xml
+  #     limit: 5
+  rss: []
 
 outputs:
   directory: ~/.local/share/morning-paper

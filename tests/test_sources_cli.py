@@ -72,10 +72,15 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["count"], 4)
+        self.assertEqual(payload["source_model"]["posture"], "reader_stack_first")
+        self.assertIn("local_drop", payload["source_model"]["reader_owned_inputs"])
         self.assertEqual(payload["sources"][0]["id"], "hacker_news")
+        self.assertEqual(payload["sources"][0]["role"], "optional_starter")
         self.assertEqual(payload["sources"][0]["status"], "disabled")
+        self.assertEqual(payload["sources"][1]["role"], "reader_owned")
         self.assertEqual(payload["sources"][1]["status"], "configured")
         self.assertIn("morning-paper stage", payload["collector_contract"]["command"])
+        self.assertIn("Pass --newsroom", " ".join(payload["next_actions"]))
 
     def test_sources_list_can_include_newsroom_collectors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -83,6 +88,7 @@ class SourcesCliTest(unittest.TestCase):
             config_path = self._config_path(tmp_path)
             newsroom = tmp_path / "newsroom"
             self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            (newsroom / "inbox" / "note.txt").write_text("Something to read.\n", encoding="utf-8")
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
@@ -90,11 +96,19 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["newsroom"]["status"], "configured")
+        self.assertEqual(payload["newsroom"]["local_drop"]["status"], "configured")
+        self.assertEqual(payload["newsroom"]["local_drop"]["candidate_count"], 1)
+        self.assertEqual(payload["newsroom"]["local_drop"]["accepts"], [".md", ".markdown", ".txt", ".url"])
+        self.assertEqual(payload["newsroom"]["local_drop"]["sample_files"], ["note.txt"])
+        self.assertIn(str(newsroom / "inbox"), payload["newsroom"]["local_drop"]["path"])
+        self.assertIn("put .md", " ".join(payload["next_actions"]))
         collectors = {item["id"]: item for item in payload["newsroom"]["collectors"]}
         self.assertIn("collector:local-drop", collectors)
         self.assertIn("collector:read", collectors)
         self.assertIn("collector:shipped", collectors)
         self.assertEqual(collectors["collector:local-drop"]["status"], "configured")
+        self.assertEqual(collectors["collector:local-drop"]["role"], "reader_owned")
+        self.assertEqual(collectors["collector:local-drop"]["source_kind"], "local_drop_folder")
 
     def test_sources_check_reports_full_text_summary_and_errors(self) -> None:
         def fake_get(url: str, timeout: int = 30) -> _FakeResponse:

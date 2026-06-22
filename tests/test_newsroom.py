@@ -51,6 +51,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
                 "editions/.gitignore",
                 "editions/operator-answers.template.md",
                 "examples/edition-skeleton.md",
+                "inbox/README.md",
                 "inbox/.gitkeep",
             ]
             for relative in required:
@@ -93,6 +94,12 @@ class NewsroomScaffoldTest(unittest.TestCase):
             sources = (root / "SOURCES.md").read_text(encoding="utf-8")
             self.assertIn("Source Desk", sources)
             self.assertIn("Start from what the reader already has", sources)
+            self.assertIn("local drop folder", sources)
+
+            inbox = (root / "inbox" / "README.md").read_text(encoding="utf-8")
+            self.assertIn("Local Drop Inbox", inbox)
+            self.assertIn(".md", inbox)
+            self.assertIn("morning-paper stage", inbox)
 
             delivery = (root / "DELIVERY.md").read_text(encoding="utf-8")
             self.assertIn("Email / Article View", delivery)
@@ -217,6 +224,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             os.chmod(fake, 0o755)
             rc = cli.main(["newsroom", "init", str(root)])
             self.assertEqual(rc, 0)
+            (root / "inbox" / "daily-note.txt").write_text("A note for the paper.\n", encoding="utf-8")
 
             env = os.environ.copy()
             env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
@@ -231,7 +239,10 @@ class NewsroomScaffoldTest(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("collectors for 2026-06-22", result.stdout)
-            self.assertIn("queue list --date 2026-06-22", log.read_text(encoding="utf-8"))
+            calls = log.read_text(encoding="utf-8")
+            self.assertIn("stage", calls)
+            self.assertIn("--date 2026-06-22", calls)
+            self.assertIn("queue list --date 2026-06-22", calls)
 
 
 if __name__ == "__main__":

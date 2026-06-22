@@ -153,7 +153,8 @@ After each personalization step, run `morning-paper newsroom state . --set ...`
 so `SETUP.md` and `setup-state.json` stay true.
 Use `morning-paper sources list --newsroom .` after scaffolding, and
 `morning-paper sources check --newsroom .` when the reader is ready to verify
-feeds and collector syntax.
+feeds and collector syntax. Read its `source_model`, `newsroom.local_drop`, and
+`next_actions` before asking more source questions.
 
 ```
 newsroom/

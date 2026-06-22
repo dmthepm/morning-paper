@@ -343,6 +343,8 @@ place, how often it should be checked, and what to do when it fails.
 - A source is not trusted just because it is loud.
 - A source with no data prints "not configured" or "nothing today".
 - Credentials live in local env files, never in this repo.
+- The local drop folder is `inbox/`: put `.md`, `.txt`, or `.url` files there
+  and let `collectors/local-drop.sh` stage them for the edition.
 
 ## Registry
 
@@ -364,8 +366,9 @@ place, how often it should be checked, and what to do when it fails.
 ## Source Health
 
 Run `morning-paper sources check --newsroom .` during setup and when a source
-changes. If a source fails, record the next action here instead of hiding the
-failure in chat.
+changes. It reports starter inputs, reader-owned collectors, the local drop
+folder, and suggested next actions. If a source fails, record the next action
+here instead of hiding the failure in chat.
 
 ## Feedback Routing
 
@@ -639,6 +642,7 @@ for file in "$DROP_DIR"/*; do
   [ -f "$file" ] || continue
   base="$(basename "$file")"
   case "$base" in .* ) continue ;; esac
+  case "$base" in README.md ) continue ;; esac
   case "$file" in
     *.md|*.markdown)
       stage_markdown "${base%.*}" "$file" && count=$((count + 1))
@@ -743,6 +747,29 @@ Open loops | 0 | update from memory
 
 Queued reads and full-text feeds go here. If there is nothing worth printing,
 say "not configured" or "reading pile is empty" instead of padding.
+""",
+        "inbox/README.md": """# Local Drop Inbox
+
+Put reader-owned source files here when you want the next edition to consider
+them. The scaffolded `collectors/local-drop.sh` stages copies for the edition
+date; it does not move or mutate the originals.
+
+Accepted starter formats:
+
+- `.md` / `.markdown` - staged as written.
+- `.txt` - wrapped in a markdown heading, then staged.
+- `.url` - the first URL in the file is staged.
+
+Run:
+
+```bash
+collectors/local-drop.sh YYYY-MM-DD
+morning-paper queue list --date YYYY-MM-DD
+```
+
+For PDFs, CSVs, JSON exports, browser dumps, or app-specific exports, ask the
+agent to write a collector that converts the source into markdown and calls
+`morning-paper stage`.
 """,
         "inbox/.gitkeep": "",
     }

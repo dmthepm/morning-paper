@@ -176,6 +176,14 @@ class BuildFlowTest(unittest.TestCase):
             self.assertEqual(config["outputs"]["renderer"], "typewriter")
             # local-first extraction: URLs stay on this machine by default
             self.assertEqual(config["article_extractor"], "local")
+            # generated config should be reader-first; demo proves the engine
+            self.assertFalse(config["sources"]["hacker_news"]["enabled"])
+            self.assertEqual(config["sources"]["rss"], [])
+            config["sources"]["hacker_news"]["enabled"] = True
+            config["sources"]["rss"] = [
+                {"name": "Example Feed A", "url": "https://example.com/a.xml", "limit": 5},
+                {"name": "Example Feed B", "url": "https://example.com/b.xml", "limit": 5},
+            ]
             config["outputs"]["directory"] = str(output_dir)
             config["outputs"]["renderer"] = "portable"
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
@@ -415,7 +423,12 @@ class BuildFlowTest(unittest.TestCase):
             self.assertIn("Could not fetch article", stderr.getvalue())
 
 
-def _build_no_pdf(*, style: str, staging: dict | None = None) -> tuple[dict, str, str]:
+def _build_no_pdf(
+    *,
+    style: str,
+    staging: dict | None = None,
+    configured_sources: bool = False,
+) -> tuple[dict, str, str]:
     """Run a full build with pdf/html off; returns (payload, markdown text, stderr)."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -426,6 +439,11 @@ def _build_no_pdf(*, style: str, staging: dict | None = None) -> tuple[dict, str
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
         config["outputs"]["directory"] = str(output_dir)
         config["outputs"]["style"] = style
+        if configured_sources:
+            config["sources"]["hacker_news"]["enabled"] = True
+            config["sources"]["rss"] = [
+                {"name": "Example Feed", "url": "https://example.com/feed.xml", "limit": 5}
+            ]
         # pdf/html off: exercise the template path without the pretty stack
         config["outputs"]["pdf"] = False
         config["outputs"]["html"] = False
@@ -457,11 +475,16 @@ class BuildTemplateDispatchTest(unittest.TestCase):
         payload, markdown, _stderr = _build_no_pdf(style="broadsheet")
         self.assertIn("masthead-title", markdown)
         self.assertIn("dept-kicker", markdown)
-        self.assertIn('<table class="data">', markdown)
+        self.assertIn('class="not-configured"', markdown)
+        self.assertIn("No signals available", markdown)
         # no retired typewriter-template classes on a broadsheet page
         self.assertNotIn("page-1-header", markdown)
         self.assertNotIn("hn-card", markdown)
         self.assertEqual(payload["staged_included"], [])
+
+    def test_configured_sources_render_broadsheet_data_table(self) -> None:
+        _payload, markdown, _stderr = _build_no_pdf(style="broadsheet", configured_sources=True)
+        self.assertIn('<table class="data">', markdown)
 
     def test_build_works_via_typewriter_alias(self) -> None:
         # the retired pack's users keep building: typewriter -> brief, and the
