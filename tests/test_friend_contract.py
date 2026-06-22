@@ -112,3 +112,80 @@ def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
     assert "mp-spark`" in composing and "90 values" in composing
     assert "cap print" in spec
     assert "overflow notes" in spec
+
+
+def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
+    current_docs = {
+        "README.md": _read("README.md"),
+        "AGENTS.md": _read("AGENTS.md"),
+        "ROADMAP.md": _read("ROADMAP.md"),
+        "docs/architecture-decisions.md": _read("docs/architecture-decisions.md"),
+        "docs/collectors.md": _read("docs/collectors.md"),
+        "docs/composing.md": _read("docs/composing.md"),
+        "docs/product-readiness-0.8.md": _read("docs/product-readiness-0.8.md"),
+        "plugins/morning-paper/skills/setup/SKILL.md": _read("plugins/morning-paper/skills/setup/SKILL.md"),
+        "plugins/morning-paper/skills/edition/SKILL.md": _read("plugins/morning-paper/skills/edition/SKILL.md"),
+    }
+    forbidden = [
+        "RSS and Hacker News",
+        "starter inputs",
+        "starter feeds",
+        "not the product identity",
+        "without knowing what RSS",
+        "automatic fallback",
+        "auto-fallback",
+    ]
+    for path, text in current_docs.items():
+        for phrase in forbidden:
+            assert phrase not in text, f"{path} still contains stale framing: {phrase}"
+
+    readme_sources = current_docs["README.md"].split("## Sources", 1)[1].split("## Daily Routine", 1)[0]
+    for phrase in (
+        "email newsletters",
+        "Slack channels",
+        "GitHub activity",
+        "Linear tickets",
+        "Twitter/X",
+        "YouTube",
+        "Obsidian vaults",
+        "agent-generated reports",
+    ):
+        assert phrase in readme_sources
+
+
+def test_recurrence_guidance_prefers_host_native_primitives() -> None:
+    readme = _read("README.md")
+    setup_skill = _read("plugins/morning-paper/skills/setup/SKILL.md")
+    composing = _read("docs/composing.md")
+    readiness = _read("docs/product-readiness-0.8.md")
+
+    for text in (readme, setup_skill, composing, readiness):
+        lowered = text.lower()
+        assert "Codex automation" in text or "Codex: **automations**" in text
+        assert "Claude Code routine" in text or "Claude Code: **routines**" in text
+        assert "chatgpt" in lowered and "scheduled task" in lowered
+        assert "local fallback" in text
+
+    assert "Set up a Claude Code routine" in readme
+    assert "Set up a Codex automation" in readme
+    assert "Set up a scheduled task for my Morning Paper" in readme
+    assert "Do not install a local scheduler unless they explicitly ask" in setup_skill
+
+
+def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
+    readme = _read("README.md")
+    config = _read("src/morning_paper/config.py")
+    article_print = _read("src/morning_paper/article_print.py")
+    release_check = _read("scripts/release_candidate_check.py")
+    changelog = _read("CHANGELOG.md")
+
+    assert "Local extraction" in readme
+    assert "keeps URL capture on your machine" in readme
+    assert "remote readers or browser/API scrapes" in readme
+    assert "explicit choices" in readme
+    assert "remote_extractor_fallback: false" in config
+    assert "allow_remote_fallback: bool = False" in article_print
+    assert "Remote fallback is opt-in" in article_print
+    assert "remote_extractor_fallback" in release_check
+    assert "no longer escalates" in changelog
+    assert "Jina remote" in changelog

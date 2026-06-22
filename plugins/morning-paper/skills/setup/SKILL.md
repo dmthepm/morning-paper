@@ -669,9 +669,9 @@ PDF, and report the PDF path plus anything that needs my attention.
 ```
 
 ```text
-Set up a scheduled task for my Morning Paper. Each weekday morning, use my
-newsroom sources and preferences to produce one calm edition, render the PDF,
-and summarize only the actions or blockers I need to review.
+Set up a ChatGPT scheduled task for my Morning Paper. Each weekday morning,
+use my newsroom sources and preferences to produce one calm edition, render the
+PDF, and summarize only the actions or blockers I need to review.
 ```
 
 Only if they specifically want a machine-local fallback, run
