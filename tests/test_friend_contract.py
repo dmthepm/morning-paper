@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
-
-import tomllib
 
 from morning_paper.cli import HELP_TEXT
 
@@ -13,6 +12,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
+
+
+def _pyproject_field(key: str) -> str:
+    """Read a string field from pyproject's [project] table without tomllib.
+
+    tomllib is stdlib only on Python 3.11+, but the package supports 3.10
+    (requires-python >=3.10), so this test must too. The contract only needs
+    two simple [project] string fields, so a tolerant regex beats taking a
+    3.11-only import or a tomli dependency.
+    """
+    text = _read("pyproject.toml")
+    section = text.split("[project]", 1)[-1].split("\n[", 1)[0]
+    match = re.search(rf'^{re.escape(key)}\s*=\s*"([^"]*)"', section, re.M)
+    assert match, f"{key} not found in [project] table of pyproject.toml"
+    return match.group(1)
 
 
 def test_friend_install_path_uses_the_same_print_proof_everywhere() -> None:
@@ -57,13 +71,12 @@ def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
 
 
 def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> None:
-    pyproject = tomllib.loads(_read("pyproject.toml"))
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
 
-    summary = pyproject["project"]["description"]
-    version = pyproject["project"]["version"]
+    summary = _pyproject_field("description")
+    version = _pyproject_field("version")
     assert summary.startswith("Own your algorithm")
     assert "personal newsroom" in summary
     assert "sources and preferences you own as files" in summary
