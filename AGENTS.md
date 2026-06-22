@@ -32,7 +32,8 @@ configured" — never an invented headline, number, or quote.
 Three skills, one body each, shared verbatim across hosts:
 
 - **setup** — cold start. Installs the engine, interviews the reader, scaffolds
-  their newsroom with working contracts (not empty folders), wires the routine.
+  their newsroom with working contracts (not empty folders), and offers
+  host-native recurrence. The CLI routine is a local fallback, not the default.
 - **edition** — composes, renders, reviews, and delivers today's paper.
 - **writing** — the revision discipline for every word the paper prints.
 
@@ -55,7 +56,7 @@ anyway, so check each step against reality:
 
 The CLI speaks JSON. `morning-paper doctor --json` reports install status;
 `newsroom`, `edition`, `sources`, `stage`, `queue`, `estimate`, `render`,
-`review`, and `routine` are the verbs the edition skill drives. `newsroom init
+`review`, and local-fallback `routine` are the verbs the edition skill drives. `newsroom init
 <path>` scaffolds the private repo; `newsroom state <path> --set key=value`
 keeps setup-state/SETUP current; `edition prepare <path>` creates the durable
 files an agent can resume from; `sources check` inventories configured sources;

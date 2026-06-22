@@ -391,35 +391,31 @@ through `render`), read the same seam:
 
 When you hand the engine a URL (`morning-paper print <url>`,
 `morning-paper stage <url>`), an extractor turns the page into printable
-blocks. Two are registered:
+blocks. Treat this as replaceable plumbing, not editorial truth.
 
-- `local` (default) — fetches the page directly from this machine and parses
-  it with trafilatura. **The URLs your reader cares about never leave their
-  computer.** No key, no rate limits, works offline-adjacent (only the
-  article's own host is contacted).
-- `jina` — sends the URL to the third-party `r.jina.ai` reader service
-  (anonymous tier: shared rate limits, 40-second timeout). Stronger on
-  JavaScript-heavy pages and X posts.
+The contract is stable even if the backend changes:
 
-The chain is `local -> jina`: when local extraction recovers too little
-content, the engine retries through jina and the result carries an honest
-note (`extraction_note` on the article, an `extractor_note` field in the
-stage JSON, and a warning line in `print` output) saying the URL was sent to
-the third-party service. It never falls back silently — if your reader's
-threat model forbids the remote reader entirely, respect the note and skip
-the article instead of staging it. Pin a backend with `article_extractor:
-local` or `article_extractor: jina` in config.
+- if extraction is partial, the staged item carries `truncated`,
+  `words_extracted`, and a plain-language `warning`;
+- if a URL leaves the machine through a remote reader service, the staged item
+  carries an `extractor_note`;
+- shell pages, too-short extractions, and obvious garbage are rejected instead
+  of printed;
+- the editor must surface those notes or skip the item. Never print a clipped
+  or remote-fetched article as if it were complete and local.
 
-Both paths feed the same validation gate (shell pages and too-short
-extractions are rejected, never printed) and the same truncation reporting
-(`truncated`, `words_extracted`, plain-language `warning`).
+Backend names and configuration live in the architecture/reference docs. The
+composition skill should care about source honesty and page fit.
 
 ## Scheduling the daily compose
 
-The composition pass itself can run unattended: `morning-paper routine
-install` schedules a daily headless `claude -p` run of the edition skill
-(launchd on macOS with missed-run coalescing, systemd user timer with
-`Persistent=true` on Linux, cron fallback). `morning-paper routine status`
-reports schedule, last run, and next fire as JSON — the seam for "did my
-paper build this morning?". The full scheduling ladder (Tier 0 manual through
-Tier 3 cloud-compose) is in the README's "The morning routine" section.
+The composition pass can run manually or through the host's native recurring
+primitive:
+
+- Codex automation;
+- Claude Code routine (`/schedule`);
+- ChatGPT scheduled task.
+
+The CLI's `morning-paper routine install|status|uninstall` remains an advanced
+local fallback for users who explicitly want launchd/systemd/cron. It should
+not be the default setup path for readers already living in an agent host.

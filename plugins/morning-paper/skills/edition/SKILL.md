@@ -2,8 +2,9 @@
 name: edition
 description: >
   Compose, render, and deliver today's Morning Paper edition. Use every
-  morning (scheduled routine or manual), or when the user says "build my
-  paper", "today's edition", "morning brief". Requires setup to have run.
+  morning (manual, Claude Code routine, Codex automation, ChatGPT scheduled
+  task, or local fallback), or when the user says "build my paper", "today's
+  edition", "morning brief". Requires setup to have run.
 ---
 
 # Morning Paper — The Edition
@@ -43,7 +44,7 @@ Required durable artifacts:
    the senders get their confirmations. Then run the user's collectors: the
    scaffolded newsroom has `collectors/run_all.sh` (it runs every collector
    for the edition date, then prints `morning-paper queue list`); a bare-bones
-   newsroom may just have the engine's `morning-paper build` for HN/RSS.
+   newsroom may have only starter feeds or staged material.
    Collectors stage via `morning-paper stage`, so check the staged queue:
    `morning-paper queue list --date <edition-date>` and inspect uncertain
    items with `morning-paper queue show <slug> --date <edition-date> --content`.

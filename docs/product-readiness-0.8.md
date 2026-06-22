@@ -15,7 +15,8 @@ The product promise stays narrow:
 
 - the reader owns the algorithm as files;
 - the agent edits and composes the paper;
-- the CLI renders, verifies, schedules, and manages durable source queues;
+- the CLI renders, verifies, manages durable source queues, and offers a local
+  scheduling fallback;
 - a section with no data says "not configured";
 - the paper lands once and ends.
 
@@ -38,9 +39,9 @@ The product promise stays narrow:
   or rejected over time.
 - The edition skill has the editor model, source collection, review, return
   path, and durable intermediate files for interruption recovery.
-- The source model is local-folder-first: HN and RSS are optional starter
-  sources, and everything else can arrive through collectors that stage
-  markdown for a specific edition date.
+- The source model is reader-stack-first: RSS and Hacker News are optional
+  starter inputs, and everything else can arrive through collectors or host
+  agent workflows that stage markdown for a specific edition date.
 - `doctor --strict` proves actual layout for the production print path.
 - The chart furniture now has renderer-level guardrails: built-in `mp-bars`,
   `mp-spark`, and `mp-stats` align with the available measure, cap print
@@ -129,6 +130,20 @@ Acceptance:
   `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `specs/`,
   `preferences/`, or `TASTELOG.md`.
 
+## Native Recurrence Policy
+
+The daily paper should lean into the recurring primitive of the host the reader
+already uses:
+
+- Codex: **automations**;
+- Claude Code: **routines** created with `/schedule`;
+- ChatGPT: **scheduled tasks**.
+
+Morning Paper should provide short prompts that ask the host agent to set up the
+recurring run using the reader's newsroom and the `edition` workflow. The CLI's
+`routine` command remains a deliberate local fallback for users who want
+launchd/systemd/cron, not the default onboarding path.
+
 ## Print Stack Policy
 
 WeasyPrint is the production renderer. Morning Paper should understand and
@@ -168,7 +183,7 @@ Morning Paper owns:
 
 ## Source Model
 
-Built in:
+Starter inputs:
 
 - RSS feeds, including full-text feeds when `content:encoded` is present;
 - optional Hacker News starter source;
@@ -176,18 +191,19 @@ Built in:
 - contributor inbox;
 - queue/status.
 
-Private newsroom collectors:
+Private newsroom collectors and host-agent workflows:
 
 - local drop folder for `.md`, `.txt`, `.url`, and synced-folder files;
 - GitHub/`gh` activity;
 - Main Branch business facts;
-- Apify or browser-driven scrapes;
+- browser/API/scrape outputs the reader already trusts;
 - exports from YouTube, Instagram, TikTok, email, Slack, Obsidian, or other
   tools.
 
-0.8 should not build hosted sync, OAuth connectors, a scraper registry, or a
-dashboard. The engine should expose durable seams; the reader's newsroom owns
-private source logic.
+0.8 should not build hosted sync, OAuth connectors, a scraper registry, a
+platform-specific scheduling layer, or a dashboard. The engine should expose
+durable seams; the reader's newsroom and chosen host agent own private source
+logic.
 `morning-paper sources list|check --newsroom <path>` is the bridge between the
 engine and that private logic: it inventories built-in feeds plus local
 collector scripts, and `check` validates RSS reachability/full-text mode plus

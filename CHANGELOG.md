@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+- Thinned the README and source/routine docs around the real product contract:
+  Hacker News is an optional starter, extractor backends are replaceable
+  plumbing, and recurring runs should prefer host-native primitives (Codex
+  Automations, Claude Code routines, ChatGPT scheduled tasks) with the CLI
+  routine kept as an explicit local fallback.
+
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when
   the installed version is outside Morning Paper's supported range

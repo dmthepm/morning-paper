@@ -1,23 +1,22 @@
 # Collectors — bring your own sources
 
-Morning Paper ships two built-in sources: **Hacker News** and **RSS feeds**.
-`morning-paper build` reads those, lays out an edition, and prints it with zero
-configuration. That is the default, and for many readers it is the whole
-product.
+Morning Paper ships small starter inputs, including **RSS feeds** and optional
+**Hacker News**. They are there so the engine can prove the paper path without
+asking for credentials. They are not the product identity.
 
 A **collector** is how you add anything else — a subreddit digest, your GitHub
-activity, an X/Twitter radar, a weekly research roundup, your bank's RSS-less
-statements page, whatever earns a place on your desk. This page is the contract
-a collector has to honor. Write to it and your source flows into the same
-edition as HN and RSS, through the same renderer, under the same page budget.
+activity, a local social export, a weekly research roundup, a folder of notes,
+whatever earns a place on your desk. This page is the contract a collector has
+to honor. Write to it and your source flows into the same edition queue, through
+the same renderer, under the same page budget.
 
 ## What a collector is
 
-A collector is **any script you run before you compose**. It can be a Python
-file, a shell pipeline, a Claude Code skill, a cron job — the engine does not
-care what language it is or how it runs. Its only job is to turn a source into
-**staged material**: markdown the editor will read when it composes today's
-paper.
+A collector is **any script or agent workflow you run before you compose**. It
+can be a Python file, a shell pipeline, a Claude Code routine, a Codex
+automation, a local command, or a manual export. The engine does not care what
+language it is or how it runs. Its only job is to turn a source into **staged
+material**: markdown the editor will read when it composes today's paper.
 
 Collectors are yours. They live in your private newsroom repo (the `setup`
 skill scaffolds a `collectors/` directory for exactly this), never in the
@@ -171,8 +170,8 @@ fi
 rm -f "$tmp"
 ```
 
-That is the whole idea: a script that produces markdown and stages it. The
-engine prints HN and RSS for free; collectors are how the paper becomes yours.
+That is the whole idea: a source turns into markdown and gets staged. Starter
+feeds prove the path; collectors are how the paper becomes yours.
 
 ## Local drop-folder collector
 

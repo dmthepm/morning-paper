@@ -3,7 +3,7 @@ name: setup
 description: >
   Morning Paper cold-start: install the engine, interview the reader, scaffold
   their private newsroom repo with working contracts (not empty folders), and
-  wire the morning routine. Use on first run, when
+  offer host-native recurring setup. Use on first run, when
   ~/.config/morning-paper/config.yaml is missing, or when the user says
   "set up my morning paper", "onboard me", "configure morning paper".
 ---
@@ -13,8 +13,8 @@ description: >
 You are setting up a personal newsroom. The outcome: a config, a private
 "newsroom" repo of preferences the user owns **scaffolded with real working
 contracts the edition skill obeys** (not four empty directories), and
-(optionally) a scheduled morning routine. Degrade honestly at every step — a
-paper with two sources beats a broken setup with ten.
+(optionally) a recurring run in the host the reader already uses. Degrade
+honestly at every step — a paper with two sources beats a broken setup with ten.
 
 The keystone of this skill is §5: setup must **write** the newsroom's
 contracts. A friend who finishes setup has a `CLAUDE.md`, section specs led by
@@ -61,10 +61,12 @@ Ask in 2-3 messages, not twenty. Capture:
 - **Who they are / what they run** — work, projects, what "useful every morning"
   means to them. This seeds `profile` in config.yaml, the editor's voice, and
   the section specs you scaffold in §5.
-- **Sources** — RSS feeds they read, newsletters with full-text feeds (paid feed
-  URLs are credentials: store in `~/.config/morning-paper/env.sh`, never in a
-  repo), Hacker News yes/no. Full-text feeds (those that ship the whole article
-  in `content:encoded`) print as real reads, not blurbs — worth asking for.
+- **Sources** — what they already have: feeds, newsletters, local folders,
+  Obsidian vaults, exports, browser/API scrape outputs, work systems, and
+  agent-produced files. RSS/full-text feeds are useful when available; paid feed
+  URLs are credentials, so store them in `~/.config/morning-paper/env.sh`, never
+  in a repo. Ask about Hacker News only as an optional starter technical radar,
+  not as the center of the paper.
 - **Shape** — `page_budget` (suggest 12-20), how many full reads per edition,
   style (`morning-paper styles` lists the family of four — broadsheet,
   brief, field-card, zine; `broadsheet` is the default recommendation),
@@ -82,20 +84,20 @@ Write their answers into `~/.config/morning-paper/config.yaml`.
 
 ## 3. Optional unlocks (collector recipes they write, not engine features)
 
-The engine ships exactly two built-in sources — Hacker News and RSS — plus the
-generic stage/inbox contract any script can write to. Everything below is a
-**collector**: a small script the operator (or their agent) authors and runs at
-compose time, dropping markdown into the staging queue. None of these ship in
-the engine; they are recipes to build in the newsroom's `collectors/` (which
-§5 scaffolds with the contract and three worked examples). See
+The engine ships starter inputs and the generic stage/inbox contract any script
+can write to. Everything below is a **collector**: a small script or host-agent
+workflow the operator authors and runs at compose time, dropping markdown into
+the staging queue. None of these ship in the engine; they are recipes to build
+in the newsroom's `collectors/` (which §5 scaffolds with the contract and three
+worked examples). See
 [docs/collectors.md](https://github.com/dmthepm/morning-paper/blob/main/docs/collectors.md)
 for the contract.
 
-- **Apify** (`APIFY_TOKEN`): a collector that pulls an X/Twitter radar via
-  tweet-scraper actors, about $0.02/day at 40 tweets. Worth it if their work
-  has a market lane.
-- **last30days**: a collector wrapping the Reddit/HN/Polymarket research plugin
-  for a weekly trends page.
+- **Social/export tools**: local Twitter/X exports, browser/API scrapes, or
+  services the reader already trusts. Treat these as reader-owned source
+  systems, not Morning Paper defaults.
+- **Research plugins**: a collector wrapping a tool such as last30days for a
+  weekly trends page.
 - **gh CLI**: a collector that builds a "shipped while you slept" section from
   their repos (scaffolded as `collectors/shipped.sh` in §5).
 - **Local drop folder**: a collector that stages `.md`, `.txt`, and `.url`
@@ -637,36 +639,40 @@ the place and the prose with their own.
 
 After personalizing the scaffold, make the first commit.
 
-## 6. The morning routine (offer the ladder)
+## 6. Recurrence (host-native first)
 
-Tier 0 is the default and needs nothing: each morning they say "paper" (or
-invoke `/morning-paper:edition`) and watch the editor work. Offer the next
-rung — one command, run **from inside the newsroom repo** (the routine pins the
-job's working directory to where you install it, so the scheduled edition can
-find `specs/`, `collectors/`, `editions/`):
+Default: each morning they say "paper" or invoke the `edition` skill and watch
+the editor work.
 
-```bash
-morning-paper routine install                  # daily at 05:00
-morning-paper routine install --time 06:30     # their wake time beats the default
-morning-paper routine status                   # schedule, last run, next fire (JSON)
+If they want it to run automatically, lean into the primitive of the host they
+already use. Do not install a local scheduler unless they explicitly ask for
+that fallback.
+
+Offer the matching prompt:
+
+```text
+Set up a Claude Code routine with /schedule that builds my Morning Paper each
+weekday morning. Use this private newsroom, run the Morning Paper edition
+workflow, render the PDF, open or deliver it according to DELIVERY.md, and tell
+me only if the run failed or needs my attention.
 ```
 
-This schedules a headless `claude -p` run of the edition skill through their
-existing subscription (`--permission-mode acceptEdits`) — no extra API key.
-On macOS it is a launchd agent that coalesces runs missed during sleep into
-one run on wake: the paper builds the moment the laptop opens. On Linux it is
-a systemd user timer with `Persistent=true`, falling back to cron (say
-plainly: cron skips runs missed while asleep). The job logs to
-`~/.local/share/morning-paper/routine.log`; `--command CMD` swaps in their
-own job. If `claude` is not on PATH the install refuses, warns, and prints
-the exact command to wire into their own scheduler — relay that honestly.
+```text
+Set up a Codex automation that builds my Morning Paper each weekday morning.
+Use this private newsroom, run the Morning Paper edition workflow, render the
+PDF, and report the PDF path plus anything that needs my attention.
+```
 
-Mention the higher rungs only if they want more: an always-on machine runs
-the routine at exactly the set time (a Mac that should wake itself instead:
-`sudo pmset repeat wakeorpoweron MTWRFSU 04:55:00`); the cloud-compose split
-(a scheduled cloud agent composes into the newsroom repo, any local machine
-renders and prints) is the top of the ladder — see the README's "The morning
-routine" section.
+```text
+Set up a scheduled task for my Morning Paper. Each weekday morning, use my
+newsroom sources and preferences to produce one calm edition, render the PDF,
+and summarize only the actions or blockers I need to review.
+```
+
+Only if they specifically want a machine-local fallback, run
+`morning-paper routine install|status|uninstall` from inside the newsroom repo
+and explain that it uses the machine scheduler (launchd/systemd/cron), so local
+runs depend on that machine being available.
 
 ## 7. The return path (how their ink comes back)
 

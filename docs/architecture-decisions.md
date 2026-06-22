@@ -15,16 +15,16 @@ Reason:
 - `Morning Paper` is the public engine.
 - Private deployments extend it for specific operators.
 - Public repo owns:
-  - the built-in HN + RSS build path
+  - starter feed inputs and the generic source/staging contract
   - the generic stage/inbox/build/render contract
   - normalized models
   - CLI
   - renderer implementations
   - tests
   - example configs
-- Collectors are NOT in the engine. The engine ships HN + RSS and the
-  stage/inbox contract any script can write to; every other source is a
-  collector the operator authors and runs in their own private newsroom
+- Collectors are NOT in the engine. The engine ships starter inputs and the
+  stage/inbox contract any script or host-agent workflow can write to; every
+  other source is a collector the operator authors and runs in their own private newsroom
   (see [docs/collectors.md](collectors.md)).
 - Private deployments own their own collectors, scheduling, credentials, delivery, and operator-specific configuration.
 
@@ -71,8 +71,8 @@ Renderer values:
 `typewriter`:
 - the product look
 - uses the public typewriter template
-- prefers `WeasyPrint` when available
-- falls back cleanly when not available
+- uses `WeasyPrint` through the `[pretty]` install path
+- fails clearly when the production renderer is unavailable
 
 `portable`:
 - explicit guaranteed fallback
@@ -80,7 +80,8 @@ Renderer values:
 
 Reason:
 - The style is part of the product.
-- The install path still needs to work on machines without native renderer support.
+- The user can intentionally choose the portable fallback, but the product path
+  should not silently downgrade.
 
 ## 6. Premium Renderer
 
@@ -88,14 +89,15 @@ Optional extra:
 
 ```toml
 [project.optional-dependencies]
-pretty = ["weasyprint>=62.0"]
+pretty = ["weasyprint>=69.0,<70"]
 ```
 
 Runtime behavior:
 - try `WeasyPrint`
 - catch both `ImportError` and `OSError`
-- fall back to `fpdf2`
-- emit a clear warning telling the user to install `morning-paper[pretty]`
+- fail clearly when the user asked for the product renderer and it is missing
+- `doctor --strict` verifies the supported WeasyPrint range and a real render
+  self-test
 - on macOS, automatically include `/opt/homebrew/lib` and `/usr/local/lib` in `DYLD_FALLBACK_LIBRARY_PATH` before import
 
 Reason:
@@ -129,9 +131,11 @@ Stable public commands:
 - `morning-paper styles` — list styles + palettes
 - `morning-paper doctor`
 
-Every command prints JSON (`doctor` via `--json`). `remove`/`list` (queue
-management) remain on the roadmap and report so honestly when invoked. Any
-internal-only commands remain compatibility-only and do not define the public API.
+Every command prints JSON (`doctor` via `--json`). `routine` is an advanced
+local fallback scheduler; for most readers, recurring runs should use the
+host-native primitive (Codex Automations, Claude Code routines, or ChatGPT
+scheduled tasks). Any internal-only commands remain compatibility-only and do
+not define the public API.
 
 ## 9. Printed Output Standard
 
@@ -158,141 +162,63 @@ never a font or a CSS property. The `typewriter` *style pack* retired into
 `brief`; the `typewriter` *renderer* name (this section's original subject,
 vs `portable`) is unchanged. The no-version-suffix rule stands.
 
-## 11. X/Twitter Extraction Strategy
+## 11. Social And Hard-To-Extract Sources
 
-Decision date: 2026-04-14
+Decision date: 2026-04-14; reframed 2026-06-22
 
-### The problem
+Social platforms, video sites, logged-in pages, paywalled sites, and
+JavaScript-heavy pages change too often to make a single built-in scraper the
+product. Morning Paper should not promise that any one third-party reader,
+browser scrape, API, or open-source parser is the right universal answer.
 
-X.com is actively hostile to content extraction. There is no free, open source, zero-auth, reliable way to pull full threads from X in 2026.
+Current decision:
 
-### What we evaluated
+- Core stays zero-auth and source-agnostic.
+- Reader-owned exports, local files, pasted markdown, and private collectors
+  are first-class.
+- Browser/API/scrape tools are recipes in the private newsroom, not bundled
+  product identity.
+- If an external service, logged-in browser session, or paid API is used, the
+  collector records that fact in the staged item.
+- If source capture fails, the paper says "not configured" or "nothing today";
+  it never prints guessed content.
 
-| Approach | Auth/Cost | Reliability | Fit for a free CLI |
-|---|---|---|---|
-| Official X API (Pay-Per-Use) | $0.005/post, no free tier | High | No — unpredictable bills, too expensive |
-| Apify Twitter actors | Apify token (free tier limited) | Very high | Good as optional backend |
-| twscrape (vladkens/twscrape) | User's own X session cookies | Good (active maintenance) | Good as optional backend |
-| trafilatura (general URLs) | None | Excellent for articles | Perfect for non-X URLs |
-| Manual paste / local markdown | None | 100% | Perfect universal fallback |
-| Headless browser (Playwright) | None | Medium | Poor — 200MB+ Chromium dep |
-
-### Decision (current, since 0.4.2)
-
-- X is an **optional plugin**, never core. Core stays zero-auth.
-- General article extraction is **local-first**: trafilatura ships as a core
-  dependency and `article_extractor: local` is the default — the URLs the
-  reader cares about never leave their machine. Local parsing returns clean
-  blocks for news articles, blogs, and Substack.
-- Jina Reader (`r.jina.ai`) is an explicit option and an automatic fallback:
-  when local extraction recovers too little content, the engine retries
-  through Jina and flags the result with an honest `extraction_note` (the URL
-  was sent to a third-party service) — never a silent fallback. The privacy
-  concern (every read URL sent to a third-party SaaS) is why local, not Jina,
-  is the default; the original 0.1–0.4.1 default was Jina, flipped in 0.4.2.
-- X/Twitter uses optional backends configured by the user:
-  1. `apify` — user supplies their own Apify token (recommended for reliability)
-  2. `twscrape` — pure Python, user adds their own X session (open source, no API cost)
-  3. `manual` — user pastes thread content as markdown (always works)
-- If no X backend is configured and user tries an X URL: clear message with options, never a broken/garbage PDF.
-
-### pyproject.toml extras
-
-```toml
-[project.optional-dependencies]
-pretty = ["weasyprint>=62.0"]
-```
-
-trafilatura is a core dependency (not an extra); the never-wired `twitter`
-and `local` extras were removed in 0.4.2.
-
-### Content validation gate
-
-Before rendering any article (X or otherwise), validate:
-- Extracted text is above 200 characters of real content
-- Text does not contain known failure markers ("This page explicitly specify a timeout", X noscript shells, HTTP error pages)
-- If validation fails: report the failure, suggest alternatives, never render garbage to PDF
-
-### Why not the Official X API
-
-The February 2026 Pay-Per-Use pricing ($0.005/post, no free tier) makes it unsuitable for a free open source CLI. A user running 50-100 posts daily would pay $0.25-$2+/day with no cap. No major Python CLI tool (Ruff, Rich, HTTPie, Poetry) uses paid APIs as a core dependency. We follow the same pattern.
+Historical notes in older docs named X/Twitter-specific APIs, Jina behavior,
+and tool pricing. Treat those as dated implementation research, not current
+product guidance.
 
 ## 12. Article Extraction Architecture
 
-Decision date: 2026-04-14 (revised 0.4.2)
+Decision date: 2026-04-14; reframed 2026-06-22
 
-Default extractor: **local trafilatura** (the page is fetched and parsed on
-this machine; URLs stay local). **Jina Reader** (`https://r.jina.ai/{url}`) is
-the explicit option and the automatic fallback in the `local -> jina` chain
-below, selectable via `article_extractor: jina`. Jina requests include
-`X-With-Images: true` for better heading and image preservation on the pages it
-handles (notably X Articles).
+Morning Paper treats extraction as replaceable plumbing behind a stable
+contract.
 
-Jina's strengths (why it remains the fallback, and was the original default):
-- Zero pip dependency (just a `requests.get` call)
-- Returns clean markdown with inline image URLs (tested: X articles return 8+ images as direct `pbs.twimg.com` URLs)
-- Successfully extracts X Articles and long threads where local sees only a noscript shell
-- Images come in print-friendly sizes (`small` variant, perfect for newspaper columns)
+Current shape:
 
-Local trafilatura is the default anyway: keeping every read URL off third-party
-infrastructure outweighs Jina's zero-dependency convenience.
+- extractor interface: `src/morning_paper/extractors.py`;
+- registered extractors include `local` and `jina`;
+- config field: `article_extractor`;
+- `fetch_article()` resolves the configured extractor, then applies shared
+  validation, metadata enrichment, image handling, and PDF rendering.
 
-Fallback chain in `fetch_article()` (as of 0.4.2):
-1. Local trafilatura extraction → if it recovers enough content → return Article
-2. If local recovers too little → Jina Reader retry, result carries an honest
-   `extraction_note` ("the URL was sent to the third-party r.jina.ai service")
-3. If the winning extraction fails the validation gate → raise
-   ArticleExtractionError with clear message
-4. For X URLs specifically: the local fetch sees the noscript shell, so jina
-   handles X posts in practice; shell responses still fail with a clear error
+The stable contract:
 
-Content validation gate (implemented in v0.1.1):
-- Minimum 200 characters of extracted text
-- Reject known failure markers (X noscript shells, timeout warnings)
-- Domain skiplist (youtube.com, github.com, instagram.com — domains Jina can't meaningfully extract)
-- Network errors caught and reported cleanly
-
-Image handling:
-- Jina returns images as standard markdown `![alt](url)` syntax
-- `article_print.py` downloads images, converts to B&W via `image_tools.py`, embeds in PDF
-- Failed image downloads skip gracefully (never break the pipeline)
-- Max 3 images per article to control page length
-
-Honest limitations:
-- Jina is an external free service — rate limits and future changes are possible
-- Some X posts fail extraction (noscript shell returned) — validation gate catches these
-- ~~No offline mode without the optional `morning-paper[local]` extra (trafilatura)~~ — resolved in 0.4.2: trafilatura is core and local extraction is the default
-
-## 13. X/Twitter Metadata via FxTwitter
-
-Decision date: 2026-04-14
-
-For X/Twitter post URLs, Morning Paper uses FxTwitter as the primary metadata source:
-
-- endpoint: `https://api.fxtwitter.com/{handle}/status/{id}`
-- used for:
-  - author name
-  - handle
-  - profile image URL
-  - followers
-  - likes
-  - retweets
-  - replies
-  - views
-  - short bio/role line
-
-Body text and inline article images still come from Jina Reader.
-
-Fallback chain for X metadata:
-1. FxTwitter API
-2. `unavatar.io` for avatar only
-3. X profile reader fallback for avatar only
-4. render without avatar/stats if all metadata calls fail
+- an extractor returns normalized article content: title, author, blocks,
+  paragraphs, and image references when available;
+- validation rejects shell pages, too-short results, and obvious garbage;
+- partial results carry a plain-language warning;
+- remote-reader results carry an extraction note so the editor knows the URL
+  left the machine;
+- rendering does not branch around extractor-specific hacks.
 
 Reason:
-- FxTwitter returns the durable social metadata we need in one JSON response.
-- Jina remains the better source for article body extraction and inline media.
-- The split keeps the renderer honest: social metadata from a social metadata endpoint, long-form body from the article reader.
+
+- Jina and trafilatura are current implementation details, not the product
+  promise.
+- Different readers will prefer different privacy, fidelity, account, and cost
+  tradeoffs.
+- The renderer and editor loop should survive extractor changes unchanged.
 
 ## 14. Typewriter Design Tokens
 
@@ -321,33 +247,12 @@ Rule:
 
 ## 15. Pluggable Article Extractors
 
-Decision date: 2026-04-14
+Decision date: 2026-04-14; superseded by section 12 on 2026-06-22
 
-Morning Paper should treat article extraction as a replaceable backend, not a permanent Jina implementation detail.
-
-Current shape:
-- extractor interface: `src/morning_paper/extractors.py`
-- registered extractors: `local` (default since 0.4.2) and `jina`
-- config field: `article_extractor: local` (or `jina`)
-- `fetch_article()` resolves the configured extractor, then applies shared validation, metadata enrichment, and rendering
-
-Reason:
-- Jina is useful, but it is not the only future parser.
-- Different extractors will preserve different levels of fidelity for X articles, essays, paywalled pages, or saved-reader exports.
-- The renderer and design system should survive extractor changes unchanged.
-
-Contract:
-- an extractor returns normalized article content:
-  - title
-  - author
-  - blocks
-  - paragraphs
-  - primary image refs
-  - profile image ref when available
-- validation, image processing, FxTwitter enrichment, and PDF rendering remain outside the extractor
-
-Rule:
-- new extractors should register through the extractor registry instead of branching renderer logic around source-specific hacks.
+Keep the extractor registry. Do not build renderer branches around specific
+source sites or reader services. The current backend list is an implementation
+detail; the durable contract is normalized article content plus honest notes
+for partial or remote extraction.
 
 ## 16. Skill Distribution for Agent Runtimes
 

@@ -13,7 +13,8 @@ and write the smallest durable update back to the private newsroom.
 The split stays fixed:
 
 - the agent composes and edits;
-- the CLI renders, estimates, stages, validates, and schedules;
+- the CLI renders, estimates, stages, validates, and offers a local scheduling
+  fallback;
 - the private newsroom stores memory and taste;
 - the public repo ships reusable skills and engine code;
 - code never fabricates the paper.
@@ -32,8 +33,8 @@ newsroom-native primitives already:
 The three shipped skills prove the product path, but they are too broad for the
 next phase:
 
-- `setup` is doing interview, install, scaffold, source onboarding, routine
-  setup, and first-edition coaching in one very large body.
+- `setup` is doing interview, install, scaffold, source onboarding, recurring
+  setup guidance, and first-edition coaching in one very large body.
 - `edition` is the right main loop, but visual editing, source triage, feedback
   digestion, and final proofing are becoming separate jobs.
 - `writing` is correctly narrow and should remain the copy desk.
@@ -49,12 +50,12 @@ today's edition" should still work. Internally, grow toward narrow desks:
 | Skill | Role | Durable files read/write |
 | --- | --- | --- |
 | `morning-paper-setup` | Front desk. Install, interview, create private newsroom, open demo/first PDF. | `SETUP.md`, `setup-state.json`, all initial contracts |
-| `morning-paper-status` | Triage. Inspect install, plugin state, newsroom state, routine, source health, latest edition. | reads state; writes no taste by default |
+| `morning-paper-status` | Triage. Inspect install, plugin state, newsroom state, host recurrence/local fallback, source health, latest edition. | reads state; writes no taste by default |
 | `morning-paper-sources` | Assignment desk. Discover, inventory, connect, and debug local/RSS/inbox/collector sources. | `SOURCES.md`, collectors, source inventory |
 | `morning-paper-edition` | Editor-in-chief. Compose, render, review, deliver, ask for feedback. | edition workspace, all taste files |
 | `morning-paper-visuals` | Art/layout desk. Choose charts/images/illustrations, enforce visual fit, update style taste. | `VISUALS.md`, edition draft, render/review outputs |
 | `morning-paper-feedback` | Taste desk. Turn natural-language notes or desk-sheet photos into durable rules. | `TASTELOG.md`, smallest matching taste file |
-| `morning-paper-doctor` | Pressroom ops. Repair engine/plugin/install/native print stack/routine problems. | setup state, install logs; avoids editorial changes |
+| `morning-paper-doctor` | Pressroom ops. Repair engine/plugin/install/native print stack/local fallback problems. | setup state, install logs; avoids editorial changes |
 | `morning-paper-writing` | Copy desk. Revise prose for clarity, honesty, and reader fit. | `EDITORIAL.md`, voice/preferences, draft |
 
 The existing `setup`, `edition`, and `writing` skills can either stay as aliases

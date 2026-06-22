@@ -141,8 +141,11 @@ your own address: *"Got it — this is in Morning Paper tomorrow morning
 - **No passwords in config.** The credential lives in the environment, and
   the config loader rejects any `password` key in the inbox block.
 
-## In the morning routine
+## In an edition run
 
 The `edition` skill runs `morning-paper inbox` before composing, so anything
 the masthead sent overnight is in the queue by the time the editor reads it.
-Running it again is always safe: only unread mail is considered.
+That is true whether the edition was started manually, by a Codex automation,
+by a Claude Code routine, by a ChatGPT scheduled task, or by the local CLI
+fallback routine. Running it again is always safe: only unread mail is
+considered.
