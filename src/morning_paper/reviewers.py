@@ -84,6 +84,13 @@ class Headline:
     kind: str  # "headline"
     section: str
     deck: str = ""
+    # role tells a TRUE headline (the lead/front head + article heads) apart
+    # from a DECK / DEPARTMENT / SECTION LABEL that is long by design. The two
+    # length checks (line-count, length) flag only true headlines; decks and
+    # labels are intentionally multi-sentence summaries and must not trip them.
+    # See HEADLINE_ROLE_* below for the class → role mapping. Verb-presence and
+    # hed-dek-redundancy still read every head regardless of role.
+    role: str = "headline"  # "headline" | "deck"
 
 
 @dataclass(slots=True)
@@ -108,10 +115,40 @@ class ParsedEdition:
 # ---------------------------------------------------------------------------
 # Artifact resolution + parsing
 # ---------------------------------------------------------------------------
-# A composed head wears one of these class names (broadsheet .mg-title/
-# .dept-title, field-card .oc-title). Plain markdown headings are heads too.
+# Headline ROLE vocabulary — the explicit, maintainable map from a head's CSS
+# class to whether the LENGTH checks treat it as a real headline.
+#
+# TRUE HEADLINES (role "headline") — the lead/front head and per-article heads.
+# These carry the news in a tight line and SHOULD flag when they run long:
+#   .mg-title   broadsheet lead/front headline (demo.md: "The Lighthouse
+#               Keeper Wants a Quieter Lamp" — a real, tight hed)
+#   .article-title  a printed article's own headline (article_print.py)
+#   .oc-title   field-card main title (its pack's headline)
+#   plus markdown #/## headings, which double as the head in the simpler packs.
+#
+# DECKS / DEPARTMENT / SECTION LABELS (role "deck") — EXEMPT from the length
+# checks. These are multi-sentence summaries or department names that are long
+# BY DESIGN; flagging them is the 0.6.0 false positive that trained editors to
+# ignore the gate (dogfood 2026-06-21). They are still parsed so verb-presence,
+# hed-dek-redundancy, and duplicate-headline can read them — only the two
+# LENGTH checks skip them:
+#   .dept-title broadsheet DEPARTMENT title (15pt; the renderer emits it for
+#               every read/dept/staged item — a deck, not a one-line hed)
+#   .mg-dek     the deck (an explicit second-beat summary, always prose-length)
+#   .dept-kicker / .mg-kicker  section labels / kickers
+#
+# A composed head wears one of these class names; plain markdown headings are
+# heads too. The two regexes below split heads by role at parse time.
+_TRUE_HEAD_CLASSES = ("mg-title", "article-title", "oc-title")
+_DECK_HEAD_CLASSES = ("dept-title", "mg-dek")
 _HEAD_DIV_RE = re.compile(
-    r'<div[^>]*class="[^"]*\b(?:mg-title|dept-title|oc-title)\b[^"]*"[^>]*>(.*?)</div>',
+    r'<div[^>]*class="[^"]*\b(?:mg-title|article-title|oc-title)\b[^"]*"[^>]*>(.*?)</div>',
+    re.IGNORECASE | re.DOTALL,
+)
+# Deck/department heads: parsed (so the non-length checks see them) but tagged
+# role "deck" so the length checks skip them.
+_DECK_HEAD_DIV_RE = re.compile(
+    r'<div[^>]*class="[^"]*\b(?:dept-title)\b[^"]*"[^>]*>(.*?)</div>',
     re.IGNORECASE | re.DOTALL,
 )
 _DECK_DIV_RE = re.compile(
@@ -282,20 +319,36 @@ def parse_edition(artifacts: dict[str, Path]) -> ParsedEdition:
                     return d_text
             return ""
 
-        # headlines: head divs (.mg-title/.dept-title/.oc-title)
+        # TRUE headlines: lead/article head divs (.mg-title/.article-title/
+        # .oc-title). These flag when they run long.
         for m in _HEAD_DIV_RE.finditer(body):
             text = _strip_tags(m.group(1))
             if text:
                 headlines.append(
-                    Headline(text=text, kind="headline", section=_section_at(m.start()), deck=_deck_near(m.start()))
+                    Headline(
+                        text=text, kind="headline", section=_section_at(m.start()),
+                        deck=_deck_near(m.start()), role="headline",
+                    )
+                )
+        # DECK / DEPARTMENT heads: .dept-title — parsed so verb/redundancy/
+        # duplicate checks still read them, but tagged role "deck" so the two
+        # length checks skip them (they are long summaries by design).
+        for m in _DECK_HEAD_DIV_RE.finditer(body):
+            text = _strip_tags(m.group(1))
+            if text:
+                headlines.append(
+                    Headline(
+                        text=text, kind="headline", section=_section_at(m.start()),
+                        deck=_deck_near(m.start()), role="deck",
+                    )
                 )
         # headlines: markdown ## / # headings double as both section and head
-        # in the simpler packs (brief/zine). Treat them as headlines too.
+        # in the simpler packs (brief/zine). Treat them as true headlines.
         for m in re.finditer(r"^(#{1,2})\s+(.+)$", body, re.MULTILINE):
             text = m.group(2).strip()
             if text:
                 headlines.append(
-                    Headline(text=text, kind="headline", section=text, deck=_deck_near(m.start()))
+                    Headline(text=text, kind="headline", section=text, deck=_deck_near(m.start()), role="headline")
                 )
 
         sections = _section_word_counts(body, section_spans)
@@ -533,6 +586,10 @@ def check_headline_line_count(ed: ParsedEdition, prefs: Preferences) -> list[Fin
     strong_at = int(strong_at)
     out: list[Finding] = []
     for h in ed.headlines:
+        # only TRUE headlines wrap-flag; decks/department titles run long by
+        # design (dogfood 2026-06-21 — the 0.6.0 false positive).
+        if h.role != "headline":
+            continue
         lines = _estimate_lines(h.text, ed.style)
         if lines < warn_at:
             continue
@@ -557,6 +614,10 @@ def check_headline_length(ed: ParsedEdition, prefs: Preferences) -> list[Finding
     nudge_at = int(nudge_at)
     out: list[Finding] = []
     for h in ed.headlines:
+        # only TRUE headlines nudge on length; decks/department titles are
+        # intentionally long summaries (dogfood 2026-06-21).
+        if h.role != "headline":
+            continue
         if len(h.text) <= nudge_at:
             continue
         out.append(

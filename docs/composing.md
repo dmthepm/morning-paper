@@ -82,8 +82,8 @@ The eight checks, all text-only (they run even on a fallback-only install):
 
 | Check | Severity | Flags |
 |---|---|---|
-| `headline-line-count` | flag | a head estimated to wrap 3+ lines at the pack's measure |
-| `headline-length` | nudge | a head over ~60 characters |
+| `headline-line-count` | flag | a TRUE headline estimated to wrap 3+ lines at the pack's measure |
+| `headline-length` | nudge | a TRUE headline over ~60 characters |
 | `headline-verb-presence` | flag | a label head with no finite verb |
 | `hed-dek-redundancy` | nudge | a deck that echoes ≥50% of the head's words |
 | `section-balance` | nudge | a section >2.5× the median, or one lonely item next to fat ones |
@@ -95,6 +95,16 @@ The eight checks, all text-only (they run even on a fallback-only install):
 prevents (orphan/widow *lines*, stranded heads). It catches the residue CSS
 cannot fix: a head that still wraps because the *words* are long, a starved or
 dead section, a stale or duplicate story.
+
+The two LENGTH checks (`headline-line-count`, `headline-length`) measure only
+**true headlines** — the lead/front head (`.mg-title`), a printed article's
+headline (`.article-title`), the field-card title (`.oc-title`), and markdown
+`#`/`##` heads in the simpler packs. They **exempt** deck/department/section
+labels (`.dept-title`, `.mg-dek`, kickers), which are multi-sentence summaries
+long by design — flagging them was the 0.6.0 false positive. The other
+headline checks (`headline-verb-presence`, `hed-dek-redundancy`,
+`duplicate-headline`) still read every head, so a label-style department title
+with no verb still flags.
 
 A newsroom's `preferences/checks.yaml` (when present) tunes the checks — the
 file is read automatically, never written by `review`:

@@ -1,8 +1,11 @@
-"""The `review` verb — editorial QC on a finished edition (0.6.0).
+"""The `review` verb — editorial QC on a finished edition (0.6.0, scoped 0.6.1).
 
 Phase 0 (the verb + report model + registry runner) and Phase 1 (the eight
 TEXT-only checks + checks.yaml reading). The checker never fails: exit 0 by
 default; --strict makes a flag (and only a flag) exit 1.
+
+0.6.1 scopes the two LENGTH checks (line-count, length) to TRUE headlines:
+deck/department titles (.dept-title) are long by design and are exempt.
 """
 
 from __future__ import annotations
@@ -101,8 +104,8 @@ class ReportModelTest(unittest.TestCase):
 
     def test_finding_object_carries_location_issue_why(self) -> None:
         report = _review(
-            '<div class="dept-kicker">News</div>\n'
-            '<div class="dept-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
+            '<div class="mg-kicker">News</div>\n'
+            '<div class="mg-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
             "Nobody In The State Capital Will Discuss Openly Today Right Now</div>\n\n"
             "Real body prose so the section has content for the reviewer to read here today.\n"
         )
@@ -122,7 +125,7 @@ class EightTextChecksTest(unittest.TestCase):
 
     def test_1_headline_line_count_flags_a_long_head(self) -> None:
         bad = _review(
-            '<div class="dept-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
+            '<div class="mg-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
             "Nobody In The State Capital Will Discuss Openly Today Right Now This Morning</div>\n\n"
             "Real body prose so the section has content to review here today for the desk.\n"
         )
@@ -134,12 +137,45 @@ class EightTextChecksTest(unittest.TestCase):
 
     def test_2_headline_length_nudges_over_ceiling(self) -> None:
         bad = _review(
-            '<div class="dept-title">Council weighs a fairly modest new plan for the harbor lamps this evening</div>\n\n'
+            '<div class="mg-title">Council weighs a fairly modest new plan for the harbor lamps this evening</div>\n\n'
             "Real body prose for content so the section reads as real to the reviewer here.\n"
         )
         found = self._checks(bad, "headline-length")
         self.assertTrue(found)
         self.assertEqual(found[0]["severity"], "nudge")
+
+    def test_long_dept_title_deck_does_not_flag_length_or_line_count(self) -> None:
+        # the 0.6.0 false positive: a department/deck title is long BY DESIGN
+        # (a multi-sentence summary). It must NOT trip the two LENGTH checks.
+        long_deck = (
+            "Devon's two same-day Monologue notes plus fourteen newsroom commits "
+            "make the lead write itself this morning, and the gap, the connection, "
+            "the drift, and the move are all present and mutually reinforcing today."
+        )
+        report = _review(
+            '<div class="dept-kicker">The Read</div>\n'
+            f'<div class="dept-title">{long_deck}</div>\n\n'
+            "Real body prose so the section reads as genuine content for the desk here today.\n"
+        )
+        self.assertFalse(self._checks(report, "headline-line-count"))
+        self.assertFalse(self._checks(report, "headline-length"))
+
+    def test_real_headline_over_the_line_limit_still_flags(self) -> None:
+        # a TRUE headline (.mg-title) that genuinely runs long is exactly what
+        # the check should still catch — the scope fix must not blind it.
+        report = _review(
+            '<div class="mg-kicker">Harborfront</div>\n'
+            '<div class="mg-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
+            "Nobody In The State Capital Will Discuss Openly Today Right Now This Very Morning</div>\n\n"
+            "Real body prose so the section reads as genuine content for the desk here today.\n"
+        )
+        line_count = self._checks(report, "headline-line-count")
+        length = self._checks(report, "headline-length")
+        self.assertTrue(line_count)
+        self.assertEqual(line_count[0]["severity"], "flag")
+        self.assertGreaterEqual(line_count[0]["measured"]["lines"], 3)
+        self.assertTrue(length)
+        self.assertEqual(length[0]["severity"], "nudge")
 
     def test_3_headline_verb_presence_flags_a_label_head(self) -> None:
         bad = _review(
@@ -226,7 +262,7 @@ class PreferencesTest(unittest.TestCase):
         prefs = Preferences(thresholds={"headline-line-count": {"warn_at_lines": 2}})
         # a 2-line head now flags where the default 3 would not
         ed = _write_edition(
-            '<div class="dept-title">Council weighs a modest plan for the harbor lamps tonight at long last</div>\n\n'
+            '<div class="mg-title">Council weighs a modest plan for the harbor lamps tonight at long last</div>\n\n'
             "Real body prose so the section has content for review here today this morning.\n"
         )
         report = run_review(ed / "edition.md", prefs=prefs)
@@ -249,8 +285,8 @@ class PreferencesTest(unittest.TestCase):
             mutes=[{"check": "headline-length", "when": {"section": "Field Notes"}}]
         )
         ed = _write_edition(
-            '<div class="dept-kicker">Field Notes</div>\n'
-            '<div class="dept-title">Council weighs a fairly modest new plan for the harbor lamps this evening</div>\n\n'
+            '<div class="mg-kicker">Field Notes</div>\n'
+            '<div class="mg-title">Council weighs a fairly modest new plan for the harbor lamps this evening</div>\n\n'
             "Real body prose so the section has content for review here today this morning.\n"
         )
         report = run_review(ed / "edition.md", prefs=prefs)
@@ -311,7 +347,7 @@ class CliReviewTest(unittest.TestCase):
         ed.mkdir(parents=True)
         (ed / "edition.md").write_text(
             '<div class="dept-kicker">News</div>\n'
-            '<div class="dept-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
+            '<div class="mg-title">The Quiet Collapse Of The Municipal Bond Market That Almost '
             "Nobody In The State Capital Will Discuss Openly Today Right Now This Morning</div>\n\n"
             "Real body prose so the section has content for the reviewer to read here today.\n",
             encoding="utf-8",
