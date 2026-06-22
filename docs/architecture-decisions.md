@@ -351,25 +351,41 @@ Rule:
 
 ## 16. Skill Distribution for Agent Runtimes
 
-Decision date: 2026-04-14 (revised 0.7.0)
+Decision date: 2026-04-14 (revised 0.7.1)
 
-Morning Paper ships its skills as a Claude Code plugin. The loader reads
-`<root>/skills/<name>/SKILL.md`, so the registered surface is the three real
-skills:
+Morning Paper ships its skills as a plugin on two hosts — Claude Code and
+Codex — from one source tree. The skill bodies live once, under
+`plugins/morning-paper/skills/<name>/SKILL.md`, host-neutral and
+self-contained:
 
-- `skills/setup/SKILL.md` — cold-start: install, interview, scaffold the
-  newsroom contracts, wire the routine
-- `skills/edition/SKILL.md` — the daily editor pass
-- `skills/writing/SKILL.md` — the prose revision discipline
+- `plugins/morning-paper/skills/setup/SKILL.md` — cold-start: install,
+  interview, scaffold the newsroom contracts, wire the routine
+- `plugins/morning-paper/skills/edition/SKILL.md` — the daily editor pass
+- `plugins/morning-paper/skills/writing/SKILL.md` — the prose revision
+  discipline
+
+Each host points its own thin manifest at that one tree. The Claude Code
+manifest (`.claude-plugin/plugin.json`) sets `"skills":
+"./plugins/morning-paper/skills/"`. The Codex manifest
+(`plugins/morning-paper/.codex-plugin/plugin.json`) sets `"skills": "./skills/"`
+relative to its own plugin root, carries the required `interface` block, and
+omits `hooks` (Codex validation rejects it). The Codex marketplace
+(`.agents/plugins/marketplace.json`) points at `./plugins/morning-paper` —
+the live `codex plugin add` only surfaces a plugin whose source is a real
+subdirectory, never the marketplace root, and the validator resolves `skills`
+relative to that plugin root, so a single real directory satisfies both hosts
+with no duplicated tree and no up-reference.
 
 A thin `.claude/skills/morning-paper/SKILL.md` cheat-sheet stub existed through
 0.6.1 and was removed in 0.7.0: it had no frontmatter, never shipped through the
 plugin loader, and shadowed the real skills during local dev.
 
 Purpose:
-- make the CLI discoverable in Claude Code style runtimes
+- make the CLI discoverable in Claude Code and Codex runtimes from one repo
 - provide a stable command contract for always-on agent runtimes
 - keep runtime integration thin: skills call the CLI, they do not reimplement the pipeline
+- hold the single-source invariant: one strict-semver version across both
+  manifests per release; never fork a skill's prose between hosts
 
 ## 17. Visual Snapshot Testing
 

@@ -4,85 +4,103 @@
   <h1>Morning Paper</h1>
 
   <p><strong>Own your algorithm. Your personal newsroom.</strong></p>
-
-  <p>An agent composes your newspaper. Code prints it.<br>
-  Your preferences live in files you own.</p>
 </div>
 
 ---
 
-## Set up with AI (recommended)
+A feed runs an algorithm you cannot see, tuned to keep you scrolling. Morning
+Paper inverts that. An agent composes you a newspaper from sources you choose;
+code typesets it into a print-ready PDF. Your preferences and your weighting
+are files you own and edit — not a feed you rent, and never tuned for time on
+page. It is print-first and calm by design: a paper has edges, lands once, and
+ends.
 
-Open your strongest model — Claude Opus 4.8 with the 1M context works great — and paste this:
+Optional connections make it richer when you want them, and only then. Bring
+your own sources. Bridge in your work. Hand it your own downloaded data as a
+private weighting prior the editor reads but never sends anywhere. None of it
+is required, and a section with no data prints "not configured" — never a
+fabricated headline. It runs on Claude Code and on Codex.
+
+## Set Up With An Agent
+
+Setup touches local Python tooling, native print libraries, your Claude Code or
+Codex plugin state, and the private files of your newsroom. Use a strong
+reasoning model for it — Claude Opus 4.8 (High), Codex 5.5 (High), or better —
+and let it verify each step instead of trusting that the package manager did
+the right thing. Paste this:
 
 ```text
-I want a Morning Paper: an open-source personal newspaper my agent composes
-and prints, with preferences I own as files
-(https://github.com/dmthepm/morning-paper). First read the entire README,
-then explore the repo enough to understand the architecture (agent composes,
-code renders; a private newsroom repo holds my preference files; the honesty
-doctrine binds). Then interview me briefly about my sources, page budget, and
-printer. Then: install the engine, run `morning-paper doctor` and fix
-anything it flags, run `morning-paper demo` so I see the product, scaffold my
-private newsroom repo (the operating constitution, section specs led by The
-Read, the reads-ledger, voice, and example collectors — real files, not empty
-folders), build my first real edition, and teach me the daily loop and the
-return path (replies I leave in `editions/<date>/operator-answers.md` shape
-tomorrow's paper). Get me to a printed (or PDF) first edition, then stop and
-show me what you set up.
+Install Morning Paper on this machine. It is an owned algorithm: an agent
+composes a newspaper from sources and preferences I keep as files, and the
+`morning-paper` CLI renders it to a print-ready PDF. It is not a feed reader
+or a dashboard. Success is a real demo PDF on disk — not a successful package
+install. Do this end to end and verify each step:
+
+1. Install the latest `morning-paper[pretty]`.
+2. Confirm `morning-paper --version` matches the latest version on PyPI.
+3. Run `morning-paper doctor` and fix what it flags until the typewriter
+   renderer is ready (macOS may need `brew install pango gdk-pixbuf`).
+4. Run `morning-paper demo` and confirm the PDF it names exists on disk.
+5. If `uv tool install` resolves an old version or the wrong Python,
+   diagnose it — prefer `uv tool install --python 3.13 "morning-paper[pretty]"`,
+   else pipx or a clean venv.
+6. Stop when the demo PDF exists. Show me the exact commands that worked, the
+   installed version, and the PDF path.
+
+Do not set up my private newsroom yet — first prove the engine prints.
 ```
 
-Prefer to drive it yourself? Everything below is the manual path.
+Once the engine prints, add the plugin so the agent carries the newsroom
+skills, and say "set up my morning paper":
 
-## Try it
+- **Claude Code** — `/plugin marketplace add dmthepm/morning-paper` then
+  `/plugin install morning-paper@morning-paper`
+- **Codex** — `codex plugin marketplace add dmthepm/morning-paper` then
+  `codex plugin add morning-paper@morning-paper`
 
-Typeset the bundled sample edition — no config, no network, no keys:
+The plugin is the install for a friend: it carries the `setup`, `edition`, and
+`writing` skills (a bare `pip install` of the engine carries none). The `setup`
+skill interviews you and scaffolds your private newsroom — your preferences as
+files you own. The `edition` skill composes and prints each day's paper.
+
+## Or drive it yourself
 
 ```bash
-uvx --from "morning-paper[pretty]" morning-paper demo
+uv tool install --python 3.13 "morning-paper[pretty]"   # pin the interpreter
+morning-paper --version    # should match the latest on PyPI
+morning-paper doctor       # must say: typewriter ready
+morning-paper demo         # renders the sample PDF and prints its path
 ```
 
 > macOS first: `brew install pango gdk-pixbuf` (WeasyPrint needs Pango).
 
-Or keep it on your PATH instead of a one-off run:
-
-```bash
-uv tool install "morning-paper[pretty]"
-morning-paper demo
-```
-
-The demo renders a fully synthetic edition through the `broadsheet` style pack
-and tells you exactly where the PDF landed. Print it. That is the product.
-
-## The Claude Code plugin
-
-The plugin turns Claude Code into your newsroom staff:
-
-```text
-/plugin marketplace add dmthepm/morning-paper
-/plugin install morning-paper@morning-paper
-```
-
-Then say "set up my morning paper". The `setup` skill installs the engine,
-interviews you about sources and shape, and creates your private newsroom
-repo — your preferences as files you own, not a feed you rent. The `edition`
-skill composes and prints each day's paper.
+Pin the interpreter with `--python 3.13` because a bare `uv tool install` can
+pick a Python beta with no print-stack wheels and resolve an older release or
+fail outright. `pipx install --python 3.13 "morning-paper[pretty]"` works the
+same way; use bare `pip` only inside a virtual environment (PEP 668 blocks it
+on Homebrew and system Pythons). The demo renders a fully synthetic edition
+through the `broadsheet` style pack and tells you where the PDF landed. Print
+it. That is the product.
 
 ## For Agents (read this first if you are one)
 
 Your human wants a daily printed paper. You can give them one. If they pasted
-the ["Set up with AI" prompt](#set-up-with-ai-recommended) above, follow it —
+the ["Set Up With An Agent" prompt](#set-up-with-an-agent) above, follow it —
 it is the full onboarding arc (read, explore, interview, install, demo,
-newsroom repo, first edition, daily loop). Otherwise:
+newsroom repo, first edition, daily loop). The repo-level contract is
+[AGENTS.md](AGENTS.md). Otherwise:
 
-1. Install: `uv tool install "morning-paper[pretty]"` (or
-   `pipx install "morning-paper[pretty]"`; use `pip` only inside a venv —
-   PEP 668 blocks it on brew/system Pythons), then `morning-paper doctor`.
-   `morning-paper demo` proves the print path end to end.
-2. If this repo is installed as a Claude Code plugin, run the `setup` skill —
-   it interviews the reader, creates their private newsroom repo (preferences
-   as files: the owned algorithm), and wires a morning routine. The `edition`
-   skill composes and renders each day's paper.
+1. Install: `uv tool install --python 3.13 "morning-paper[pretty]"` (or
+   `pipx install --python 3.13 "morning-paper[pretty]"`; use `pip` only inside
+   a venv — PEP 668 blocks it on brew/system Pythons). Pin the interpreter: a
+   bare install can pick a Python beta with no print-stack wheels and resolve
+   an old release. Then `morning-paper --version` (confirm it is the latest on
+   PyPI) and `morning-paper doctor`. `morning-paper demo` proves the print path
+   end to end.
+2. If this repo is installed as a plugin (Claude Code or Codex), run the
+   `setup` skill — it interviews the reader, creates their private newsroom repo
+   (preferences as files: the owned algorithm), and wires a morning routine. The
+   `edition` skill composes and renders each day's paper.
 3. The CLI speaks JSON. The verbs you need:
    - `morning-paper stage <url>` -> stages it for tomorrow and answers with a
      page estimate ("that adds ~5 pages")
@@ -140,18 +158,20 @@ prints a newspaper.
 ## Your daily paper
 
 ```bash
-uv tool install "morning-paper[pretty]"
+uv tool install --python 3.13 "morning-paper[pretty]"
 morning-paper init      # starter config
 morning-paper doctor    # must say: typewriter ready
 morning-paper build     # today's edition
 ```
 
-`pipx install "morning-paper[pretty]"` works the same way. Prefer either
-over bare `pip`: on Macs and Linux boxes whose default Python is Homebrew's
-or the distro's, `pip install` outside a virtual environment fails with
-`externally-managed-environment` (PEP 668), and inside an existing
-environment it can silently keep an older version unless you pass
-`--upgrade`. If you manage your own venv,
+`pipx install --python 3.13 "morning-paper[pretty]"` works the same way.
+Prefer either over bare `pip`: on Macs and Linux boxes whose default Python is
+Homebrew's or the distro's, `pip install` outside a virtual environment fails
+with `externally-managed-environment` (PEP 668), and inside an existing
+environment it can silently keep an older version unless you pass `--upgrade`.
+The `--python 3.13` pin matters either way: a default interpreter that is a
+Python beta has no WeasyPrint wheels, so a bare install can resolve an older
+release or fail. If you manage your own venv,
 `pip install "morning-paper[pretty]"` is still fine.
 
 Artifacts land under:

@@ -29,3 +29,30 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -v
+
+  plugins:
+    name: Validate plugin surface (Claude Code + Codex)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Node (for the Claude CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate Claude Code plugin (strict)
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate ./ --strict
+
+      - name: Validate Codex plugin + marketplace (structural)
+        run: python scripts/validate_codex_plugin.py
+
+      - name: Install-smoke (both hosts expose setup/edition/writing)
+        run: python scripts/install_smoke.py
