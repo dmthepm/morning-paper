@@ -50,8 +50,10 @@ surfaces again.
   `writing` for 0.8.x. Future newsroom desk skills are documented as design
   direction and cannot leak into the plugin without validation failures.
 - Native recurrence is framed through the host's own primitive: Codex
-  automations, Claude Code routines, or ChatGPT scheduled tasks. The CLI
-  `routine` command remains a local fallback.
+  automations, Claude Code routines, or ChatGPT scheduled tasks. Codex and
+  Claude paths run where the newsroom is visible; ChatGPT tasks are treated as
+  reminders/check-ins unless an approved runner can access the newsroom. The
+  CLI `routine` command remains a local fallback.
 - Visual integration guardrails now cover chart and illustration width,
   label-density, print suitability, captions/source notes, and review
   expectations.
@@ -91,7 +93,7 @@ WeasyPrint 69.0 and trafilatura 2.1.0 and passes setup smoke.
 | README stays concise and true | README now keeps details to setup, sources, daily routine, styles, agents, and development. |
 | No stale source identity | Friend-facing docs describe the whole source stack; legacy built-ins stay internal and do not define the product surface. |
 | No stale scraper assumption | Local extraction is default; remote fallback is explicit and tested. Jina/trafilatura are implementation details, not the product promise; dependency versions are visible in `doctor --json` and release checks. |
-| Native recurrence prompts | README carries Claude Code routine, Codex automation, and ChatGPT scheduled-task prompts. |
+| Native recurrence prompts | README carries Claude Code routine, Codex automation, and ChatGPT scheduled-task prompts without claiming ChatGPT rendered a local PDF unless a runner is available. |
 | Source onboarding durable path | `sources check --newsroom`, scaffolded-newsroom auto-detection, collector recipes, staging, queue inspection, and fresh-friend smoke all exercise reader-owned sources. |
 | Compaction-safe edition loop | `edition prepare` writes durable edition files; `edition apply-feedback` records accepted/rejected feedback into the smallest supported newsroom files, including `preferences/` and `specs/`. |
 | Visual/editor guidance | Composing docs, CSS/style guardrails, tests, and the edition skill require visual QA before delivery. |

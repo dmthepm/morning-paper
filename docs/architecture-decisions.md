@@ -148,8 +148,11 @@ Stable public commands:
 Every command prints JSON (`doctor` via `--json`). `routine` is an advanced
 local fallback scheduler; for most readers, recurring runs should use the
 host-native primitive (Codex Automations, Claude Code routines, or ChatGPT
-scheduled tasks). Any internal-only commands remain compatibility-only and do
-not define the public API.
+scheduled tasks). Codex and Claude recurrence should run where the private
+newsroom is visible. ChatGPT scheduled tasks are a reminder/check-in or
+connected-workflow surface unless the reader has explicitly approved a runner
+that can access the newsroom and render the PDF. Any internal-only commands
+remain compatibility-only and do not define the public API.
 
 ## 9. Printed Output Standard
 

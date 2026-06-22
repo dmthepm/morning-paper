@@ -137,14 +137,18 @@ PDF, and report the PDF path plus anything that needs my attention.
 ```
 
 ```text
-Set up a scheduled task for my Morning Paper. Each weekday morning, use my
-newsroom sources and preferences to produce one calm edition, render the PDF,
-and summarize only the actions or blockers I need to review.
+Set up a scheduled task for my Morning Paper. Each weekday morning, check
+whether today's paper was produced or remind me to run the Morning Paper
+edition workflow in my newsroom. If you have an approved way to access the
+newsroom runner, use it; otherwise do not pretend you rendered the PDF.
 ```
 
 Claude Code calls this a **routine**. Codex calls it an **automation**. ChatGPT
-calls it a **scheduled task**. If those are not available or you specifically
-want a machine-local fallback, the CLI still has `morning-paper routine
+calls it a **scheduled task**. The important distinction: Codex and Claude can
+run inside the project/newsroom; ChatGPT tasks are useful for reminders or
+connected workflows, but should not claim local PDF work unless the local runner
+is actually available. If those are not available or you specifically want a
+machine-local fallback, the CLI still has `morning-paper routine
 install|status|uninstall`; use it deliberately, not by default.
 
 ## Styles

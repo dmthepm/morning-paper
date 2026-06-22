@@ -659,22 +659,24 @@ that fallback.
 Offer the matching prompt:
 
 ```text
-Set up a Claude Code routine with /schedule that builds my Morning Paper each
-weekday morning. Use this private newsroom, run the Morning Paper edition
-workflow, render the PDF, open or deliver it according to DELIVERY.md, and tell
-me only if the run failed or needs my attention.
+Set up a Claude Code routine with a schedule trigger that builds my Morning
+Paper each weekday morning. Use this private newsroom, run the Morning Paper
+edition workflow, render the PDF, open or deliver it according to DELIVERY.md,
+and tell me only if the run failed or needs my attention.
 ```
 
 ```text
 Set up a Codex automation that builds my Morning Paper each weekday morning.
-Use this private newsroom, run the Morning Paper edition workflow, render the
-PDF, and report the PDF path plus anything that needs my attention.
+Use this private newsroom/project, run the Morning Paper edition skill, render
+the PDF, and report the PDF path plus anything that needs my attention. Choose
+the Codex automation environment that can actually see this newsroom.
 ```
 
 ```text
 Set up a ChatGPT scheduled task for my Morning Paper. Each weekday morning,
-use my newsroom sources and preferences to produce one calm edition, render the
-PDF, and summarize only the actions or blockers I need to review.
+check whether today's paper was produced or remind me to run the Morning Paper
+edition workflow in my newsroom. If you have an approved way to access the
+newsroom runner, use it; otherwise do not pretend you rendered the PDF.
 ```
 
 Only if they specifically want a machine-local fallback, run
