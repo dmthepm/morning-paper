@@ -9,6 +9,15 @@ from .sources import source_inventory
 from .staging import queue_status
 
 
+FEEDBACK_ROUTES = {
+    "editorial": "EDITORIAL.md",
+    "visuals": "VISUALS.md",
+    "sources": "SOURCES.md",
+    "delivery": "DELIVERY.md",
+    "taste": "TASTELOG.md",
+}
+
+
 def operator_answers_template(date_str: str) -> str:
     return f"""# Operator Answers - {date_str}
 
@@ -108,6 +117,80 @@ def _write(path: Path, text: str, *, force: bool = False) -> str:
 
 def _write_json(path: Path, payload: dict, *, force: bool = False) -> str:
     return _write(path, json.dumps(payload, indent=2), force=force)
+
+
+def _append_section_note(path: Path, *, heading: str, note: str) -> None:
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    if heading not in text:
+        text = text.rstrip() + f"\n\n{heading}\n"
+    text = text.rstrip() + f"\n- {note}\n"
+    path.write_text(text, encoding="utf-8")
+
+
+def _append_applied_feedback(feedback_plan: Path, line: str, *, date_str: str) -> None:
+    if not feedback_plan.exists():
+        feedback_plan.write_text(feedback_plan_template(date_str).rstrip() + "\n", encoding="utf-8")
+    text = feedback_plan.read_text(encoding="utf-8")
+    text = text.replace("No feedback applied yet.", "").rstrip()
+    text = text + f"\n- {line}\n"
+    feedback_plan.write_text(text, encoding="utf-8")
+
+
+def apply_feedback(
+    newsroom: Path,
+    *,
+    date_str: str,
+    route: str,
+    note: str,
+    decision: str = "accepted",
+    why: str = "",
+) -> dict[str, object]:
+    root = newsroom.expanduser().resolve()
+    route_key = route.strip().lower()
+    if route_key not in FEEDBACK_ROUTES:
+        raise ValueError(f"route must be one of: {', '.join(sorted(FEEDBACK_ROUTES))}")
+    decision_key = decision.strip().lower()
+    if decision_key not in {"accepted", "rejected"}:
+        raise ValueError("decision must be accepted or rejected")
+    clean_note = " ".join(note.split())
+    if not clean_note:
+        raise ValueError("note is required")
+    clean_why = " ".join(why.split()) or "recorded from reader feedback"
+
+    target = root / FEEDBACK_ROUTES[route_key]
+    if not target.exists():
+        raise FileNotFoundError(f"missing newsroom file: {target}")
+
+    stamp = datetime.now(timezone.utc).date().isoformat()
+    target_line = f"{stamp} - {decision_key} - {clean_note} ({clean_why})"
+    changed_paths: list[str] = []
+    if target.name != "TASTELOG.md":
+        _append_section_note(target, heading="## Feedback Notes", note=target_line)
+        changed_paths.append(str(target))
+
+    taste_log = root / "TASTELOG.md"
+    if not taste_log.exists():
+        raise FileNotFoundError(f"missing newsroom file: {taste_log}")
+    taste_line = f"{stamp} - {decision_key} - {clean_note} - {target.name} - {clean_why}"
+    _append_section_note(taste_log, heading="## Log", note=taste_line)
+    changed_paths.append(str(taste_log))
+
+    feedback_plan = root / "editions" / date_str / "feedback-plan.md"
+    applied_line = f"{decision_key} `{route_key}` feedback -> `{target.name}`; paths changed: {', '.join(changed_paths)}"
+    _append_applied_feedback(feedback_plan, applied_line, date_str=date_str)
+    changed_paths.append(str(feedback_plan))
+
+    return {
+        "status": "applied",
+        "date": date_str,
+        "route": route_key,
+        "decision": decision_key,
+        "target": str(target),
+        "taste_log": str(taste_log),
+        "feedback_plan": str(feedback_plan),
+        "paths_changed": changed_paths,
+        "note": clean_note,
+    }
 
 
 def prepare_edition_workspace(

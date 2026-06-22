@@ -169,7 +169,7 @@ Read [AGENTS.md](AGENTS.md) first. The short version:
 - agent composes, code renders;
 - use `doctor --strict` as proof, not vibes;
 - write setup and edition state to files before long work;
-- update the smallest durable newsroom file when the reader gives feedback;
+- use `edition apply-feedback` to record durable reader feedback;
 - never put private newsroom facts in this public repo.
 
 Useful CLI verbs: `newsroom`, `sources`, `stage`, `queue`, `edition`,

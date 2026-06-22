@@ -684,12 +684,12 @@ runs depend on that machine being available.
 Tell the reader where their reactions land: the `edition` skill reads the most
 recent `editions/<date>/operator-answers.md` and honors it. So if they reply
 "more like this", "kill section X", or "print `<url>` tomorrow", the editor
-writes those into the smallest durable file: `EDITORIAL.md` for judgment,
-`VISUALS.md` for charts/images/layout, `SOURCES.md` for source purpose and
-cadence, `DELIVERY.md` for how it lands, `preferences/` or `specs/` for local
-rules, and `TASTELOG.md` for the decision record. Then it stages anything they
-asked to read. The newsroom is a loop: what they write today shapes tomorrow's
-paper.
+chooses the smallest durable route and records stable notes with
+`morning-paper edition apply-feedback . --date <edition-date> --route
+editorial|visuals|sources|delivery|taste --note "<reader note>" --why
+"<why it should change tomorrow>"`. That writes the target file, `TASTELOG.md`,
+and the edition's `feedback-plan.md`. Then it stages anything they asked to
+read. The newsroom is a loop: what they write today shapes tomorrow's paper.
 
 ## 8. First edition, now
 

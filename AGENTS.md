@@ -61,8 +61,11 @@ The CLI speaks JSON. `morning-paper doctor --json` reports install status;
 keeps setup-state/SETUP current; `edition prepare <path>` creates the durable
 files an agent can resume from; `sources check` inventories configured sources;
 `sources check --newsroom <path>` also inventories local collector scripts;
-`queue list|show|remove` inspects and prunes staged material. `stage` takes a
-real file path, never `/dev/stdin` — write a temp file first.
+`queue list|show|remove` inspects and prunes staged material; `edition
+apply-feedback <path> --route editorial|visuals|sources|delivery|taste --note
+...` records stable reader feedback into the smallest durable file, TASTELOG,
+and that edition's feedback plan. `stage` takes a real file path, never
+`/dev/stdin` — write a temp file first.
 
 ## The single-source rule (hold it forever)
 

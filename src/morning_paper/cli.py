@@ -54,7 +54,7 @@ Commands:
   inbox             Poll the contributor inbox: mail from your masthead becomes
                     staged pages, the sender gets a confirmation (--dry-run)
   queue             Show/list/read/remove staged material vs the page budget
-  edition           Prepare durable files for an edition (prepare PATH)
+  edition           Prepare/apply durable edition files (prepare|apply-feedback)
   estimate <file>   Page count for a markdown file, nothing written
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)
@@ -68,8 +68,9 @@ Commands:
 
 Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
 the bare version). `newsroom init` creates the private file contract; `edition
-prepare` creates compaction-safe edition files; `sources` inventories feeds;
-`stage` + `queue` are the seam for "add this to tomorrow's brief" workflows.
+prepare` creates compaction-safe edition files; `edition apply-feedback`
+records reader notes into durable taste; `sources` inventories feeds; `stage`
+and `queue` are the seam for "add this to tomorrow's brief" workflows.
 See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
@@ -1051,16 +1052,22 @@ def sources_command(args: list[str]) -> int:
 
 
 def edition_command(args: list[str]) -> int:
-    from .edition_workspace import prepare_edition_workspace
+    from .edition_workspace import apply_feedback, prepare_edition_workspace
 
     usage = (
         "usage: morning-paper edition prepare <newsroom-path> "
-        "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]"
+        "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]\n"
+        "       morning-paper edition apply-feedback <newsroom-path> --route ROUTE --note TEXT "
+        "[--decision accepted|rejected] [--why TEXT] [--date YYYY-MM-DD]"
     )
     config_path = DEFAULT_CONFIG_PATH
     date: str | None = None
     check_sources = False
     force = False
+    route = ""
+    note = ""
+    decision = "accepted"
+    why = ""
     rest: list[str] = []
     index = 0
     while index < len(args):
@@ -1084,9 +1091,25 @@ def edition_command(args: list[str]) -> int:
             force = True
             index += 1
             continue
+        if arg == "--route" and index + 1 < len(args):
+            route = args[index + 1]
+            index += 2
+            continue
+        if arg == "--note" and index + 1 < len(args):
+            note = args[index + 1]
+            index += 2
+            continue
+        if arg == "--decision" and index + 1 < len(args):
+            decision = args[index + 1]
+            index += 2
+            continue
+        if arg == "--why" and index + 1 < len(args):
+            why = args[index + 1]
+            index += 2
+            continue
         rest.append(arg)
         index += 1
-    if len(rest) != 2 or rest[0] != "prepare":
+    if len(rest) != 2 or rest[0] not in {"prepare", "apply-feedback"}:
         print(usage, file=sys.stderr)
         return 2
     try:
@@ -1095,13 +1118,27 @@ def edition_command(args: list[str]) -> int:
         print(f"invalid config: {exc}", file=sys.stderr)
         return 1
     date_str = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
-    payload = prepare_edition_workspace(
-        Path(rest[1]),
-        config,
-        date_str=date_str,
-        check_sources=check_sources,
-        force=force,
-    )
+    try:
+        if rest[0] == "prepare":
+            payload = prepare_edition_workspace(
+                Path(rest[1]),
+                config,
+                date_str=date_str,
+                check_sources=check_sources,
+                force=force,
+            )
+        else:
+            payload = apply_feedback(
+                Path(rest[1]),
+                date_str=date_str,
+                route=route,
+                note=note,
+                decision=decision,
+                why=why,
+            )
+    except (FileNotFoundError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     print(json.dumps(payload, indent=2))
     return 0
 

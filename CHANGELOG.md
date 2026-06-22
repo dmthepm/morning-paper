@@ -42,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   capture on the reader's machine; it no longer escalates to the Jina remote
   reader unless `remote_extractor_fallback: true` is set. Direct
   `article_extractor: jina` remains available for readers who choose it.
+- **Executable feedback loop.** `morning-paper edition apply-feedback` records
+  stable reader notes into the selected durable newsroom file, appends
+  `TASTELOG.md`, and updates the edition's `feedback-plan.md` so feedback
+  survives compaction as an auditable change.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when

@@ -163,9 +163,10 @@ unanswered, say so once, plainly — the paper is allowed to notice.
 
 If the user dictates or replies with reactions ("more like this", "kill
 section X", "that chart worked", "email this too", "print <url> tomorrow"):
-read `feedback-plan.md`, update the smallest durable file (`EDITORIAL.md`,
-`VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `preferences/`, `specs/`, or
-`TASTELOG.md`), append the accepted/rejected decision to `TASTELOG.md` when the
-change should survive tomorrow, and `morning-paper stage <url>` anything they
-asked to read. Add an "Applied Feedback" note to `feedback-plan.md` listing the
-paths changed. Tomorrow's editor reads what you wrote today.
+read `feedback-plan.md`, choose the smallest durable route, then use
+`morning-paper edition apply-feedback . --date <edition-date> --route
+editorial|visuals|sources|delivery|taste --note "<reader note>" --why
+"<why it should change tomorrow>"` for stable feedback. It updates the target
+durable file, appends `TASTELOG.md`, and writes the "Applied Feedback" note.
+Use `morning-paper stage <url>` for anything they asked to read tomorrow.
+Tomorrow's editor reads what you wrote today.

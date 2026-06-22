@@ -132,6 +132,8 @@ Acceptance:
 - delivery ends by asking for natural-language feedback;
 - `feedback-plan.md` gives the agent a compaction-safe route from notes to the
   smallest durable newsroom file;
+- `morning-paper edition apply-feedback` records stable reader notes into the
+  selected durable file, `TASTELOG.md`, and the edition's `feedback-plan.md`;
 - accepted feedback is routed to the smallest durable file:
   `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `specs/`,
   `preferences/`, or `TASTELOG.md`.

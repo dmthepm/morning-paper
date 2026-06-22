@@ -69,6 +69,11 @@ def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
         assert "product.md" not in text.lower()
         assert "design.md" not in text.lower()
 
+    cli_text = _read("src/morning_paper/cli.py")
+    edition_workspace = _read("src/morning_paper/edition_workspace.py")
+    assert "edition apply-feedback" in cli_text
+    assert "def apply_feedback" in edition_workspace
+
 
 def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> None:
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
@@ -91,6 +96,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
     assert "skills as newsroom desks" in readiness
     assert "Morning Paper skills are newsroom desks" in skill_suite
+    assert "edition apply-feedback" in readiness
     for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         assert newsroom_file in skill_suite
 

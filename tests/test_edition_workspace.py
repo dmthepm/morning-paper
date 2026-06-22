@@ -129,6 +129,106 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertEqual(cli.main([*args, "--force"]), 0)
             self.assertNotEqual(draft.read_text(encoding="utf-8"), "# Edited Draft\n\nKeep this.\n")
 
+    def test_apply_feedback_routes_note_to_smallest_durable_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "apply-feedback",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                        "--route",
+                        "visuals",
+                        "--note",
+                        "Make wide charts full measure.",
+                        "--why",
+                        "reader disliked narrow floating visuals",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["status"], "applied")
+            self.assertEqual(payload["route"], "visuals")
+            self.assertEqual(payload["decision"], "accepted")
+            self.assertEqual(payload["target"], str((newsroom / "VISUALS.md").resolve()))
+            self.assertIn(str((newsroom / "TASTELOG.md").resolve()), payload["paths_changed"])
+
+            visuals = (newsroom / "VISUALS.md").read_text(encoding="utf-8")
+            self.assertIn("## Feedback Notes", visuals)
+            self.assertIn("Make wide charts full measure.", visuals)
+            self.assertIn("reader disliked narrow floating visuals", visuals)
+            tastelog = (newsroom / "TASTELOG.md").read_text(encoding="utf-8")
+            self.assertIn("Make wide charts full measure.", tastelog)
+            self.assertIn("VISUALS.md", tastelog)
+            feedback_plan = (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("Applied Feedback", feedback_plan)
+            self.assertNotIn("No feedback applied yet.", feedback_plan)
+            self.assertIn("visuals", feedback_plan)
+            self.assertIn("VISUALS.md", feedback_plan)
+
+    def test_apply_feedback_rejects_missing_route_or_note(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "apply-feedback",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--route",
+                        "kitchen",
+                        "--note",
+                        "Too much soup.",
+                    ]
+                ),
+                1,
+            )
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "apply-feedback",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--route",
+                        "editorial",
+                    ]
+                ),
+                1,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
