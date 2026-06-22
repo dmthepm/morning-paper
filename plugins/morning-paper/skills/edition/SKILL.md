@@ -103,7 +103,7 @@ Required durable artifacts:
    ships: `morning-paper review <edition-dir> --json`. Save the output as
    `review.json`. It reads the composed artifacts and returns editorial
    findings (long/label headlines, lopsided or dead sections, duplicate
-   stories, stale leads) with `location` + `hint`. It
+   stories, stale leads, unfurnished visuals) with `location` + `hint`. It
    never fails the build — exit is always 0; the JSON `status` is the signal:
    - `clean` → ship.
    - `notes` (only info/nudge) → ship; you may fold the one-line nudge summary

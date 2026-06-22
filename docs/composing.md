@@ -78,7 +78,8 @@ morning-paper review 2026-06-21 --explain headline-line-count  # the threshold m
   and is one quiet line when clean. `--verbose` shows info; `--explain CHECK`
   prints the numbers and their provenance.
 
-The eight checks, all text-only (they run even on a fallback-only install):
+The deterministic checks run from the composed artifacts, so they work even on
+a fallback-only install:
 
 | Check | Severity | Flags |
 |---|---|---|
@@ -90,6 +91,7 @@ The eight checks, all text-only (they run even on a fallback-only install):
 | `empty-or-sparse-section` | nudge | a heading over no real content |
 | `duplicate-headline` | nudge | the same story twice (URL or near-identical title) |
 | `stale-dateline` | info | a lead item materially older than the edition date |
+| `visual-provenance` | nudge | standalone images, missing captions/source notes, narrow visual widths, or one-item visual grids |
 
 `review` complements the taste layer — it never re-checks what the CSS already
 prevents (orphan/widow *lines*, stranded heads). It catches the residue CSS
@@ -249,6 +251,12 @@ For two related visuals, use a shared block so the pair moves together:
 
 Avoid narrow orphan images. If a visual cannot fill the measure or pair with a
 neighbor, rewrite it as a chart/table, make it full-width, or cut it.
+
+`morning-paper review` runs a deterministic art-desk check over the composed
+markdown. It nudges on standalone images, figures without captions, visuals
+without source/synthetic notes, explicit narrow widths, and one-item visual
+grids. It does not replace looking at the rendered PDF; it catches the obvious
+markup problems before the editor hands the paper over.
 
 ## Class vocabulary
 

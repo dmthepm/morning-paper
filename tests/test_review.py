@@ -1,7 +1,7 @@
 """The `review` verb — editorial QC on a finished edition (0.6.0, scoped 0.6.1).
 
-Phase 0 (the verb + report model + registry runner) and Phase 1 (the eight
-TEXT-only checks + checks.yaml reading). The checker never fails: exit 0 by
+Phase 0 (the verb + report model + registry runner) and Phase 1 (deterministic
+text/art-desk checks + checks.yaml reading). The checker never fails: exit 0 by
 default; --strict makes a flag (and only a flag) exit 1.
 
 0.6.1 scopes the two LENGTH checks (line-count, length) to TRUE headlines:
@@ -166,7 +166,7 @@ class ReportModelTest(unittest.TestCase):
         self.assertEqual(f["location"]["kind"], "headline")
 
 
-class EightTextChecksTest(unittest.TestCase):
+class DeterministicChecksTest(unittest.TestCase):
     """Each check fires on a crafted bad input and is silent on clean input."""
 
     def _checks(self, report: dict, check_id: str) -> list[dict]:
@@ -304,6 +304,35 @@ class EightTextChecksTest(unittest.TestCase):
             edition_date="2026-06-21",
         )
         self.assertFalse(self._checks(report, "stale-dateline"))
+
+    def test_9_visual_provenance_allows_captioned_sourced_figure(self) -> None:
+        report = _review(
+            "## Visual Desk\n\n"
+            '<figure class="mp-figure">\n'
+            '  <img src="images/chart.png" alt="Harbor seal count over 14 days">\n'
+            "  <figcaption>Harbor seals counted at the breakwater.</figcaption>\n"
+            '  <span class="mp-source-note">Source: reader collector, 2026-06-22.</span>\n'
+            "</figure>\n\n"
+            "A short note explains why this visual earns its ink today.\n"
+        )
+        self.assertFalse(self._checks(report, "visual-provenance"))
+
+    def test_10_visual_provenance_nudges_unfurnished_or_narrow_visuals(self) -> None:
+        report = _review(
+            "## Visual Desk\n\n"
+            '<figure class="mp-figure" style="width: 42%">\n'
+            '  <img src="images/chart.png" alt="Harbor seal count over 14 days">\n'
+            "</figure>\n\n"
+            "![loose diagram](images/loose.png)\n\n"
+            "A short note explains why these visuals need the art desk.\n"
+        )
+        found = self._checks(report, "visual-provenance")
+        self.assertGreaterEqual(len(found), 3)
+        issues = "\n".join(f["issue"] for f in found)
+        self.assertIn("caption", issues)
+        self.assertIn("source/synthetic note", issues)
+        self.assertIn("narrow width", issues)
+        self.assertIn("Markdown image", issues)
 
 
 class PreferencesTest(unittest.TestCase):

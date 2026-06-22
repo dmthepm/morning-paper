@@ -15,10 +15,10 @@ the WORDS are long, a starved section, a stale dateline, a duplicate story.
 The two never overlap.
 
 Phase 0 + Phase 1 only (per docs/editorial-checkers-spec.md): the verb, the
-report model, the registry runner, and the eight TEXT-only checks. The
-geometry checks (a render pass) and the learned `--learn` loop are deferred.
-`preferences/checks.yaml`, when present, is READ for threshold overrides and
-mutes — it is never written here.
+report model, the registry runner, the text checks, and a deterministic visual
+provenance check. Geometry checks (a render pass) and the learned `--learn`
+loop are deferred. `preferences/checks.yaml`, when present, is READ for
+threshold overrides and mutes — it is never written here.
 
 Determinism: pure function of artifacts + prefs → report. No network, no clock
 beyond the edition date already in the artifact.
@@ -111,6 +111,7 @@ class ParsedEdition:
     items: list[dict[str, object]]  # structured items from the .json, if any
     edition_date: str | None
     markdown_present: bool
+    body: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +166,15 @@ _ARTICLE_HEAD_RE = re.compile(
     r'<div[^>]*class="[^"]*\barticle-head\b[^"]*"[^>]*>(.*?)</div>\s*</div>',
     re.IGNORECASE | re.DOTALL,
 )
+_FIGURE_RE = re.compile(r"<figure\b[^>]*>(.*?)</figure>", re.IGNORECASE | re.DOTALL)
+_IMG_RE = re.compile(r"<img\b[^>]*>", re.IGNORECASE | re.DOTALL)
+_MD_IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]+\)")
+_VISUAL_GRID_RE = re.compile(
+    r'<div[^>]*class="[^"]*\bmp-visual-grid\b[^"]*"[^>]*>(.*?)</div>',
+    re.IGNORECASE | re.DOTALL,
+)
+_WIDTH_STYLE_RE = re.compile(r'width\s*:\s*(\d+(?:\.\d+)?)\s*%', re.IGNORECASE)
+_WIDTH_ATTR_RE = re.compile(r'\bwidth=["\']?(\d+(?:\.\d+)?)(?:%|px)?["\']?', re.IGNORECASE)
 _TAG_RE = re.compile(r"<[^>]+>")
 _REFCODE_RE = re.compile(r'<span[^>]*class="[^"]*\bref-code\b[^"]*"[^>]*>.*?</span>', re.IGNORECASE | re.DOTALL)
 _WORKSPACE_METADATA_STEMS = {
@@ -396,6 +406,7 @@ def parse_edition(artifacts: dict[str, Path]) -> ParsedEdition:
         items=items,
         edition_date=edition_date,
         markdown_present=markdown_present,
+        body=body if markdown_present else "",
     )
 
 
@@ -611,7 +622,7 @@ def _median(values: list[float]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# The eight TEXT-only checks. Each returns a list[Finding].
+# Deterministic editorial checks. Each returns a list[Finding].
 # Signature: (edition, prefs) -> list[Finding].
 # ---------------------------------------------------------------------------
 def check_headline_line_count(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
@@ -893,9 +904,163 @@ def check_stale_dateline(ed: ParsedEdition, prefs: Preferences) -> list[Finding]
     ]
 
 
+def _has_caption(fragment: str) -> bool:
+    lowered = fragment.lower()
+    return "<figcaption" in lowered or "mp-caption" in lowered
+
+
+def _has_source_or_synthetic_note(fragment: str) -> bool:
+    lowered = _strip_tags(fragment).lower() + " " + fragment.lower()
+    return (
+        "mp-source-note" in lowered
+        or "source:" in lowered
+        or "source -" in lowered
+        or "sources:" in lowered
+        or "synthetic" in lowered
+        or "generated illustration" in lowered
+        or "generated image" in lowered
+    )
+
+
+def _explicit_narrow_width(fragment: str) -> int | None:
+    for match in _WIDTH_STYLE_RE.finditer(fragment):
+        width = int(float(match.group(1)))
+        if 0 < width < 70:
+            return width
+    for match in _WIDTH_ATTR_RE.finditer(fragment):
+        width = int(float(match.group(1)))
+        if 0 < width < 450:
+            return width
+    return None
+
+
+def check_visual_provenance(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
+    """Text-level art-desk check for visuals that lack editorial furniture.
+
+    This intentionally does not claim page geometry. It catches the markup an
+    agent can fix before rendering again: standalone images, figures without
+    captions/source notes, explicit narrow widths, and singleton visual grids.
+    """
+    del prefs
+    body = ed.body
+    if not body:
+        return []
+    out: list[Finding] = []
+
+    for match in _FIGURE_RE.finditer(body):
+        fragment = match.group(0)
+        text = _strip_tags(fragment)
+        ref = _trunc(text or "figure")
+        missing: list[str] = []
+        if not _has_caption(fragment):
+            missing.append("caption")
+        if not _has_source_or_synthetic_note(fragment):
+            missing.append("source/synthetic note")
+        if missing:
+            out.append(
+                Finding(
+                    check="visual-provenance",
+                    severity="nudge",
+                    location={"section": "", "kind": "visual", "ref": ref},
+                    issue="Figure is missing " + " and ".join(missing) + ".",
+                    why="A print visual needs enough furniture for the reader to know what it shows and where it came from.",
+                    measured={"missing": missing},
+                    threshold={"source": "default"},
+                    hint="Add a figcaption plus an .mp-source-note, or state clearly that the visual is synthetic.",
+                )
+            )
+        narrow = _explicit_narrow_width(fragment)
+        if narrow is not None:
+            out.append(
+                Finding(
+                    check="visual-provenance",
+                    severity="nudge",
+                    location={"section": "", "kind": "visual", "ref": ref},
+                    issue=f"Figure declares a narrow width ({narrow}).",
+                    why="Narrow print visuals create awkward leftover lines unless they are part of a deliberate grid.",
+                    measured={"width": narrow},
+                    threshold={"min_percent_width": 70, "min_px_width": 450, "source": "default"},
+                    hint="Make it full-measure, put it in .mp-visual-grid with a neighbor, or cut it.",
+                )
+            )
+
+    figure_spans = [match.span() for match in _FIGURE_RE.finditer(body)]
+
+    def _inside_figure(pos: int) -> bool:
+        return any(start <= pos < end for start, end in figure_spans)
+
+    for match in _IMG_RE.finditer(body):
+        if _inside_figure(match.start()):
+            continue
+        fragment = match.group(0)
+        out.append(
+            Finding(
+                check="visual-provenance",
+                severity="nudge",
+                location={"section": "", "kind": "visual", "ref": "standalone image"},
+                issue="Standalone <img> is not wrapped in a figure.",
+                why="Reader-supplied or generated images need caption/source furniture and should move as one print block.",
+                measured={},
+                threshold={"source": "default"},
+                hint="Wrap the image in <figure class=\"mp-figure\"> with figcaption and .mp-source-note.",
+            )
+        )
+        narrow = _explicit_narrow_width(fragment)
+        if narrow is not None:
+            out.append(
+                Finding(
+                    check="visual-provenance",
+                    severity="nudge",
+                    location={"section": "", "kind": "visual", "ref": "standalone image"},
+                    issue=f"Image declares a narrow width ({narrow}).",
+                    why="Narrow print visuals create awkward leftover lines unless they are part of a deliberate grid.",
+                    measured={"width": narrow},
+                    threshold={"min_percent_width": 70, "min_px_width": 450, "source": "default"},
+                    hint="Make it full-measure, put it in .mp-visual-grid with a neighbor, or cut it.",
+                )
+            )
+
+    for match in _MD_IMAGE_RE.finditer(body):
+        out.append(
+            Finding(
+                check="visual-provenance",
+                severity="nudge",
+                location={"section": "", "kind": "visual", "ref": _trunc(match.group(0))},
+                issue="Markdown image has no explicit caption/source block.",
+                why="Plain markdown images render, but they do not carry enough editorial context for a printed paper.",
+                measured={},
+                threshold={"source": "default"},
+                hint="Use <figure class=\"mp-figure\"> with figcaption and .mp-source-note.",
+            )
+        )
+
+    for match in _VISUAL_GRID_RE.finditer(body):
+        fragment = match.group(1)
+        children = (
+            len(_FIGURE_RE.findall(fragment))
+            + len(re.findall(r'class="[^"]*\bmp-chart\b', fragment, re.IGNORECASE))
+            + len(_IMG_RE.findall(fragment))
+        )
+        if children < 2:
+            out.append(
+                Finding(
+                    check="visual-provenance",
+                    severity="nudge",
+                    location={"section": "", "kind": "visual", "ref": "mp-visual-grid"},
+                    issue="Visual grid has fewer than two visual children.",
+                    why="A one-item grid is just a narrow orphan risk with extra markup.",
+                    measured={"visual_children": children},
+                    threshold={"min_visual_children": 2, "source": "default"},
+                    hint="Add the companion visual/note block or make the visual full-measure.",
+                )
+            )
+
+    return out
+
+
 # ---------------------------------------------------------------------------
 # The registry (§4.3). Adding a builtin = adding one entry; the runner never
-# changes. tier is 'text' for all Phase-1 checks.
+# changes. tier is 'text' for deterministic markdown/artifact checks.
 # ---------------------------------------------------------------------------
 @dataclass(slots=True)
 class Check:
@@ -913,6 +1078,7 @@ REGISTRY: list[Check] = [
     Check("empty-or-sparse-section", "text", check_empty_or_sparse_section),
     Check("duplicate-headline", "text", check_duplicate_headline),
     Check("stale-dateline", "text", check_stale_dateline),
+    Check("visual-provenance", "text", check_visual_provenance),
 ]
 
 

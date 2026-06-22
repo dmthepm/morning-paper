@@ -122,11 +122,14 @@ def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
     roadmap = _read("ROADMAP.md")
     composing = _read("docs/composing.md")
     spec = _read("docs/product-readiness-0.8.md")
+    reviewers = _read("src/morning_paper/reviewers.py")
 
     assert "chart row/label bounds" not in roadmap
     assert "mp-bars` shows up to 12 rows" in composing
     assert "mp-stats`" in composing and "6 primary blocks" in composing
     assert "mp-spark`" in composing and "90 values" in composing
+    assert "`visual-provenance`" in composing
+    assert "check_visual_provenance" in reviewers
     assert "cap print" in spec
     assert "overflow notes" in spec
 

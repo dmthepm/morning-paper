@@ -56,7 +56,8 @@ surfaces again.
   CLI `routine` command remains a local fallback.
 - Visual integration guardrails now cover chart and illustration width,
   label-density, print suitability, captions/source notes, and review
-  expectations.
+  expectations; `morning-paper review` now nudges on unfurnished visual markup
+  before the agent hands over the PDF.
 
 ## Verification Run
 
@@ -73,7 +74,7 @@ claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-pap
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --install-check
 ```
 
-Last full isolated local result: `212 passed`.
+Last full isolated local result: `214 passed`.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack
@@ -96,7 +97,7 @@ WeasyPrint 69.0 and trafilatura 2.1.0 and passes setup smoke.
 | Native recurrence prompts | README carries Claude Code routine, Codex automation, and ChatGPT scheduled-task prompts without claiming ChatGPT rendered a local PDF unless a runner is available. |
 | Source onboarding durable path | `sources check --newsroom`, scaffolded-newsroom auto-detection, collector recipes, staging, queue inspection, and fresh-friend smoke all exercise reader-owned sources. |
 | Compaction-safe edition loop | `edition prepare` writes durable edition files; `edition apply-feedback` records accepted/rejected feedback into the smallest supported newsroom files, including `preferences/` and `specs/`. |
-| Visual/editor guidance | Composing docs, CSS/style guardrails, tests, and the edition skill require visual QA before delivery. |
+| Visual/editor guidance | Composing docs, CSS/style guardrails, `visual-provenance` review findings, tests, and the edition skill require visual QA before delivery. |
 | Plugin surfaces | Codex and Claude plugin validation plus install/host plugin smoke pass from the shared skill tree, locked to exactly `setup`, `edition`, and `writing` for 0.8.x. |
 
 ## Release Checklist

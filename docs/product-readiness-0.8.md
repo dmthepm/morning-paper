@@ -49,6 +49,9 @@ The product promise stays narrow:
   `mp-spark`, and `mp-stats` align with the available measure, cap print
   density, clip labels, and add honest overflow notes instead of colliding or
   floating as narrow inserts.
+- The review desk now has a deterministic visual-provenance check: standalone
+  images, missing captions/source notes, explicit narrow widths, and one-item
+  visual grids produce advisory findings before delivery.
 - The print stack is deterministic across machines: broadsheet serif/sans
   faces now lead with vendored MP Serif (TeX Gyre Pagella) and MP Sans (Arimo),
   charts lead with vendored Courier Prime, and `@font-face` emits the correct
