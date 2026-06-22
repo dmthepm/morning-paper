@@ -20,9 +20,10 @@ configured" — never an invented headline, number, or quote.
   bodies under `plugins/morning-paper/skills/` are the single source both
   Claude Code and Codex load. You may read all of it.
 - **The reader's newsroom repo** — private, created during setup, holds their
-  preferences as files (the operating constitution, section specs, voice,
-  collectors, memory). You write there freely on the reader's behalf. Nothing
-  from a newsroom ever belongs in this public repo.
+  preferences as files (the operating constitution, section specs, editorial
+  taste, visual desk, source desk, delivery preferences, voice, collectors,
+  memory, and taste log). You write there freely on the reader's behalf.
+  Nothing from a newsroom ever belongs in this public repo.
 
 ## Skills
 

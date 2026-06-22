@@ -108,7 +108,9 @@ newsroom repo, first edition, daily loop). The repo-level contract is
 2. If this repo is installed as a plugin (Claude Code or Codex), run the
    `setup` skill — it interviews the reader, creates their private newsroom repo
    (preferences as files: the owned algorithm), and wires a morning routine. The
-   `edition` skill composes and renders each day's paper.
+   scaffold includes newsroom-native taste files (`EDITORIAL.md`, `VISUALS.md`,
+   `SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`). The `edition` skill composes
+   and renders each day's paper.
 3. The CLI speaks JSON. The verbs you need:
    - `morning-paper sources list --newsroom <path>` / `sources check
      --newsroom <path>` -> what built-in feeds and private newsroom collectors

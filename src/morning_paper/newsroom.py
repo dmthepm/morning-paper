@@ -139,10 +139,12 @@ Start here after setup resumes:
 
 1. Read `setup-state.json`.
 2. Read `SETUP.md`.
-3. Run `morning-paper sources check`.
-4. Run `collectors/run_all.sh $(date +%F)`.
-5. Compose today's edition into `editions/<date>/draft.md`.
-6. Render, review, deliver the PDF, then ask for feedback in
+3. Read `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
+   `TASTELOG.md`.
+4. Run `morning-paper sources check`.
+5. Run `collectors/run_all.sh $(date +%F)`.
+6. Compose today's edition into `editions/<date>/draft.md`.
+7. Render, review, deliver the PDF, then ask for feedback in
    `editions/<date>/operator-answers.md`.
 """,
         "SETUP.md": _setup_doc(state),
@@ -155,12 +157,17 @@ in files I own.
 ## The law (read in this precedence, top wins)
 
 1. `specs/*` - section contracts. The Read leads.
-2. `preferences/voice.md` - how the paper talks. Overrides engine defaults.
-3. `preferences/algorithm-prior.yaml` - standing interests. Empty means ignore.
-4. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
-5. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
-6. `memory/MEMORY.md` and `memory/threads/` - running threads.
-7. `collectors/` - source adapters. Empty sources print "not configured".
+2. `EDITORIAL.md` - the durable editorial taste system.
+3. `VISUALS.md` - the print/email visual desk and visual guardrails.
+4. `SOURCES.md` - source purpose, trust, cadence, and backlog.
+5. `DELIVERY.md` - PDF, print, and email delivery preferences.
+6. `preferences/voice.md` - how the paper talks. Overrides engine defaults.
+7. `preferences/algorithm-prior.yaml` - standing interests. Empty means ignore.
+8. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
+9. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
+10. `TASTELOG.md` - accepted/rejected taste changes over time.
+11. `memory/MEMORY.md` and `memory/threads/` - running threads.
+12. `collectors/` - source adapters. Empty sources print "not configured".
 
 ## Honesty
 
@@ -170,6 +177,258 @@ quote, source, or trend. If a collector returns nothing, say so plainly.
 ## Delivery
 
 Replace this with the saved print command, or keep "hand me the PDF path".
+
+## Feedback loop
+
+When the reader says "more like this", "less of that", "too busy", "email it
+instead", or marks up the desk sheet, update the smallest durable file that
+will make tomorrow better:
+
+- editorial preference -> `EDITORIAL.md`, `preferences/voice.md`, or a section
+  file in `specs/`
+- visual/layout preference -> `VISUALS.md`
+- source preference -> `SOURCES.md`, `preferences/algorithm-prior.yaml`,
+  `collectors/`, or `memory/reads-ledger.md`
+- delivery preference -> `DELIVERY.md`
+- a durable decision or rejected idea -> `TASTELOG.md`
+""",
+        "EDITORIAL.md": """# Editorial System
+
+This is the paper's durable editorial taste. It is the answer to "what makes
+this worth reading tomorrow?" Update it when the reader gives feedback.
+
+## North Star
+
+The paper is a personal newsroom, not a feed. It saves attention, catches what
+matters, and makes one printed or readable edition that lands once and ends.
+
+## Editorial Jobs
+
+- **Orient** - what changed since the last edition.
+- **Prioritize** - what earns ink inside today's page budget.
+- **Connect** - what two sources mean together that they do not mean alone.
+- **Protect attention** - what to skip, damp, or defer.
+- **Move** - what the reader should do, decide, ask, or read next.
+
+## Default Mix
+
+- Lead with The Read: one source-backed judgment, not a link roundup.
+- Prefer full reads over blurbs when the source carries enough text.
+- Keep personal/work loops concise and operational.
+- Treat empty or blocked sources as "not configured"; never fill the gap.
+
+## Feedback Routing
+
+- "More like this" -> add a rule under Recurring Wins.
+- "Less of this" -> add a rule under Dampeners.
+- "This section is wrong" -> update the matching `specs/*.md`.
+- "This voice is wrong" -> update `preferences/voice.md`.
+- "I already read this" -> add it to `memory/reads-ledger.md`.
+- Every accepted or rejected durable taste change -> add one line to
+  `TASTELOG.md`.
+
+## Recurring Wins
+
+- Source-backed synthesis that changes what the reader does today.
+- One surprising connection across sources.
+- A clear page-budget tradeoff, stated plainly.
+
+## Dampeners
+
+- Viral velocity without relevance.
+- Repeated reads.
+- Summary that does not lead to a decision, question, or next move.
+""",
+        "VISUALS.md": f"""# Visual Desk
+
+This is the newsroom's visual taste system. It borrows the useful part of
+agent-readable design files - durable structured context - but it is not a
+product UI spec. It is a visual desk for a personal newspaper.
+
+```yaml
+version: 1
+surfaces:
+  primary: pdf
+  secondary:
+    - print
+    - email_article
+default_visual_budget:
+  major_visuals_per_edition: 0-3
+  minor_visuals_per_edition: as_earned
+print_constraints:
+  color_must_survive_mono: true
+  no_tiny_labels: true
+  inspect_pdf_pages_before_delivery: true
+preferred_primitives:
+  charts:
+    - mp-bars
+    - mp-spark
+    - mp-stats
+  custom_allowed:
+    - svg_diagram
+    - generated_illustration
+    - annotated_image
+    - timeline
+    - map
+```
+
+## North Star
+
+Visuals are editorial furniture. A chart, diagram, illustration, pull quote,
+map, timeline, or generated image must explain something the prose cannot
+explain as well. If it only decorates, cut it.
+
+## Visual Types
+
+- **Chart** - use for comparison, movement, count, budget, or trend. Prefer
+  `mp-bars`, `mp-spark`, and `mp-stats` before custom SVG.
+- **Diagram** - use when the reader needs a relationship, workflow, stack, or
+  system map.
+- **Timeline** - use when sequence is the story.
+- **Annotated image** - use when a real object, screenshot, product, place, or
+  source artifact needs inspection.
+- **Generated illustration** - use sparingly for texture or metaphor. It must
+  add a layer of meaning, not fill space.
+- **Pull quote / clipping** - use when one sentence deserves physical weight.
+
+## Placement Rules
+
+- A major visual spans the full available measure or exactly two grid columns.
+- If a visual spans two columns, fill the remaining column with a note, legend,
+  source box, related mini-chart, or short text block.
+- Do not leave a visual floating narrower than the text above and below it.
+- Keep labels readable on paper. If the label will be too small, move it into
+  a legend or caption.
+- Every visual carries a source note or says why it is synthetic.
+
+## Print Rules
+
+- Color may support meaning but may not be the only way to read the visual.
+- Avoid hairline marks that vanish on a home printer.
+- Prefer fewer, stronger visual moves over a page of small widgets.
+- After render, inspect page 1 and one inside page before delivery.
+
+## Email / Article Rules
+
+If this edition becomes an email later, the visual should degrade to one of:
+
+- an inline image with caption and source;
+- a plain-text table or bullet summary;
+- a link to the PDF visual.
+
+The email should still feel like one edition, not a feed.
+
+## Feedback Routing
+
+- "Too cramped" -> increase whitespace or reduce visual count.
+- "More charts" -> add a recurring chart rule under Visual Types.
+- "I liked that illustration" -> record what it clarified and when to reuse it.
+- "This visual felt random" -> add a dampener here and cut similar visuals.
+""",
+        "SOURCES.md": """# Source Desk
+
+This is the source taste system: what the paper reads, why each source earns a
+place, how often it should be checked, and what to do when it fails.
+
+## Source Principles
+
+- Start from what the reader already has. Do not force sources to move.
+- Prefer local files, exports, folders, feeds, and tools the reader controls.
+- A source is not trusted just because it is loud.
+- A source with no data prints "not configured" or "nothing today".
+- Credentials live in local env files, never in this repo.
+
+## Registry
+
+| Source | Type | Purpose | Cadence | Trust | Section | Status |
+|---|---|---|---|---|---|---|
+| Local drop | folder | Anything the reader or an agent saves | daily | reader-owned | Reading / The Read | configured |
+| RSS | feed | Full-text reads and newsletters | daily | source-specific | Reading | ask |
+| Hacker News | starter | Optional technical radar | ask | mixed | optional | ask |
+
+## Backlog
+
+- YouTube export or watch history.
+- Instagram/TikTok/X export or local scraper output.
+- Email newsletters via feed, IMAP, MCP, or exported files.
+- Slack/Discord/work chat summaries.
+- Main Branch facts, bets, pushes, and open loops.
+- Obsidian vault or synced notes folder.
+
+## Source Health
+
+Run `morning-paper sources check --newsroom .` during setup and when a source
+changes. If a source fails, record the next action here instead of hiding the
+failure in chat.
+
+## Feedback Routing
+
+- "Add this source" -> add it to Registry or Backlog, then create/adjust a
+  collector or config entry.
+- "This source is noisy" -> lower cadence, map it to a smaller section, or add
+  it to dampeners in `preferences/algorithm-prior.yaml`.
+- "This source is important" -> map it to a section and say what job it does.
+""",
+        "DELIVERY.md": """# Delivery
+
+This file records how the paper lands. The default is physical and tactile;
+email and article views are secondary surfaces that should preserve the same
+editorial hierarchy.
+
+## Primary Surface
+
+- PDF first.
+- Print when possible.
+- If no printer is configured, open the PDF and report the path.
+
+## Print
+
+- Command: not configured.
+- Duplex: ask.
+- Paper size: letter.
+- Color: ask. Mono must still be readable.
+
+## PDF
+
+- Open on screen after demo and first edition when the host can do it.
+- Archive markdown, HTML, JSON, and PDF under `editions/<date>/`.
+- Check page 1 and one inside page before delivery.
+
+## Email / Article View
+
+Not configured by default. If the reader wants email, preserve the whole paper
+as one calm edition:
+
+1. masthead and date
+2. The Read
+3. source-backed sections
+4. full reads or links
+5. feedback prompt
+
+Email must not become a feed. One edition, one landing, clear end.
+
+## Feedback
+
+After delivery, ask for natural-language notes. Route them back into
+`EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `preferences/`,
+`specs/`, `collectors/`, or `TASTELOG.md` before the next run.
+""",
+        "TASTELOG.md": """# Taste Log
+
+One line per durable taste decision. This is not a diary; it is the change log
+for the reader's personal newsroom.
+
+## Format
+
+```text
+YYYY-MM-DD - accepted/rejected - feedback - file changed - why
+```
+
+## Entries
+
+<!-- Example:
+2026-06-22 - accepted - "less Hacker News" - SOURCES.md + algorithm-prior.yaml - HN is a starter source, not the paper identity.
+-->
 """,
         "specs/_template.md": """# Section: <name>
 

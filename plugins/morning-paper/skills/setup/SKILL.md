@@ -18,9 +18,11 @@ paper with two sources beats a broken setup with ten.
 
 The keystone of this skill is §5: setup must **write** the newsroom's
 contracts. A friend who finishes setup has a `CLAUDE.md`, section specs led by
-The Read, an empty reads-ledger, a voice template, an editions dir, and a
-collector contract with worked examples — everything the `edition` skill reads.
-A scaffold of empty folders is a failed setup.
+The Read, newsroom-native taste files (`EDITORIAL.md`, `VISUALS.md`,
+`SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`), an empty reads-ledger, a voice
+template, an editions dir, and a collector contract with worked examples —
+everything the `edition` skill reads. A scaffold of empty folders is a failed
+setup.
 
 Resumability rule: as soon as the newsroom path exists, create and keep current
 `setup-state.json` and `SETUP.md`. After every major step, update them before
@@ -156,6 +158,11 @@ newsroom/
   SETUP.md                   # resumable setup journal for humans and agents
   setup-state.json           # resumable setup state, updated after each step
   CLAUDE.md                  # the operating constitution (the keystone)
+  EDITORIAL.md               # what earns ink, gets cut, and becomes The Read
+  VISUALS.md                 # the visual desk: charts, images, PDF/email rules
+  SOURCES.md                 # source purpose, trust, cadence, health, backlog
+  DELIVERY.md                # PDF, print, email/article, archive preferences
+  TASTELOG.md                # accepted/rejected durable taste changes
   specs/
     _template.md             # the five-field section contract
     the-read.md              # THE LEAD intelligence section
@@ -268,12 +275,17 @@ here, in files I own.
 ## The law (read in this precedence, top wins)
 
 1. `specs/*` — the section contracts. The Read leads.
-2. `preferences/voice.md` — how the paper talks. Overrides any engine default.
-3. `preferences/algorithm-prior.yaml` — my standing interests (absent = ignore).
-4. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
-5. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
-6. `memory/MEMORY.md` + `memory/threads/` — running threads (load on slug match).
-7. `collectors/` — my sources. What they don't return prints "not configured".
+2. `EDITORIAL.md` — what earns ink, what gets killed, and what makes The Read.
+3. `VISUALS.md` — the visual desk: charts, images, illustrations, PDF/email.
+4. `SOURCES.md` — source purpose, trust, cadence, health, and backlog.
+5. `DELIVERY.md` — PDF, print, email/article, archive preferences.
+6. `preferences/voice.md` — how the paper talks. Overrides any engine default.
+7. `preferences/algorithm-prior.yaml` — my standing interests (absent = ignore).
+8. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
+9. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
+10. `TASTELOG.md` — accepted and rejected taste changes over time.
+11. `memory/MEMORY.md` + `memory/threads/` — running threads (load on slug match).
+12. `collectors/` — my sources. What they don't return prints "not configured".
 
 ## The honesty rule
 
@@ -661,9 +673,12 @@ routine" section.
 Tell the reader where their reactions land: the `edition` skill reads the most
 recent `editions/<date>/operator-answers.md` and honors it. So if they reply
 "more like this", "kill section X", or "print `<url>` tomorrow", the editor
-writes those into `preferences/` and `operator-answers.md` and stages anything
-they asked to read — and tomorrow's editor reads it. The newsroom is a loop:
-what they write today shapes tomorrow's paper.
+writes those into the smallest durable file: `EDITORIAL.md` for judgment,
+`VISUALS.md` for charts/images/layout, `SOURCES.md` for source purpose and
+cadence, `DELIVERY.md` for how it lands, `preferences/` or `specs/` for local
+rules, and `TASTELOG.md` for the decision record. Then it stages anything they
+asked to read. The newsroom is a loop: what they write today shapes tomorrow's
+paper.
 
 ## 8. First edition, now
 

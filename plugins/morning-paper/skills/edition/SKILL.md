@@ -54,14 +54,18 @@ Required durable artifacts:
    Refresh `source-inventory.json` with `morning-paper sources check --newsroom .`
    when useful, then write `collector-report.md` and
    `queue-snapshot.json` before composing.
-2. **Read the newsroom.** `specs/*` (section contracts) and `preferences/*`
-   (reading weights, style notes). These outrank your taste. Also read, when
-   present: `memory/reads-ledger.md` — the cumulative record of everything
-   already printed; repeating a read the owner already got is a hard fail,
-   and when today's paper ships, append today's reads to it. And the most
-   recent `editions/<date>/operator-answers.md` — triaged owner ink (deep-read
-   picks, queue answers, steers); honor it exactly. If the newsroom keeps an
-   `inbox/scans/` directory, check it for untriaged captures before composing.
+2. **Read the newsroom.** `specs/*` (section contracts), `EDITORIAL.md`
+   (what earns ink), `VISUALS.md` (charts/images/layout), `SOURCES.md`
+   (source purpose and cadence), `DELIVERY.md` (how the paper lands), and
+   `preferences/*` (voice, reading weights, review tuning). These outrank your
+   taste. Also read, when present: `memory/reads-ledger.md` — the cumulative
+   record of everything already printed; repeating a read the owner already
+   got is a hard fail, and when today's paper ships, append today's reads to
+   it. Read the most recent `editions/<date>/operator-answers.md` — triaged
+   owner ink (deep-read picks, queue answers, steers); honor it exactly. Skim
+   `TASTELOG.md` for recent accepted/rejected taste changes. If the newsroom
+   keeps an `inbox/scans/` directory, check it for untriaged captures before
+   composing.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
    docs/composing.md for the class vocabulary and `mp-bars`/`mp-spark`/
    `mp-stats` chart directives). The newsroom's `examples/edition-skeleton.md`
@@ -106,7 +110,8 @@ Required durable artifacts:
 9. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. Archive markdown + html into `editions/<date>/`. End by
    pointing at `operator-answers.md` and asking for natural-language feedback:
-   what to keep, cut, expand, add as a source, or print tomorrow.
+   what to keep, cut, expand, change visually, add as a source, change about
+   delivery, save as taste, or print tomorrow.
 
 Write `operator-answers.md` like this:
 
@@ -124,8 +129,18 @@ Read the paper with a pen. Reply in chat or mark this file up.
 ## More
 - What should get more pages, deeper reporting, or a recurring section?
 
+## Visuals
+- What chart, image, diagram, illustration, or layout choice helped or hurt?
+
 ## Sources To Add
 - Feeds, folders, newsletters, repos, people, searches, exports, or tools.
+
+## Delivery
+- Did the PDF, printout, or email/article format land the way it should?
+
+## Taste To Save
+- Which note should become a durable rule in EDITORIAL.md, VISUALS.md,
+  SOURCES.md, DELIVERY.md, specs/, preferences/, or TASTELOG.md?
 
 ## Print Tomorrow
 - URLs or files to stage for tomorrow's paper.
@@ -140,6 +155,8 @@ unanswered, say so once, plainly — the paper is allowed to notice.
 ## Return path
 
 If the user dictates or replies with reactions ("more like this", "kill
-section X", "print <url> tomorrow"): update `preferences/`, and `morning-paper
-stage <url>` anything they asked to read. Tomorrow's editor reads what you
-wrote today.
+section X", "that chart worked", "email this too", "print <url> tomorrow"):
+update the smallest durable file (`EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`,
+`DELIVERY.md`, `preferences/`, `specs/`, or `TASTELOG.md`) and
+`morning-paper stage <url>` anything they asked to read. Tomorrow's editor
+reads what you wrote today.

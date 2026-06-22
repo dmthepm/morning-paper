@@ -93,6 +93,10 @@
 - `morning-paper newsroom state <path> --set key=value` updates setup state
   and refreshes `SETUP.md` so install proof, source choices, printer choices,
   plugin state, pending questions, and next action stay durable
+- private newsroom taste primitives now ship with the scaffold:
+  `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
+  `TASTELOG.md`; they are newsroom-native files for editorial judgment,
+  visuals, sources, delivery, and accepted/rejected taste changes
 - `morning-paper sources list|check` inventories built-in and RSS sources and
   labels checked RSS feeds as full-text or summary-only; with `--newsroom
   <path>` it also inventories local collector scripts and checks shell syntax
@@ -142,6 +146,8 @@
 - first-edition acceptance test proving a real agent uses the prepared
   workspace, overwrites pending render/review artifacts, and ends by asking
   for natural-language feedback
+- visual QA guardrails for arbitrary agent-created raw HTML/SVG/images:
+  geometry checks, asset provenance, image sizing, and chart row/label bounds
 - style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
 - source plugins for YouTube transcripts and X/Twitter thread workflows

@@ -28,6 +28,11 @@ class NewsroomScaffoldTest(unittest.TestCase):
                 "setup-state.json",
                 "CLAUDE.md",
                 "README.md",
+                "EDITORIAL.md",
+                "VISUALS.md",
+                "SOURCES.md",
+                "DELIVERY.md",
+                "TASTELOG.md",
                 "specs/_template.md",
                 "specs/the-read.md",
                 "specs/front-page.md",
@@ -71,6 +76,29 @@ class NewsroomScaffoldTest(unittest.TestCase):
             constitution = (root / "CLAUDE.md").read_text(encoding="utf-8")
             self.assertIn("The Read leads", constitution)
             self.assertIn('Empty sources print "not configured"', constitution)
+            self.assertIn("EDITORIAL.md", constitution)
+            self.assertIn("VISUALS.md", constitution)
+            self.assertIn("SOURCES.md", constitution)
+            self.assertIn("TASTELOG.md", constitution)
+
+            editorial = (root / "EDITORIAL.md").read_text(encoding="utf-8")
+            self.assertIn("what makes", editorial)
+            self.assertIn("Feedback Routing", editorial)
+
+            visuals = (root / "VISUALS.md").read_text(encoding="utf-8")
+            self.assertIn("Visual Desk", visuals)
+            self.assertIn("major_visuals_per_edition", visuals)
+            self.assertIn("Do not leave a visual floating narrower", visuals)
+
+            sources = (root / "SOURCES.md").read_text(encoding="utf-8")
+            self.assertIn("Source Desk", sources)
+            self.assertIn("Start from what the reader already has", sources)
+
+            delivery = (root / "DELIVERY.md").read_text(encoding="utf-8")
+            self.assertIn("Email / Article View", delivery)
+
+            tastelog = (root / "TASTELOG.md").read_text(encoding="utf-8")
+            self.assertIn("durable taste decision", tastelog)
 
             the_read = (root / "specs" / "the-read.md").read_text(encoding="utf-8")
             self.assertIn("The four moves", the_read)

@@ -77,7 +77,12 @@ class EditionWorkspaceTest(unittest.TestCase):
             review = json.loads((edition_dir / "review.json").read_text(encoding="utf-8"))
             self.assertEqual(review["status"], "pending")
             self.assertIn("morning-paper review", review["command"])
-            self.assertIn("Print Tomorrow", (edition_dir / "operator-answers.md").read_text(encoding="utf-8"))
+            operator_answers = (edition_dir / "operator-answers.md").read_text(encoding="utf-8")
+            self.assertIn("Visuals", operator_answers)
+            self.assertIn("Delivery", operator_answers)
+            self.assertIn("Taste To Save", operator_answers)
+            self.assertIn("VISUALS.md", operator_answers)
+            self.assertIn("Print Tomorrow", operator_answers)
 
     def test_edition_prepare_preserves_draft_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

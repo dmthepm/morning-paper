@@ -23,8 +23,18 @@ Read the paper with a pen. Reply in chat or mark this file up.
 ## More
 - What should get more pages, deeper reporting, or a recurring section?
 
+## Visuals
+- What chart, image, diagram, illustration, or layout choice helped or hurt?
+
 ## Sources To Add
 - Feeds, folders, newsletters, repos, people, searches, exports, or tools.
+
+## Delivery
+- Did the PDF, printout, or email/article format land the way it should?
+
+## Taste To Save
+- Which note should become a durable rule in EDITORIAL.md, VISUALS.md,
+  SOURCES.md, DELIVERY.md, specs/, preferences/, or TASTELOG.md?
 
 ## Print Tomorrow
 - URLs or files to stage for tomorrow's paper.
@@ -34,9 +44,9 @@ Read the paper with a pen. Reply in chat or mark this file up.
 def draft_template(date_str: str, paper_name: str) -> str:
     return f"""# {paper_name} - {date_str}
 
-<!-- Draft starts here. Compose against specs/, preferences/, source-inventory.json,
-collector-report.md, and queue-snapshot.json. Replace this placeholder before
-rendering. -->
+<!-- Draft starts here. Compose against EDITORIAL.md, VISUALS.md, SOURCES.md,
+DELIVERY.md, specs/, preferences/, source-inventory.json, collector-report.md,
+and queue-snapshot.json. Replace this placeholder before rendering. -->
 
 ## The Read
 

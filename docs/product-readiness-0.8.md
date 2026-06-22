@@ -29,6 +29,12 @@ The product promise stays narrow:
   install prompt.
 - The setup skill writes a real newsroom scaffold instead of empty folders and
   records setup state in `setup-state.json` plus `SETUP.md`.
+- The private newsroom now has durable taste primitives:
+  `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
+  `TASTELOG.md`. These are newsroom-native, not copied product/design docs:
+  they tell the agent what earns ink, how visuals should work in PDF/email,
+  why sources exist, how the paper lands, and which taste changes were accepted
+  or rejected over time.
 - The edition skill has the editor model, source collection, review, return
   path, and durable intermediate files for interruption recovery.
 - The source model is local-folder-first: HN and RSS are optional starter
@@ -66,6 +72,8 @@ Acceptance:
 - setup writes `setup-state.json` and `SETUP.md`;
 - both record installed version, demo proof path, plugin state, newsroom path,
   source choices, printer choice, pending questions, and next action;
+- setup writes `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
+  `TASTELOG.md` so the reader's taste can evolve in durable files;
 - rerunning setup reads these files before asking questions.
 
 ### 3. Sources Start From What The Reader Already Has
@@ -107,7 +115,10 @@ Acceptance:
   `draft.md`, `render-result.json`, `review.json`, and
   `operator-answers.md`;
 - the edition skill reads those files before restarting work;
-- delivery ends by asking for natural-language feedback.
+- delivery ends by asking for natural-language feedback;
+- accepted feedback is routed to the smallest durable file:
+  `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `specs/`,
+  `preferences/`, or `TASTELOG.md`.
 
 ## Print Stack Policy
 
