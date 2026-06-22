@@ -36,6 +36,7 @@ Required durable artifacts:
 - `review.json` — JSON output from `morning-paper review`.
 - `operator-answers.md` — a short feedback sheet for the reader to mark up or
   answer in chat.
+- `feedback-plan.md` — the route from reader notes to durable newsroom files.
 
 ## The pass
 
@@ -115,9 +116,9 @@ Required durable artifacts:
      mutes; `review` reads it automatically.
 9. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. Archive markdown + html into `editions/<date>/`. End by
-   pointing at `operator-answers.md` and asking for natural-language feedback:
-   what to keep, cut, expand, change visually, add as a source, change about
-   delivery, save as taste, or print tomorrow.
+   pointing at `operator-answers.md` and `feedback-plan.md`, then asking for
+   natural-language feedback: what to keep, cut, expand, change visually, add
+   as a source, change about delivery, save as taste, or print tomorrow.
 
 Write `operator-answers.md` like this:
 
@@ -162,7 +163,9 @@ unanswered, say so once, plainly — the paper is allowed to notice.
 
 If the user dictates or replies with reactions ("more like this", "kill
 section X", "that chart worked", "email this too", "print <url> tomorrow"):
-update the smallest durable file (`EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`,
-`DELIVERY.md`, `preferences/`, `specs/`, or `TASTELOG.md`) and
-`morning-paper stage <url>` anything they asked to read. Tomorrow's editor
-reads what you wrote today.
+read `feedback-plan.md`, update the smallest durable file (`EDITORIAL.md`,
+`VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `preferences/`, `specs/`, or
+`TASTELOG.md`), append the accepted/rejected decision to `TASTELOG.md` when the
+change should survive tomorrow, and `morning-paper stage <url>` anything they
+asked to read. Add an "Applied Feedback" note to `feedback-plan.md` listing the
+paths changed. Tomorrow's editor reads what you wrote today.

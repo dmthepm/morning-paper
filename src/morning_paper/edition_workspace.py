@@ -41,6 +41,50 @@ Read the paper with a pen. Reply in chat or mark this file up.
 """
 
 
+def feedback_plan_template(date_str: str) -> str:
+    return f"""# Feedback Plan - {date_str}
+
+Use this after the reader marks up `operator-answers.md` or replies in chat.
+The goal is not to preserve every reaction. The goal is to turn stable feedback
+into the smallest durable newsroom change that makes tomorrow's paper better.
+
+## Process
+
+1. Read `operator-answers.md` and the reader's chat/photo notes.
+2. Group each note by route below.
+3. Update the smallest durable file that can carry the rule.
+4. Append one line to `TASTELOG.md` for every accepted or rejected durable
+   taste change.
+5. Stage anything under "Print Tomorrow" with `morning-paper stage <url-or-file>`.
+6. Leave a short "Applied Feedback" note in this file with paths changed.
+
+## Routes
+
+| Reader note | Durable target |
+|---|---|
+| Keep / cut / more / less / page budget / what earns ink | `EDITORIAL.md`, `specs/`, `preferences/voice.md` |
+| Visuals, charts, illustrations, layout, print readability | `VISUALS.md` |
+| Add, demote, remove, distrust, or change cadence of a source | `SOURCES.md`, `preferences/algorithm-prior.yaml`, `collectors/` |
+| PDF, print, email/article view, archive, routine/automation behavior | `DELIVERY.md` |
+| One-off URL or file to read tomorrow | `morning-paper stage <url-or-file>` |
+| Stable accepted/rejected taste decision | `TASTELOG.md` |
+
+## Guardrails
+
+- Do not overfit one annoyed note into a permanent rule. Save as durable taste
+  only when the reader asks, repeats it, or the paper clearly benefits.
+- Do not store private source content in the public engine repo.
+- Do not erase a source because it was empty once. Record failure and next
+  action in `SOURCES.md`.
+- If feedback conflicts with an existing rule, update `TASTELOG.md` with the
+  decision and why the older rule changed.
+
+## Applied Feedback
+
+No feedback applied yet.
+"""
+
+
 def draft_template(date_str: str, paper_name: str) -> str:
     return f"""# {paper_name} - {date_str}
 
@@ -122,6 +166,7 @@ must be reported as "not configured"; never invent source data.
     record("review.json", _write_json(edition_dir / "review.json", review_pending, force=force))
 
     record("operator-answers.md", _write(edition_dir / "operator-answers.md", operator_answers_template(date_str), force=force))
+    record("feedback-plan.md", _write(edition_dir / "feedback-plan.md", feedback_plan_template(date_str), force=force))
 
     return {
         "edition_dir": str(edition_dir),
@@ -136,6 +181,7 @@ must be reported as "not configured"; never invent source data.
             "render_result": str(edition_dir / "render-result.json"),
             "review": str(edition_dir / "review.json"),
             "operator_answers": str(edition_dir / "operator-answers.md"),
+            "feedback_plan": str(edition_dir / "feedback-plan.md"),
         },
-        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render, review, then ask for feedback",
+        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render, review, then ask for feedback and route it through feedback-plan.md",
     }

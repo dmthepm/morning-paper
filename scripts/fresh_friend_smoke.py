@@ -150,6 +150,7 @@ def simulate(persona: dict[str, str], base: Path, env: dict[str, str]) -> dict[s
         "render-result.json",
         "review.json",
         "operator-answers.md",
+        "feedback-plan.md",
     ]
     missing = [name for name in required if not (edition_dir / name).is_file()]
     pdf_path = Path(render_payload["outputs"]["pdf"])

@@ -124,10 +124,12 @@ Acceptance:
 
 - edition work writes durable intermediate files early:
   `source-inventory.json`, `collector-report.md`, `queue-snapshot.json`,
-  `draft.md`, `render-result.json`, `review.json`, and
-  `operator-answers.md`;
+  `draft.md`, `render-result.json`, `review.json`, `operator-answers.md`, and
+  `feedback-plan.md`;
 - the edition skill reads those files before restarting work;
 - delivery ends by asking for natural-language feedback;
+- `feedback-plan.md` gives the agent a compaction-safe route from notes to the
+  smallest durable newsroom file;
 - accepted feedback is routed to the smallest durable file:
   `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `specs/`,
   `preferences/`, or `TASTELOG.md`.

@@ -251,6 +251,7 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
         "render-result.json",
         "review.json",
         "operator-answers.md",
+        "feedback-plan.md",
     ]
     missing_artifacts = [name for name in required_artifacts if not (edition_dir / name).is_file()]
     if missing_artifacts:
@@ -259,6 +260,9 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     setup_doc = (newsroom / "SETUP.md").read_text(encoding="utf-8")
     if "run first edition and ask for feedback" not in setup_doc:
         raise RuntimeError("SETUP.md did not refresh next action")
+    feedback_plan = (edition_dir / "feedback-plan.md").read_text(encoding="utf-8")
+    if "Applied Feedback" not in feedback_plan or "TASTELOG.md" not in feedback_plan:
+        raise RuntimeError("feedback-plan.md does not route durable taste")
 
     return {
         "ok": True,

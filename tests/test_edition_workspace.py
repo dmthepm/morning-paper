@@ -57,6 +57,7 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "render-result.json",
                 "review.json",
                 "operator-answers.md",
+                "feedback-plan.md",
             }
             self.assertEqual(set(payload["written"]), expected)
             for filename in expected:
@@ -85,6 +86,18 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("Taste To Save", operator_answers)
             self.assertIn("VISUALS.md", operator_answers)
             self.assertIn("Print Tomorrow", operator_answers)
+            feedback_plan = (edition_dir / "feedback-plan.md").read_text(encoding="utf-8")
+            self.assertIn("Feedback Plan", feedback_plan)
+            self.assertIn("operator-answers.md", feedback_plan)
+            self.assertIn("EDITORIAL.md", feedback_plan)
+            self.assertIn("VISUALS.md", feedback_plan)
+            self.assertIn("SOURCES.md", feedback_plan)
+            self.assertIn("DELIVERY.md", feedback_plan)
+            self.assertIn("TASTELOG.md", feedback_plan)
+            self.assertIn("Applied Feedback", feedback_plan)
+            self.assertIn("Do not overfit", feedback_plan)
+            self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
+            self.assertIn("feedback-plan.md", payload["next_action"])
 
     def test_edition_prepare_preserves_draft_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

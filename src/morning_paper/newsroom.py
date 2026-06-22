@@ -147,7 +147,8 @@ Start here after setup resumes:
 5. Run `collectors/run_all.sh $(date +%F)`.
 6. Compose today's edition into `editions/<date>/draft.md`.
 7. Render, review, deliver the PDF, then ask for feedback in
-   `editions/<date>/operator-answers.md`.
+   `editions/<date>/operator-answers.md` and route durable changes through
+   `editions/<date>/feedback-plan.md`.
 """,
         "SETUP.md": _setup_doc(state),
         "CLAUDE.md": """# Newsroom - operating constitution
@@ -167,9 +168,10 @@ in files I own.
 7. `preferences/algorithm-prior.yaml` - standing interests. Empty means ignore.
 8. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
 9. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
-10. `TASTELOG.md` - accepted/rejected taste changes over time.
-11. `memory/MEMORY.md` and `memory/threads/` - running threads.
-12. `collectors/` - source adapters. Empty sources print "not configured".
+10. `editions/<latest>/feedback-plan.md` - route feedback to durable files.
+11. `TASTELOG.md` - accepted/rejected taste changes over time.
+12. `memory/MEMORY.md` and `memory/threads/` - running threads.
+13. `collectors/` - source adapters. Empty sources print "not configured".
 
 ## Honesty
 
@@ -183,8 +185,8 @@ Replace this with the saved print command, or keep "hand me the PDF path".
 ## Feedback loop
 
 When the reader says "more like this", "less of that", "too busy", "email it
-instead", or marks up the desk sheet, update the smallest durable file that
-will make tomorrow better:
+instead", or marks up the desk sheet, read the latest `feedback-plan.md`, then
+update the smallest durable file that will make tomorrow better:
 
 - editorial preference -> `EDITORIAL.md`, `preferences/voice.md`, or a section
   file in `specs/`
@@ -193,6 +195,9 @@ will make tomorrow better:
   `collectors/`, or `memory/reads-ledger.md`
 - delivery preference -> `DELIVERY.md`
 - a durable decision or rejected idea -> `TASTELOG.md`
+
+After applying feedback, add an "Applied Feedback" note to `feedback-plan.md`
+with the paths changed so the next agent can resume from evidence.
 """,
         "EDITORIAL.md": """# Editorial System
 

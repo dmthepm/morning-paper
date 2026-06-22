@@ -89,6 +89,8 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("VISUALS.md", constitution)
             self.assertIn("SOURCES.md", constitution)
             self.assertIn("TASTELOG.md", constitution)
+            self.assertIn("feedback-plan.md", constitution)
+            self.assertIn("Applied Feedback", constitution)
 
             editorial = (root / "EDITORIAL.md").read_text(encoding="utf-8")
             self.assertIn("what makes", editorial)
