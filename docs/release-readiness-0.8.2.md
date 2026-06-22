@@ -1,21 +1,23 @@
 # Morning Paper 0.8.2 Release Readiness
 
-Status: local release candidate, not published.
+Status: published and verified.
 
 Date: 2026-06-22
 
 ## Release Line
 
-- Local package version: `0.8.2`
-- Public PyPI version verified on 2026-06-22: `0.8.1`
-- Latest local tag: `v0.8.1`
-- Local branch state at latest audit: `main` is ahead of `origin/main`; local
-  commits are not pushed, tagged, or published yet.
+- Package version: `0.8.2`
+- Public PyPI version verified on 2026-06-22: `0.8.2`
+- Published tag: `v0.8.2` at
+  `778db32611353e654554e0a7af68dd51f525edf0`
+- Publish workflow: GitHub Actions run `27990559664`, passed.
+- CI workflow on `main`: GitHub Actions run `27990556669`, passed.
 
-0.8.2 is ready for release review from the local repo, but it still needs the
-normal publish sequence: push commits, tag `v0.8.2`, build clean artifacts,
-publish to PyPI, then verify PyPI, tag, install, doctor, demo, and plugin
-surfaces again.
+0.8.2 has completed the publish sequence: commits were pushed, `v0.8.2` was
+tagged, the publish workflow built clean artifacts and uploaded to PyPI, PyPI
+reports `0.8.2`, a clean PyPI install passed `doctor --strict`, `demo --open`
+opened a two-page PDF, and Claude Code/Codex plugin surfaces were verified from
+a fresh clone of the published tag.
 
 ## What Changed
 
@@ -87,6 +89,20 @@ scaffold smoke, five fresh-friend personas, install smoke, Codex plugin
 validation, host plugin smoke, Claude strict plugin validation, and clean
 wheel/sdist install checks all passing.
 
+Published artifact verification on 2026-06-22:
+
+- PyPI JSON reported `0.8.2`.
+- `pip index versions morning-paper` showed `0.8.2`.
+- Clean Python 3.13 venv installed `morning-paper[pretty]==0.8.2` from PyPI.
+- Installed binary printed `0.8.2`.
+- `morning-paper doctor --strict --json` returned `status: ok`,
+  WeasyPrint `69.0`, trafilatura `2.1.0`, and a one-page render self-test.
+- `morning-paper demo --output <tmp>/demo.pdf --open` rendered a real two-page
+  PDF and opened it with macOS `open`.
+- A fresh clone of `v0.8.2` passed `scripts/install_smoke.py`,
+  `scripts/validate_codex_plugin.py`, `scripts/host_plugin_smoke.py`, and
+  `claude plugin validate --strict`.
+
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack
 versions, verifies WeasyPrint 69.0, runs `doctor --strict`, and renders a
@@ -114,18 +130,15 @@ and passes setup smoke without touching real user config.
 
 ## Release Checklist
 
-Before publishing:
+Completed:
 
-1. Confirm worktree clean.
-2. Re-run the full verification block above.
-3. Push the batched commits.
-4. Tag `v0.8.2` on the release commit.
-5. Build and publish clean artifacts.
-6. Verify PyPI reports `0.8.2`.
-7. Clean-install `morning-paper[pretty]` from PyPI.
-8. Run `morning-paper doctor --strict`.
-9. Run `morning-paper demo --open`.
-10. Validate Claude Code and Codex plugin installs from the published repo.
-
-Do not call the release done until the published package, tag, local binary,
-demo PDF, and both plugin surfaces are verified directly.
+1. Confirmed worktree clean before release.
+2. Re-ran the full local verification block.
+3. Pushed batched commits to `main`.
+4. Tagged `v0.8.2` on the release commit.
+5. Built and published clean artifacts through GitHub Actions.
+6. Verified PyPI reports `0.8.2`.
+7. Clean-installed `morning-paper[pretty]==0.8.2` from PyPI.
+8. Ran `morning-paper doctor --strict`.
+9. Ran `morning-paper demo --open`.
+10. Validated Claude Code and Codex plugin installs from the published tag.

@@ -98,8 +98,11 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
     assert "Friend-ready personal newsroom setup" in changelog
-    assert f"Current release candidate: {version}" in readiness
-    assert f"release candidate {version}" in readiness
+    assert f"release: {version}" in readiness
+    assert f"`morning-paper` {version} is live on PyPI" in readiness
+    assert f"Published tag: `v{version}`" in release_readiness
+    assert "Status: published and verified." in release_readiness
+    assert "Clean Python 3.13 venv installed" in release_readiness
     assert f"same {version} semver" in readiness
     assert "live 0.7.1 demo" not in readiness
     assert "historical live-host evidence" in readiness
