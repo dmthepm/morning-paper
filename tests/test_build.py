@@ -96,7 +96,11 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
     <title>X</title>
     <meta property="og:site_name" content="X" />
   </head>
-  <body><article><p>Body paragraph one.</p><p>Body paragraph two.</p></article></body>
+  <body><article>
+    <p>Body paragraph one has enough local article text to exercise the printer without relying on any remote reader fallback or third-party extraction service.</p>
+    <p>Body paragraph two continues the story with specific detail about the printed edition, the source contract, and the local parsing path that should remain entirely on this machine.</p>
+    <p>Body paragraph three gives the validation gate enough substance to treat this as a real article rather than a shell page or tiny teaser.</p>
+  </article></body>
 </html>
 """
         )
@@ -110,7 +114,11 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
     <meta property="og:site_name" content="Example" />
     <meta name="author" content="Devon" />
   </head>
-  <body><article><p>Body paragraph one.</p><p>Body paragraph two.</p></article></body>
+  <body><article>
+    <p>Body paragraph one has enough local article text to exercise the printer without relying on any remote reader fallback or third-party extraction service.</p>
+    <p>Body paragraph two continues the story with specific detail about the printed edition, the source contract, and the local parsing path that should remain entirely on this machine.</p>
+    <p>Body paragraph three gives the validation gate enough substance to treat this as a real article rather than a shell page or tiny teaser.</p>
+  </article></body>
 </html>
 """
         )

@@ -42,7 +42,7 @@ class StagedItem:
     truncated: bool = False           # honesty flag: the staged copy is incomplete
     words_extracted: int | None = None  # words the extractor recovered before any render cap
     warning: str = ""                 # plain-language explanation when truncated
-    extractor_note: str = ""          # honesty note: e.g. local extraction fell back to jina
+    extractor_note: str = ""          # honesty note: e.g. explicit remote fallback ran
     contributor: str = ""             # masthead name when a trusted sender emailed this in
 
 
@@ -158,10 +158,14 @@ def stage_url(
 
     The one staging path for URLs — the `stage` CLI command and the
     contributor inbox both call this, so the honesty flags (truncation,
-    extractor fallback) are identical no matter how the URL arrived.
+    remote-fallback notes) are identical no matter how the URL arrived.
     Raises ArticleExtractionError when the page cannot be extracted.
     """
-    article = fetch_article(url, extractor_name=config.article_extractor)
+    article = fetch_article(
+        url,
+        extractor_name=config.article_extractor,
+        allow_remote_fallback=config.remote_extractor_fallback,
+    )
     markdown = render_article_markdown(
         config,
         [article],

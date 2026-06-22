@@ -670,7 +670,14 @@ def print_command(args: list[str]) -> int:
         print("using built-in defaults for one-off print", file=sys.stderr)
         print("run `morning-paper init` to customize feeds, timezone, and output paths", file=sys.stderr)
     try:
-        articles = [fetch_article(url, extractor_name=config.article_extractor) for url in urls]
+        articles = [
+            fetch_article(
+                url,
+                extractor_name=config.article_extractor,
+                allow_remote_fallback=config.remote_extractor_fallback,
+            )
+            for url in urls
+        ]
     except ArticleExtractionError as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -683,8 +690,8 @@ def print_command(args: list[str]) -> int:
         for article in articles
         if (message := article_truncation_warning(article))
     ]
-    # Honesty rule: if the local extractor fell back to the remote jina reader,
-    # say so — the reader should know this URL left the machine.
+    # Honesty rule: if the reader explicitly allowed remote fallback, say when
+    # it actually happened — the reader should know this URL left the machine.
     truncation_warnings.extend(
         f"{article.url} {article.extraction_note}" for article in articles if article.extraction_note
     )

@@ -31,13 +31,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   configured.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
-- Active setup, edition, collector, roadmap, and readiness docs no longer frame
-  the product around starter feeds; they describe a newsroom intake layer for
-  work systems, people, saved reading, exports, folders, and agent outputs.
+- Active setup, edition, collector, roadmap, and readiness docs now describe a
+  newsroom intake layer for work systems, people, saved reading, exports,
+  folders, and agent outputs instead of centering public feed examples.
 - `scripts/fresh_friend_smoke.py` now checks first-edition quality, not just
   PDF existence: The Read, source inventory, page budget, feedback route,
   durable feedback file routing, clean review status, and reader-owned next
   source candidates must all be present.
+- Remote article fallback is now explicit. `article_extractor: local` keeps URL
+  capture on the reader's machine; it no longer escalates to the Jina remote
+  reader unless `remote_extractor_fallback: true` is set. Direct
+  `article_extractor: jina` remains available for readers who choose it.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when
@@ -271,7 +275,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Stage JSON now carries `extractor_note`; `print` output adds a warning line when the extractor fell back
 
 ### Changed
-- `jina` (`r.jina.ai`) is demoted from default to explicit option + automatic fallback. Privacy note, stated plainly in README and docs: jina sends each URL you read to a third-party service. When local extraction recovers too little content the engine chains `local -> jina` and flags the result with an honest note — never a silent fallback
+- `jina` (`r.jina.ai`) is demoted from default to explicit option, with a
+  privacy note stated plainly in README and docs: jina sends each URL you read
+  to a third-party service. At the time, local extraction could chain
+  `local -> jina` with an honest note; 0.8.2 makes that remote fallback
+  explicit opt-in.
 - Default config (`init`) now writes `article_extractor: local` with the privacy trade documented in a comment
 
 ## [0.4.1] - 2026-06-11

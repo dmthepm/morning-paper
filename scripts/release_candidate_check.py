@@ -43,11 +43,15 @@ EXCLUDED_SUFFIXES = (".egg-info",)
 EXPECTED_MODULES = (
     "morning_paper/newsroom.py",
     "morning_paper/edition_workspace.py",
+    "morning_paper/config.py",
+    "morning_paper/article_print.py",
     "morning_paper/page_count_worker.py",
 )
 EXPECTED_SNIPPETS = {
     "morning_paper/edition_workspace.py": ("feedback_plan_template", "feedback-plan.md", "Applied Feedback"),
     "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md"),
+    "morning_paper/config.py": ("remote_extractor_fallback", "remote_extractor_fallback: false"),
+    "morning_paper/article_print.py": ("allow_remote_fallback", "Remote fallback is opt-in"),
 }
 STALE_RESOURCE_MARKERS = ("typewriter.md", "typewriter-v5.md")
 

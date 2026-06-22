@@ -207,6 +207,8 @@ The stable contract:
   paragraphs, and image references when available;
 - validation rejects shell pages, too-short results, and obvious garbage;
 - partial results carry a plain-language warning;
+- remote readers and browser/API scrapes are explicit choices, never hidden
+  default rescue paths;
 - remote-reader results carry an extraction note so the editor knows the URL
   left the machine;
 - rendering does not branch around extractor-specific hacks.

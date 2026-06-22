@@ -87,6 +87,7 @@ class MorningPaperConfig:
     timezone: str = "America/Los_Angeles"
     profile: str = ""
     article_extractor: str = "local"
+    remote_extractor_fallback: bool = False
     page_budget: int = 20
     sources: SourcesConfig = field(default_factory=SourcesConfig)
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
@@ -167,6 +168,20 @@ def _validate_article_extractor(value: str) -> str:
     return value
 
 
+def _parse_bool(value: object, *, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+    return bool(value)
+
+
 def _parse_inbox(data: dict) -> InboxConfig:
     # Security rule: credentials never live in config. Catch any attempt early
     # with the fix in the error, instead of silently ignoring a secret on disk.
@@ -230,6 +245,7 @@ def load_config(path: Path) -> MorningPaperConfig:
         timezone=_validate_timezone(str(data.get("timezone", "America/Los_Angeles"))),
         profile=str(data.get("profile", "")).strip(),
         article_extractor=_validate_article_extractor(str(data.get("article_extractor", "local"))),
+        remote_extractor_fallback=_parse_bool(data.get("remote_extractor_fallback"), default=False),
         page_budget=page_budget,
         sources=SourcesConfig(
             hacker_news=HackerNewsConfig(
@@ -285,11 +301,12 @@ timezone: {detect_system_timezone()}
 profile: |
   Add a short note about who this paper is for and what should matter most.
   Replace this with your own beat: the topics, projects, and people you follow.
-# article extraction for `print`/`stage`: `local` fetches and parses on this
-# machine (trafilatura) — URLs never leave your computer. `jina` sends each URL
-# to the third-party r.jina.ai reader service; it remains available and is used
-# automatically (with an honest note) when local extraction comes up short.
+# article extraction for `print`/`stage`: `local` keeps URL fetching and parsing
+# on this machine. `jina` sends each URL to the third-party r.jina.ai reader
+# service. If you deliberately want local extraction to try that remote reader
+# when a page comes up short, set `remote_extractor_fallback: true`.
 article_extractor: local
+remote_extractor_fallback: false
 # target length for a full edition; `morning-paper queue` reports against this
 page_budget: 20
 

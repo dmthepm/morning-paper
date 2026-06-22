@@ -34,9 +34,8 @@
 
 ## Shipped (`v0.4.2`)
 
-- `local` article extractor (trafilatura, core dependency) as the default —
-  URLs stay on your machine; `jina` demoted to explicit option + honest
-  auto-fallback with a privacy note in the result
+- `local` article extractor as the default — URLs stay on your machine; `jina`
+  demoted from the default path into an explicit remote-reader choice
 - "Set up with AI" onboarding prompt at the top of the README
 
 ## Shipped (`v0.4.4`)
@@ -140,8 +139,9 @@
   vendored Courier Prime, and WeasyPrint gets the correct OTF/TTF `format()`
   hint so the same paper uses the same glyphs on macOS and Linux
 - `v0.8.2` candidate — reader-stack-first source framing, durable
-  `feedback-plan.md` artifacts, visual integration guardrails, and stricter
-  release-candidate artifact checks
+  `feedback-plan.md` artifacts, visual integration guardrails, explicit
+  opt-in remote extractor fallback, and stricter release-candidate artifact
+  checks
 - next skill architecture is banked in `docs/newsroom-skill-suite.md`: grow
   from the current setup/edition/writing proof into narrow newsroom desks
   without breaking the friend path
@@ -176,5 +176,5 @@
 - coverage / breadth analysis for major stories
 - image-of-the-day or full-page visual mode
 - E Ink / device delivery surfaces
-- additional extractor backends beyond `local` and `jina` (readability exports,
-  paywalled-page sessions)
+- additional explicit extractor backends (readability exports, browser session
+  capture, paid/private readers, or paywalled-page sessions)

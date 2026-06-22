@@ -107,9 +107,11 @@ Examples:
 - one-off URLs staged for tomorrow's paper.
 
 Article extraction is replaceable plumbing. The current engine has registered
-extractors, but the product promise is not "use this scraper." The promise is:
-stage source-backed material honestly, record when extraction was partial or
-remote, and let the editor decide what earns space.
+extractors, but the product promise is not "use this scraper." Local extraction
+keeps URL capture on your machine; remote readers or browser/API scrapes should
+be explicit choices recorded in the staged item. The promise is: stage
+source-backed material honestly, record when extraction was partial or remote,
+and let the editor decide what earns space.
 
 See [docs/collectors.md](docs/collectors.md) for the staging contract.
 

@@ -12,7 +12,7 @@ import requests
 import yaml
 
 from morning_paper import cli
-from morning_paper.article_print import JINA_FALLBACK_NOTE, Article, fetch_article
+from morning_paper.article_print import JINA_FALLBACK_NOTE, Article, ArticleExtractionError, fetch_article
 from morning_paper.config import ConfigError, MorningPaperConfig, load_config, render_default_config
 from morning_paper.extractors import get_article_extractor
 
@@ -121,9 +121,16 @@ class LocalExtractorTest(unittest.TestCase):
         self.assertEqual(article.title, "The Quiet Craft of Local Extraction")
         self.assertIn("Local extraction keeps the entire reading pipeline", article.body)
 
-    def test_local_falls_back_to_jina_with_honest_note(self) -> None:
+    def test_local_does_not_fall_back_to_jina_by_default(self) -> None:
         with patch("morning_paper.article_print.requests.get", side_effect=_fake_get_thin_with_jina):
-            article = fetch_article("https://example.com/thin")
+            with self.assertRaises(ArticleExtractionError) as ctx:
+                fetch_article("https://example.com/thin")
+
+        self.assertIn("Could not extract enough article content", str(ctx.exception))
+
+    def test_local_remote_fallback_is_explicit_and_honest(self) -> None:
+        with patch("morning_paper.article_print.requests.get", side_effect=_fake_get_thin_with_jina):
+            article = fetch_article("https://example.com/thin", allow_remote_fallback=True)
 
         self.assertEqual(article.extraction_note, JINA_FALLBACK_NOTE)
         self.assertIn("r.jina.ai", article.extraction_note)
@@ -138,6 +145,7 @@ class LocalExtractorTest(unittest.TestCase):
             config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
             config["outputs"]["directory"] = str(tmp_path / "out")
             config["outputs"]["renderer"] = "portable"
+            config["remote_extractor_fallback"] = True
             config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
             stdout = io.StringIO()
@@ -186,7 +194,9 @@ class LocalExtractorTest(unittest.TestCase):
 class ExtractorConfigTest(unittest.TestCase):
     def test_local_is_the_default_extractor(self) -> None:
         self.assertEqual(MorningPaperConfig().article_extractor, "local")
+        self.assertFalse(MorningPaperConfig().remote_extractor_fallback)
         self.assertIn("article_extractor: local", render_default_config())
+        self.assertIn("remote_extractor_fallback: false", render_default_config())
 
     def test_default_config_loads_with_local_extractor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -198,6 +208,17 @@ class ExtractorConfigTest(unittest.TestCase):
             config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
             config = load_config(config_path)
             self.assertEqual(config.article_extractor, "local")
+            self.assertFalse(config.remote_extractor_fallback)
+
+    def test_remote_extractor_fallback_is_explicit_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "config.yaml"
+            data = yaml.safe_load(render_default_config())
+            data["outputs"]["directory"] = str(tmp_path / "out")
+            data["remote_extractor_fallback"] = "true"
+            config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+            self.assertTrue(load_config(config_path).remote_extractor_fallback)
 
     def test_config_accepts_jina_and_rejects_unknown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -85,7 +85,7 @@ class Article:
     bio: str | None = None
     blocks: list[tuple[str, str]] = field(default_factory=list)
     # honesty note: set when extraction did not happen the way the config promised
-    # (for example: local extraction came up short and the jina fallback ran)
+    # (for example: the reader explicitly allowed remote fallback and it ran)
     extraction_note: str = ""
 
 
@@ -610,12 +610,13 @@ JINA_FALLBACK_NOTE = (
 )
 
 
-def _extract_with_fallback(extractor, url: str) -> tuple[ExtractedArticleContent, str]:
-    """Run the configured extractor; chain local -> jina when local comes up short.
+def _extract_with_fallback(
+    extractor, url: str, *, allow_remote_fallback: bool = False
+) -> tuple[ExtractedArticleContent, str]:
+    """Run the configured extractor; optionally chain local -> jina when short.
 
-    Returns (content, note). The note is the honest record that the privacy
-    promise of `local` was traded for content on this URL — surfaced in the
-    print/stage results, never silent.
+    Returns (content, note). Remote fallback is opt-in because the privacy
+    promise of `local` must mean the URL stays on this machine.
     """
     try:
         extracted = extractor.extract(url)
@@ -624,6 +625,8 @@ def _extract_with_fallback(extractor, url: str) -> tuple[ExtractedArticleContent
             raise
         extracted = ExtractedArticleContent()
     if extractor.name != "local" or _extracted_content_chars(extracted) >= MIN_ARTICLE_LENGTH:
+        return extracted, ""
+    if not allow_remote_fallback:
         return extracted, ""
     try:
         fallback = get_article_extractor("jina").extract(url)
@@ -634,7 +637,9 @@ def _extract_with_fallback(extractor, url: str) -> tuple[ExtractedArticleContent
     return extracted, ""
 
 
-def fetch_article(url: str, *, extractor_name: str = "local") -> Article:
+def fetch_article(
+    url: str, *, extractor_name: str = "local", allow_remote_fallback: bool = False
+) -> Article:
     domain = _normalized_domain(url)
     if domain in SKIP_DOMAINS:
         raise ArticleExtractionError(
@@ -652,7 +657,9 @@ def fetch_article(url: str, *, extractor_name: str = "local") -> Article:
             f"Could not fetch article from `{url}`. The source returned an HTTP or network error. Detail: {exc}"
         ) from exc
     raw_html = response.text
-    extracted, extraction_note = _extract_with_fallback(extractor, url)
+    extracted, extraction_note = _extract_with_fallback(
+        extractor, url, allow_remote_fallback=allow_remote_fallback
+    )
     title = _meta_content(raw_html, "og:title")
     if not title:
         match = re.search(r"<title>(.*?)</title>", raw_html, flags=re.IGNORECASE | re.DOTALL)
