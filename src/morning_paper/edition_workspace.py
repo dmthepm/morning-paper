@@ -15,6 +15,12 @@ FEEDBACK_ROUTES = {
     "sources": "SOURCES.md",
     "delivery": "DELIVERY.md",
     "taste": "TASTELOG.md",
+    "voice": "preferences/voice.md",
+    "prior": "preferences/algorithm-prior.yaml",
+    "checks": "preferences/checks.yaml",
+    "the-read": "specs/the-read.md",
+    "front-page": "specs/front-page.md",
+    "reading": "specs/reading.md",
 }
 
 
@@ -71,9 +77,13 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
 
 | Reader note | Durable target |
 |---|---|
-| Keep / cut / more / less / page budget / what earns ink | `EDITORIAL.md`, `specs/`, `preferences/voice.md` |
+| Keep / cut / more / less / page budget / what earns ink | `EDITORIAL.md` (`--route editorial`) |
+| Voice, density, register, tone, AI tells | `preferences/voice.md` (`--route voice`) |
+| Section-specific taste | `specs/the-read.md`, `specs/front-page.md`, or `specs/reading.md` (`--route the-read|front-page|reading`) |
 | Visuals, charts, illustrations, layout, print readability | `VISUALS.md` |
-| Add, demote, remove, distrust, or change cadence of a source | `SOURCES.md`, `preferences/algorithm-prior.yaml`, `collectors/` |
+| Add, demote, remove, distrust, or change cadence of a source | `SOURCES.md` (`--route sources`) |
+| Standing interests, source weighting, dampeners | `preferences/algorithm-prior.yaml` (`--route prior`) |
+| Review thresholds or muted copy-desk findings | `preferences/checks.yaml` (`--route checks`) |
 | PDF, print, email/article view, archive, routine/automation behavior | `DELIVERY.md` |
 | One-off URL or file to read tomorrow | `morning-paper stage <url-or-file>` |
 | Stable accepted/rejected taste decision | `TASTELOG.md` |
@@ -157,7 +167,8 @@ def apply_feedback(
         raise ValueError("note is required")
     clean_why = " ".join(why.split()) or "recorded from reader feedback"
 
-    target = root / FEEDBACK_ROUTES[route_key]
+    target_relative = FEEDBACK_ROUTES[route_key]
+    target = root / target_relative
     if not target.exists():
         raise FileNotFoundError(f"missing newsroom file: {target}")
 
@@ -171,12 +182,12 @@ def apply_feedback(
     taste_log = root / "TASTELOG.md"
     if not taste_log.exists():
         raise FileNotFoundError(f"missing newsroom file: {taste_log}")
-    taste_line = f"{stamp} - {decision_key} - {clean_note} - {target.name} - {clean_why}"
+    taste_line = f"{stamp} - {decision_key} - {clean_note} - {target_relative} - {clean_why}"
     _append_section_note(taste_log, heading="## Log", note=taste_line)
     changed_paths.append(str(taste_log))
 
     feedback_plan = root / "editions" / date_str / "feedback-plan.md"
-    applied_line = f"{decision_key} `{route_key}` feedback -> `{target.name}`; paths changed: {', '.join(changed_paths)}"
+    applied_line = f"{decision_key} `{route_key}` feedback -> `{target_relative}`; paths changed: {', '.join(changed_paths)}"
     _append_applied_feedback(feedback_plan, applied_line, date_str=date_str)
     changed_paths.append(str(feedback_plan))
 
@@ -186,6 +197,7 @@ def apply_feedback(
         "route": route_key,
         "decision": decision_key,
         "target": str(target),
+        "target_relative": target_relative,
         "taste_log": str(taste_log),
         "feedback_plan": str(feedback_plan),
         "paths_changed": changed_paths,

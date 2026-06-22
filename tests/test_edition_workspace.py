@@ -192,6 +192,85 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("visuals", feedback_plan)
             self.assertIn("VISUALS.md", feedback_plan)
 
+    def test_apply_feedback_can_target_voice_and_section_specs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+
+            voice_out = io.StringIO()
+            with redirect_stdout(voice_out):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "apply-feedback",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                        "--route",
+                        "voice",
+                        "--note",
+                        "Use the dense operator register by default.",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            voice_payload = json.loads(voice_out.getvalue())
+            self.assertEqual(voice_payload["target_relative"], "preferences/voice.md")
+            voice = (newsroom / "preferences" / "voice.md").read_text(encoding="utf-8")
+            self.assertIn("Use the dense operator register by default.", voice)
+
+            spec_out = io.StringIO()
+            with redirect_stdout(spec_out):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "apply-feedback",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                        "--route",
+                        "the-read",
+                        "--note",
+                        "The Read should connect work and personal sources before recommending action.",
+                        "--why",
+                        "reader wants synthesis, not a mirror",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            spec_payload = json.loads(spec_out.getvalue())
+            self.assertEqual(spec_payload["target_relative"], "specs/the-read.md")
+            the_read = (newsroom / "specs" / "the-read.md").read_text(encoding="utf-8")
+            self.assertIn("connect work and personal sources", the_read)
+            tastelog = (newsroom / "TASTELOG.md").read_text(encoding="utf-8")
+            self.assertIn("preferences/voice.md", tastelog)
+            self.assertIn("specs/the-read.md", tastelog)
+            feedback_plan = (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("voice", feedback_plan)
+            self.assertIn("the-read", feedback_plan)
+            self.assertIn("preferences/voice.md", feedback_plan)
+            self.assertIn("specs/the-read.md", feedback_plan)
+
     def test_apply_feedback_rejects_missing_route_or_note(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

@@ -49,6 +49,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   stable reader notes into the selected durable newsroom file, appends
   `TASTELOG.md`, and updates the edition's `feedback-plan.md` so feedback
   survives compaction as an auditable change.
+- `edition apply-feedback` now supports narrower scaffolded routes:
+  `voice`, `prior`, `checks`, `the-read`, `front-page`, and `reading`, so
+  stable notes can land in `preferences/` and `specs/` instead of being forced
+  into broad desk files.
 - **Source vocabulary cleanup.** CLI help, generated config comments, source
   inventory JSON, setup guidance, roadmap, and demo copy now say source stack,
   entry points, and reader-owned sources instead of teaching a feed-first

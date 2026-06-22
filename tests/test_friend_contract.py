@@ -73,6 +73,9 @@ def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
     edition_workspace = _read("src/morning_paper/edition_workspace.py")
     assert "edition apply-feedback" in cli_text
     assert "def apply_feedback" in edition_workspace
+    for route in ("voice", "prior", "checks", "the-read", "front-page", "reading"):
+        assert route in edition_workspace
+        assert route in cli_text
 
 
 def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> None:

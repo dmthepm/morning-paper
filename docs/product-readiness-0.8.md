@@ -138,7 +138,9 @@ Acceptance:
   selected durable file, `TASTELOG.md`, and the edition's `feedback-plan.md`;
 - accepted feedback is routed to the smallest durable file:
   `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `specs/`,
-  `preferences/`, or `TASTELOG.md`.
+  `preferences/`, or `TASTELOG.md`. The supported routes include `editorial`,
+  `voice`, `visuals`, `sources`, `prior`, `delivery`, `checks`, `the-read`,
+  `front-page`, `reading`, and `taste`.
 
 ## Native Recurrence Policy
 

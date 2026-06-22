@@ -38,7 +38,9 @@ surfaces again.
   local extraction does not silently absorb a future major parser change.
 - Durable feedback is executable: `morning-paper edition apply-feedback`
   writes stable notes into the selected newsroom file, `TASTELOG.md`, and that
-  edition's `feedback-plan.md`.
+  edition's `feedback-plan.md`. It can now target the narrower scaffolded
+  files for voice, standing interests, review preferences, and section specs
+  instead of only the broad desk files.
 - Native recurrence is framed through the host's own primitive: Codex
   automations, Claude Code routines, or ChatGPT scheduled tasks. The CLI
   `routine` command remains a local fallback.

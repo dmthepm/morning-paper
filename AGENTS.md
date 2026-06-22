@@ -63,10 +63,11 @@ files an agent can resume from; `sources check` inventories configured sources
 and auto-detects a scaffolded newsroom when run from its root;
 `sources check --newsroom <path>` explicitly inventories local collector scripts;
 `queue list|show|remove` inspects and prunes staged material; `edition
-apply-feedback <path> --route editorial|visuals|sources|delivery|taste --note
-...` records stable reader feedback into the smallest durable file, TASTELOG,
-and that edition's feedback plan. `stage` takes a real file path, never
-`/dev/stdin` — write a temp file first.
+apply-feedback <path> --route ROUTE --note ...` records stable reader feedback
+into the smallest durable file, TASTELOG, and that edition's feedback plan.
+Use `editorial`, `voice`, `visuals`, `sources`, `prior`, `delivery`, `checks`,
+`the-read`, `front-page`, `reading`, or `taste`. `stage` takes a real file
+path, never `/dev/stdin` — write a temp file first.
 
 ## The single-source rule (hold it forever)
 

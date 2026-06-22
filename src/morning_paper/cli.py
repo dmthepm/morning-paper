@@ -1075,7 +1075,9 @@ def edition_command(args: list[str]) -> int:
         "usage: morning-paper edition prepare <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]\n"
         "       morning-paper edition apply-feedback <newsroom-path> --route ROUTE --note TEXT "
-        "[--decision accepted|rejected] [--why TEXT] [--date YYYY-MM-DD]"
+        "[--decision accepted|rejected] [--why TEXT] [--date YYYY-MM-DD]\n"
+        "       routes: editorial, voice, visuals, sources, prior, delivery, checks, "
+        "the-read, front-page, reading, taste"
     )
     config_path = DEFAULT_CONFIG_PATH
     date: str | None = None

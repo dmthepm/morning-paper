@@ -165,7 +165,7 @@ If the user dictates or replies with reactions ("more like this", "kill
 section X", "that chart worked", "email this too", "print <url> tomorrow"):
 read `feedback-plan.md`, choose the smallest durable route, then use
 `morning-paper edition apply-feedback . --date <edition-date> --route
-editorial|visuals|sources|delivery|taste --note "<reader note>" --why
+editorial|voice|visuals|sources|prior|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
 "<why it should change tomorrow>"` for stable feedback. It updates the target
 durable file, appends `TASTELOG.md`, and writes the "Applied Feedback" note.
 Use `morning-paper stage <url>` for anything they asked to read tomorrow.

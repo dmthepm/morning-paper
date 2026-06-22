@@ -689,7 +689,7 @@ recent `editions/<date>/operator-answers.md` and honors it. So if they reply
 "more like this", "kill section X", or "print `<url>` tomorrow", the editor
 chooses the smallest durable route and records stable notes with
 `morning-paper edition apply-feedback . --date <edition-date> --route
-editorial|visuals|sources|delivery|taste --note "<reader note>" --why
+editorial|voice|visuals|sources|prior|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
 "<why it should change tomorrow>"`. That writes the target file, `TASTELOG.md`,
 and the edition's `feedback-plan.md`. Then it stages anything they asked to
 read. The newsroom is a loop: what they write today shapes tomorrow's paper.
