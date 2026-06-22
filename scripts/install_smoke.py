@@ -3,7 +3,8 @@
 
 The two host manifests each declare a ``skills`` path. This resolves both
 exactly as each host would, and asserts that both land on the *same* real
-directory carrying all three skills with valid frontmatter. It is the
+directory carrying exactly the three shipped 0.8.x skills with valid
+frontmatter. It is the
 file-level proof behind "a fresh friend's install carries the newsroom skills"
 on Claude Code and Codex, runnable on a CI box with no CLI installed.
 
@@ -17,7 +18,7 @@ import re
 import sys
 from pathlib import Path
 
-REQUIRED_SKILLS = ("setup", "edition", "writing")
+SHIPPED_SKILLS = ("setup", "edition", "writing")
 
 
 def resolve_skills(base: Path, skills_field: str) -> Path:
@@ -30,7 +31,13 @@ def assert_skills_dir(label: str, skills_dir: Path, errors: list[str]) -> None:
     if not skills_dir.is_dir():
         errors.append(f"{label}: skills path does not resolve to a directory: {skills_dir}")
         return
-    for name in REQUIRED_SKILLS:
+    found = sorted(path.name for path in skills_dir.iterdir() if path.is_dir() and not path.name.startswith("."))
+    if found != sorted(SHIPPED_SKILLS):
+        errors.append(
+            f"{label}: shipped skill set changed without updating the contract "
+            f"(expected {sorted(SHIPPED_SKILLS)}, found {found})"
+        )
+    for name in SHIPPED_SKILLS:
         skill_md = skills_dir / name / "SKILL.md"
         if not skill_md.is_file():
             errors.append(f"{label}: missing skill `{name}` ({skill_md})")
@@ -78,7 +85,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"Install-smoke passed: both hosts expose {', '.join(REQUIRED_SKILLS)} from {cc_skills}")
+    print(f"Install-smoke passed: both hosts expose exactly {', '.join(SHIPPED_SKILLS)} from {cc_skills}")
     return 0
 
 

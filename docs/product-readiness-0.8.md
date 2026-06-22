@@ -55,7 +55,9 @@ The product promise stays narrow:
   format hint for OTF vs TTF files.
 - The next skill architecture is drafted in `docs/newsroom-skill-suite.md`.
   It treats skills as newsroom desks over durable files, not as a pile of
-  source adapters or a clone of generic product/design docs.
+  source adapters or a clone of generic product/design docs. It is explicitly
+  future-facing: 0.8.x ships exactly `setup`, `edition`, and `writing`, and
+  plugin smoke tests fail if an unfinished desk skill leaks into the surface.
 
 ## User Stories
 

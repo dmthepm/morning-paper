@@ -7,7 +7,7 @@ real Claude/Codex configuration:
 - copy the current worktree to a sanitized temporary marketplace;
 - install the plugin with a temporary CODEX_HOME;
 - install the plugin with a temporary CLAUDE_CONFIG_DIR;
-- inspect each installed cache for the expected setup/edition/writing skills.
+- inspect each installed cache for exactly the shipped setup/edition/writing skills.
 
 It is intentionally local-only: CI often does not have Claude Code or Codex.
 """
@@ -23,7 +23,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-REQUIRED_SKILLS = ("setup", "edition", "writing")
+SHIPPED_SKILLS = ("setup", "edition", "writing")
 EXCLUDED_NAMES = {
     ".git",
     ".claude",
@@ -77,7 +77,14 @@ def _assert_skill_tree(label: str, root: Path, errors: list[str]) -> None:
     if not root.is_dir():
         errors.append(f"{label}: missing installed plugin root `{root}`")
         return
-    for name in REQUIRED_SKILLS:
+    skills_root = root / "skills"
+    found = sorted(path.name for path in skills_root.iterdir() if path.is_dir() and not path.name.startswith(".")) if skills_root.is_dir() else []
+    if found != sorted(SHIPPED_SKILLS):
+        errors.append(
+            f"{label}: shipped skill set changed without updating the smoke contract "
+            f"(expected {sorted(SHIPPED_SKILLS)}, found {found})"
+        )
+    for name in SHIPPED_SKILLS:
         skill = root / "skills" / name / "SKILL.md"
         if not skill.is_file():
             errors.append(f"{label}: missing `{skill}`")
@@ -188,7 +195,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print("Host plugin smoke passed: Claude Code and Codex install the shared skills from a clean local marketplace.")
+    print("Host plugin smoke passed: Claude Code and Codex install exactly the shipped shared skills from a clean local marketplace.")
     return 0
 
 

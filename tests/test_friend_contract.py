@@ -82,6 +82,9 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     readiness = _read("docs/product-readiness-0.8.md")
     roadmap = _read("ROADMAP.md")
     skill_suite = _read("docs/newsroom-skill-suite.md")
+    install_smoke = _read("scripts/install_smoke.py")
+    host_smoke = _read("scripts/host_plugin_smoke.py")
+    codex_validator = _read("scripts/validate_codex_plugin.py")
 
     summary = _pyproject_field("description")
     version = _pyproject_field("version")
@@ -96,6 +99,11 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
     assert "skills as newsroom desks" in readiness
     assert "Morning Paper skills are newsroom desks" in skill_suite
+    assert "0.8.x ships exactly three plugin skills" in skill_suite
+    assert "This section is a design direction, not shipped surface" in skill_suite
+    assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in install_smoke
+    assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in host_smoke
+    assert "SHIPPED_SKILLS = (\"setup\", \"edition\", \"writing\")" in codex_validator
     assert "edition apply-feedback" in readiness
     for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         assert newsroom_file in skill_suite

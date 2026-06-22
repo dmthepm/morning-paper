@@ -59,6 +59,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   print stack, `trafilatura` is bounded to the current supported major line
   (`>=2.1,<3`), and the release-candidate checker fails if a clean install does
   not expose those versions.
+- **Exact shipped skill contract.** Plugin validation and host smoke tests now
+  fail if the 0.8.x plugin exposes anything other than the shipped
+  `setup`/`edition`/`writing` skill set. Future newsroom desk skills must land
+  deliberately with updated manifests, evals, and docs.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when

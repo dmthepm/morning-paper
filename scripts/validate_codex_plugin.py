@@ -10,8 +10,9 @@ catches drift without needing Codex installed on the runner:
   ``author.name`` and a required ``interface`` block, declares no rejected field
   (notably ``hooks``), and resolves ``skills`` to ``skills`` inside the plugin
   root.
-- every ``skills/<name>/SKILL.md`` opens with YAML frontmatter carrying a
-  non-empty ``name`` and ``description``.
+- the 0.8.x plugin exposes exactly the shipped ``setup`` / ``edition`` /
+  ``writing`` skills, and every ``skills/<name>/SKILL.md`` opens with YAML
+  frontmatter carrying a non-empty ``name`` and ``description``.
 - ``.agents/plugins/marketplace.json`` names the plugin, points its source at a
   real subdirectory (never the marketplace root), and carries the policy and
   category every entry needs.
@@ -41,6 +42,7 @@ REQUIRED_INTERFACE_STRINGS = (
     "displayName", "shortDescription", "longDescription",
     "developerName", "category",
 )
+SHIPPED_SKILLS = ("setup", "edition", "writing")
 
 
 def _load(path: Path, errors: list[str]) -> dict | None:
@@ -130,7 +132,12 @@ def validate_skills(plugin_root: Path, errors: list[str]) -> None:
             errors.append(f"skill `{skill_dir.name}` frontmatter needs a non-empty `name`")
         if not re.search(r"^description:\s*\S|^description:\s*>", front, re.MULTILINE):
             errors.append(f"skill `{skill_dir.name}` frontmatter needs a non-empty `description`")
-    for required in ("setup", "edition", "writing"):
+    if found != sorted(SHIPPED_SKILLS):
+        errors.append(
+            "shipped skill set changed without updating the Codex plugin contract "
+            f"(expected {sorted(SHIPPED_SKILLS)}, found {found})"
+        )
+    for required in SHIPPED_SKILLS:
         if required not in found:
             errors.append(f"expected skill `{required}` not found under {skills_root}")
 

@@ -42,10 +42,25 @@ next phase:
   as a long-term cross-plugin namespace. Future additions should use explicit
   Morning Paper names unless host constraints require otherwise.
 
+## Current Shipping Contract
+
+0.8.x ships exactly three plugin skills:
+
+- `setup`
+- `edition`
+- `writing`
+
+That exact set is intentional. `scripts/install_smoke.py`,
+`scripts/host_plugin_smoke.py`, and `scripts/validate_codex_plugin.py` fail if
+an unfinished desk skill leaks into the plugin surface. Future desk skills must
+land with updated manifests, smoke contracts, eval prompts, and README/setup
+guidance in the same release.
+
 ## Proposed Suite
 
-Keep the friend-facing path simple: "set up my morning paper" and "build
-today's edition" should still work. Internally, grow toward narrow desks:
+This section is a design direction, not shipped surface. Keep the friend-facing
+path simple: "set up my morning paper" and "build today's edition" should still
+work. Internally, grow toward narrow desks:
 
 | Skill | Role | Durable files read/write |
 | --- | --- | --- |
