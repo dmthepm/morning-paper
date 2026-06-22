@@ -90,8 +90,9 @@ Acceptance:
 
 ### 3. Sources Start From What The Reader Already Has
 
-As a reader, I can name sites, newsletters, folders, exports, feeds, or tools
-without knowing what RSS is.
+As a reader, I can name the places my attention and work already live — email,
+Slack, GitHub, Linear, saved articles, social or video exports, local folders,
+newsletters, feeds, or tools — without learning Morning Paper's internals.
 
 Acceptance:
 
@@ -191,8 +192,9 @@ Morning Paper owns:
 Entry points:
 
 - local drop folder for files the reader or an agent already has;
-- `stage` for one URL or file;
-- RSS/feed URLs, including full-text feeds when `content:encoded` is present;
+- `stage` for one URL, file, or saved item;
+- feed URLs when the reader already has them, including full-text feeds when
+  `content:encoded` is present;
 - contributor inbox;
 - queue/status for budget-aware inspection;
 - private collectors for work tools, personal feeds, local exports, and

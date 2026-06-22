@@ -1,11 +1,11 @@
 # Collectors — bring your own sources
 
 Morning Paper works best when it starts from the reader's existing source
-stack: email, newsletters, Slack or Discord, GitHub, Linear, Main Branch,
-RSS/Substack feeds, local folders, Obsidian vaults, social exports, YouTube or
-podcast history, browser/API scrape outputs, and files agents already produce.
+stack: email and newsletters, Slack or Discord, GitHub, Linear, Main Branch,
+local folders, Obsidian vaults, social and video exports, podcast history,
+browser/API scrape outputs, saved articles, and files agents already produce.
 The built-in demo proves the paper path without credentials; the product is the
-reader's own newsroom.
+reader's own newsroom, not any one input type.
 
 A **collector** is how any of that enters the paper — a work digest, a saved
 thread, a local social export, a weekly research roundup, a folder of notes, or
@@ -173,8 +173,10 @@ fi
 rm -f "$tmp"
 ```
 
-That is the whole idea: a source turns into markdown and gets staged. Starter
-feeds prove the path; collectors are how the paper becomes yours.
+That is the whole idea: a source turns into markdown and gets staged. A
+collector can be tiny because the durable contract is simple: gather something
+the reader already values, mark how trustworthy and complete it is, and let the
+editor decide whether it earns space.
 
 ## Local drop-folder collector
 

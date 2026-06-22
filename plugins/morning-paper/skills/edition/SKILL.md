@@ -45,7 +45,7 @@ Required durable artifacts:
    the senders get their confirmations. Then run the user's collectors: the
    scaffolded newsroom has `collectors/run_all.sh` (it runs every collector
    for the edition date, then prints `morning-paper queue list`); a bare-bones
-   newsroom may have only starter feeds or staged material.
+   newsroom may have only manually staged material or one simple source bridge.
    Collectors stage via `morning-paper stage`, so check the staged queue:
    `morning-paper queue list --date <edition-date>` and inspect uncertain
    items with `morning-paper queue show <slug> --date <edition-date> --content`.

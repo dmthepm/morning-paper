@@ -23,30 +23,35 @@ PERSONAS = [
         "paper": "Creator Desk",
         "profile": "Creator who wants world news, creator economy signal, and one full read.",
         "source": "# Creator note\n\nA launch essay and a news trend belong in today's paper.\n",
+        "next_sources": "newsletter folder, saved essays, YouTube watch history",
     },
     {
         "id": "business-owner-main-branch",
         "paper": "Operator Desk",
         "profile": "Business owner using Main Branch primitives: bets, pushes, risks, and asks.",
         "source": "# Main Branch pulse\n\nBet: improve onboarding. Push: finish the source layer. Risk: unclear owner feedback loop.\n",
+        "next_sources": "Main Branch bets, GitHub activity, Linear tickets, Slack decisions",
     },
     {
         "id": "technical-agent-user",
         "paper": "Agent Lab",
         "profile": "Technical user validating agent tools, render contracts, and queue durability.",
         "source": "# Agent tool note\n\nThe queue, source inventory, and edition artifacts must survive compaction.\n",
+        "next_sources": "agent logs, repo diffs, local markdown reports",
     },
     {
         "id": "nontechnical-rss-newsletter",
         "paper": "Newsletter Morning",
         "profile": "Nontechnical reader with RSS/newsletters and no interest in YAML internals.",
         "source": "# Newsletter clipping\n\nA full-text newsletter item should become a readable page, not a feed blurb.\n",
+        "next_sources": "email newsletters, RSS feeds, saved articles",
     },
     {
         "id": "local-folder-source-dump",
         "paper": "Local Sources",
         "profile": "Reader with local markdown, text dumps, synced folders, and agent-produced files.",
         "source": "# Local folder dump\n\nThis came from a folder the user already owns. Nothing needed to move.\n",
+        "next_sources": "Obsidian vault, synced folder, exported notes",
     },
 ]
 
@@ -78,23 +83,100 @@ def write_config(config_path: Path, output_dir: Path, profile: str) -> None:
 
 
 def compose_draft(persona: dict[str, str], staged_title: str) -> str:
-    return f"""# {persona['paper']} Proves Its First Edition - {DATE}
+    return f"""# {persona['paper']} Prints Its First Edition - {DATE}
 
 ## The Read
 
-The useful thing today is that this reader can get from a cold setup to a
-printable paper with sources they own as files.
+The first useful judgment is simple: this reader already has enough local
+context to print a real paper. Morning Paper should start with the source they
+own, prove the route from source to page, and ask for the next source only
+after the first edition lands.
+
+## Why It Matters Today
+
+Reader profile: {persona['profile']}
+
+The queued source, **{staged_title}**, gives the editor a concrete starting
+point from the reader's own stack. This edition should be modest, but not
+empty: one source-backed lead, one source desk note, one page-budget signal,
+and one clear feedback route.
+
+```mp-stats
+Reader-owned sources | 1 | staged today
+Edition artifacts | 8 | compaction-safe
+Feedback route | 1 | feedback-plan.md
+```
 
 ## Source Inventory
 
-The paper has a prepared source inventory and a queued local source:
-{staged_title}.
+The paper has a prepared `source-inventory.json` and a queued local source:
+{staged_title}. Tomorrow's best candidates: {persona['next_sources']}.
 
-## Reading
+## Page Budget
 
-The first edition is deliberately modest. It proves the private newsroom,
-queue, durable edition folder, renderer, review pass, and feedback sheet.
+This first edition should stay short. The goal is not volume yet; the goal is
+trust. The reader should be able to mark what felt useful, what felt thin, and
+which source should become part of the routine.
+
+## Feedback Loop
+
+After delivery, ask the reader what to keep, cut, expand, add as a source,
+change visually, change about delivery, or print tomorrow. Route durable
+changes through `feedback-plan.md` and record accepted/rejected taste in
+`TASTELOG.md`.
 """
+
+
+def assert_first_edition_quality(
+    *,
+    persona: dict[str, str],
+    edition_dir: Path,
+    render_payload: dict[str, object],
+    review_payload: dict[str, object],
+) -> list[str]:
+    errors: list[str] = []
+    draft = (edition_dir / "draft.md").read_text(encoding="utf-8")
+    queue = json.loads((edition_dir / "queue-snapshot.json").read_text(encoding="utf-8"))
+    source_inventory = json.loads((edition_dir / "source-inventory.json").read_text(encoding="utf-8"))
+    feedback_plan = (edition_dir / "feedback-plan.md").read_text(encoding="utf-8")
+    operator_answers = (edition_dir / "operator-answers.md").read_text(encoding="utf-8")
+
+    required_draft_phrases = [
+        "## The Read",
+        "first useful judgment",
+        "Reader profile:",
+        "```mp-stats",
+        "## Source Inventory",
+        "Tomorrow's best candidates:",
+        "## Page Budget",
+        "## Feedback Loop",
+        "feedback-plan.md",
+        "TASTELOG.md",
+    ]
+    for phrase in required_draft_phrases:
+        if phrase not in draft:
+            errors.append(f"{persona['id']}: draft missing `{phrase}`")
+    forbidden = ["Not composed yet", "generic feed"]
+    for phrase in forbidden:
+        if phrase in draft:
+            errors.append(f"{persona['id']}: draft contains placeholder/weak phrase `{phrase}`")
+    if queue.get("count", 0) < 1:
+        errors.append(f"{persona['id']}: queue snapshot has no staged source")
+    if source_inventory.get("source_model", {}).get("posture") != "reader_stack_first":
+        errors.append(f"{persona['id']}: source inventory lost reader-stack-first posture")
+    for phrase in ("Applied Feedback", "EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
+        if phrase not in feedback_plan:
+            errors.append(f"{persona['id']}: feedback plan missing `{phrase}`")
+    for phrase in ("Keep", "Cut", "More", "Visuals", "Sources To Add", "Taste To Save", "Print Tomorrow"):
+        if phrase not in operator_answers:
+            errors.append(f"{persona['id']}: operator answers missing `{phrase}`")
+    if review_payload.get("status") == "review":
+        errors.append(f"{persona['id']}: review requested revision")
+    if not Path(render_payload["outputs"]["pdf"]).is_file():
+        errors.append(f"{persona['id']}: rendered PDF missing")
+    if int(render_payload.get("pages") or 0) < 1:
+        errors.append(f"{persona['id']}: rendered PDF has no pages")
+    return errors
 
 
 def simulate(persona: dict[str, str], base: Path, env: dict[str, str]) -> dict[str, object]:
@@ -141,6 +223,12 @@ def simulate(persona: dict[str, str], base: Path, env: dict[str, str]) -> dict[s
     require_ok(review, f"{persona['id']} review")
     review_payload = json.loads(review.stdout)
     (edition_dir / "review.json").write_text(json.dumps(review_payload, indent=2), encoding="utf-8")
+    quality_errors = assert_first_edition_quality(
+        persona=persona,
+        edition_dir=edition_dir,
+        render_payload=render_payload,
+        review_payload=review_payload,
+    )
 
     required = [
         "source-inventory.json",
@@ -156,13 +244,14 @@ def simulate(persona: dict[str, str], base: Path, env: dict[str, str]) -> dict[s
     pdf_path = Path(render_payload["outputs"]["pdf"])
     return {
         "persona": persona["id"],
-        "ok": not missing and pdf_path.is_file(),
+        "ok": not missing and not quality_errors and pdf_path.is_file(),
         "newsroom": str(newsroom),
         "edition_dir": str(edition_dir),
         "pdf": str(pdf_path),
         "pages": render_payload.get("pages"),
         "review_status": review_payload.get("status"),
         "missing": missing,
+        "quality_errors": quality_errors,
     }
 
 

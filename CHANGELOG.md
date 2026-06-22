@@ -31,6 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   configured.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
+- Active setup, edition, collector, roadmap, and readiness docs no longer frame
+  the product around starter feeds; they describe a newsroom intake layer for
+  work systems, people, saved reading, exports, folders, and agent outputs.
+- `scripts/fresh_friend_smoke.py` now checks first-edition quality, not just
+  PDF existence: The Read, source inventory, page budget, feedback route,
+  durable feedback file routing, clean review status, and reader-owned next
+  source candidates must all be present.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when

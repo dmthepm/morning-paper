@@ -15,16 +15,16 @@ Reason:
 - `Morning Paper` is the public engine.
 - Private deployments extend it for specific operators.
 - Public repo owns:
-  - starter feed inputs and the generic source/staging contract
+  - the generic source/staging contract
   - the generic stage/inbox/build/render contract
   - normalized models
   - CLI
   - renderer implementations
   - tests
   - example configs
-- Collectors are NOT in the engine. The engine ships starter inputs and the
-  stage/inbox contract any script or host-agent workflow can write to; every
-  other source is a collector the operator authors and runs in their own private newsroom
+- Collectors are NOT in the engine. The engine ships the stage/inbox contract
+  any script or host-agent workflow can write to; each reader-specific source
+  is a collector the operator authors and runs in their own private newsroom
   (see [docs/collectors.md](collectors.md)).
 - Private deployments own their own collectors, scheduling, credentials, delivery, and operator-specific configuration.
 
@@ -34,8 +34,7 @@ Reason:
 ## 3. Deterministic vs Agentic
 
 Deterministic code owns:
-- fetching feeds
-- fetching top stories
+- fetching configured web/feed inputs
 - extracting article bodies
 - normalizing content
 - rendering artifacts

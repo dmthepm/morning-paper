@@ -3,7 +3,7 @@
 ## Shipped (`v0.1.x`)
 
 - `morning-paper init`, `build`, `print <url>`, `doctor`
-- Hacker News and RSS sources
+- early built-in web/feed sources
 - `typewriter` renderer with `WeasyPrint`
 - `portable` PDF fallback with `fpdf2`
 - Article extraction with inline image handling (Jina Reader; local trafilatura

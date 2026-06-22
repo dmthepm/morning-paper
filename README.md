@@ -91,17 +91,19 @@ missing source prints "not configured" or "nothing today."
 
 ## Sources
 
-Morning Paper should meet your sources where they already live: work streams,
-personal feeds, local knowledge, exports, and files your tools already produce.
-Most serious personal papers will use private newsroom collectors: small
-scripts or agent workflows that turn a source into staged markdown.
+Morning Paper should meet your sources where they already live: the work that
+needs your attention, the people trying to reach you, the tabs you saved, the
+feeds you chose, the repos and tickets that changed, and the exports or folders
+your tools already produce. The source layer is intentionally plural: files,
+URLs, folders, inboxes, APIs, local scrapes, and agent-generated reports all
+become staged markdown before the editor decides what deserves ink.
 
 Examples:
 
-- folders, synced files, Obsidian vaults, and exports;
-- newsletters or feeds the reader already has access to;
-- local Twitter/X exports or browser/API scrape outputs;
-- GitHub, Main Branch, Slack/email summaries, or other work systems;
+- email newsletters, Slack channels, Discord threads, or contributor notes;
+- GitHub activity, Linear tickets, Main Branch updates, or other work systems;
+- Twitter/X, YouTube, TikTok, Instagram, podcast, or browser-history exports;
+- folders, synced files, Obsidian vaults, saved articles, and local reports;
 - one-off URLs staged for tomorrow's paper.
 
 Article extraction is replaceable plumbing. The current engine has registered

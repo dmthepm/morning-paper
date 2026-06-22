@@ -84,12 +84,14 @@ Write their answers into `~/.config/morning-paper/config.yaml`.
 
 ## 3. Optional unlocks (collector recipes they write, not engine features)
 
-The engine ships starter inputs and the generic stage/inbox contract any script
-can write to. Everything below is a **collector**: a small script or host-agent
-workflow the operator authors and runs at compose time, dropping markdown into
-the staging queue. None of these ship in the engine; they are recipes to build
-in the newsroom's `collectors/` (which §5 scaffolds with the contract and three
-worked examples). See
+The engine ships the generic stage/inbox contract any script or agent workflow
+can write to. Everything below is a **collector**: a small source bridge the
+operator authors and runs at compose time, dropping markdown into the staging
+queue. A collector might summarize a work system, stage saved reading, digest a
+local folder, or turn a personal export into something the editor can judge.
+None of these ship in the engine; they are recipes to build in the newsroom's
+`collectors/` (which §5 scaffolds with the contract and three worked examples).
+See
 [docs/collectors.md](https://github.com/dmthepm/morning-paper/blob/main/docs/collectors.md)
 for the contract.
 
