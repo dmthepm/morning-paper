@@ -157,6 +157,9 @@ Use `morning-paper sources list --newsroom .` after scaffolding, and
 `morning-paper sources check --newsroom .` when the reader is ready to verify
 source entries and collector syntax. Read its `source_model`, `newsroom.local_drop`, and
 `next_actions` before asking more source questions.
+If your shell is already inside the scaffolded newsroom root, plain
+`morning-paper sources check` auto-detects the newsroom; use `--newsroom .`
+when you want the path to be unambiguous in logs.
 
 ```
 newsroom/

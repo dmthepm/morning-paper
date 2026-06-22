@@ -59,8 +59,9 @@ The CLI speaks JSON. `morning-paper doctor --json` reports install status;
 `review`, and local-fallback `routine` are the verbs the edition skill drives. `newsroom init
 <path>` scaffolds the private repo; `newsroom state <path> --set key=value`
 keeps setup-state/SETUP current; `edition prepare <path>` creates the durable
-files an agent can resume from; `sources check` inventories configured sources;
-`sources check --newsroom <path>` also inventories local collector scripts;
+files an agent can resume from; `sources check` inventories configured sources
+and auto-detects a scaffolded newsroom when run from its root;
+`sources check --newsroom <path>` explicitly inventories local collector scripts;
 `queue list|show|remove` inspects and prunes staged material; `edition
 apply-feedback <path> --route editorial|visuals|sources|delivery|taste --note
 ...` records stable reader feedback into the smallest durable file, TASTELOG,

@@ -1029,6 +1029,14 @@ def queue_command(args: list[str]) -> int:
     return 0 if payload.get("removed") else 1
 
 
+def _detect_newsroom_cwd() -> Path | None:
+    cwd = Path.cwd()
+    required = [cwd / "setup-state.json", cwd / "SOURCES.md"]
+    if all(path.is_file() for path in required) and (cwd / "collectors").is_dir():
+        return cwd.resolve()
+    return None
+
+
 def sources_command(args: list[str]) -> int:
     from .sources import source_inventory
 
@@ -1041,6 +1049,8 @@ def sources_command(args: list[str]) -> int:
             return 2
         newsroom = Path(args[index + 1]).expanduser().resolve()
         args = args[:index] + args[index + 2 :]
+    else:
+        newsroom = _detect_newsroom_cwd()
     parsed = _parse_common(args, usage)
     if isinstance(parsed, int):
         return parsed

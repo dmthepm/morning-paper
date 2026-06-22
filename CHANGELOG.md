@@ -29,6 +29,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   classes such as email/newsletters, Slack, GitHub, Linear, local folders,
   social exports, video feeds, RSS/feed URLs, and saved files when no source is
   configured.
+- `sources list` / `sources check` now auto-detect a scaffolded newsroom when
+  run from its root, so the local drop folder and collector scripts appear even
+  when a fresh agent forgets `--newsroom .`.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
 - Active setup, edition, collector, roadmap, and readiness docs now describe a

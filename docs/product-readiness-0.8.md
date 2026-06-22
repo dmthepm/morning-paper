@@ -228,7 +228,9 @@ logic.
 `morning-paper sources list|check --newsroom <path>` is the bridge between the
 engine and that private logic: it inventories built-in feeds plus local
 collector scripts, and `check` validates RSS reachability/full-text mode plus
-collector shell syntax.
+collector shell syntax. When run from a scaffolded newsroom root, `sources
+check` auto-detects that newsroom so a fresh agent does not miss the local drop
+folder or collector scripts.
 
 ## Out Of Scope For 0.8
 

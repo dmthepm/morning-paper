@@ -62,7 +62,7 @@ def _state(root: Path, *, name: str) -> dict[str, object]:
             "command": "",
         },
         "pending_questions": [],
-        "next_action": "finish interview, run sources check, then compose first edition",
+        "next_action": "finish interview, run sources check from the newsroom root, then compose first edition",
     }
 
 
@@ -143,7 +143,7 @@ Start here after setup resumes:
 2. Read `SETUP.md`.
 3. Read `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
    `TASTELOG.md`.
-4. Run `morning-paper sources check`.
+4. Run `morning-paper sources check` from this newsroom root.
 5. Run `collectors/run_all.sh $(date +%F)`.
 6. Compose today's edition into `editions/<date>/draft.md`.
 7. Render, review, deliver the PDF, then ask for feedback in

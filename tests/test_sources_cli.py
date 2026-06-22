@@ -131,6 +131,26 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(collectors["collector:local-drop"]["role"], "reader_owned")
         self.assertEqual(collectors["collector:local-drop"]["source_kind"], "local_drop_folder")
 
+    def test_sources_check_auto_detects_scaffolded_newsroom_cwd(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+            newsroom = tmp_path / "newsroom"
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            (newsroom / "inbox" / "note.txt").write_text("Something to read.\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with patch("morning_paper.sources.requests.get", return_value=_FakeResponse(_SUMMARY_FEED)):
+                with patch("morning_paper.cli.Path.cwd", return_value=newsroom):
+                    with redirect_stdout(stdout):
+                        rc = cli.main(["sources", "check", "--config", str(config_path)])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["newsroom"]["newsroom_path"], str(newsroom.resolve()))
+        self.assertEqual(payload["newsroom"]["local_drop"]["candidate_count"], 1)
+        collectors = {item["id"]: item for item in payload["newsroom"]["collectors"]}
+        self.assertTrue(collectors["collector:local-drop"]["syntax_ok"])
+
     def test_sources_check_reports_full_text_summary_and_errors(self) -> None:
         def fake_get(url: str, timeout: int = 30) -> _FakeResponse:
             if "full.xml" in url:

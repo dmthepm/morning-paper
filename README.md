@@ -174,6 +174,8 @@ Read [AGENTS.md](AGENTS.md) first. The short version:
 
 Useful CLI verbs: `newsroom`, `sources`, `stage`, `queue`, `edition`,
 `estimate`, `render`, `review`, local-fallback `routine`, `doctor`.
+`sources check` auto-detects a scaffolded newsroom when run from its root;
+use `--newsroom <path>` when checking from somewhere else.
 
 ## Docs
 

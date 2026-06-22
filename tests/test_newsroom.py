@@ -71,6 +71,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("printer_choice", state)
             self.assertIn("pending_questions", state)
             self.assertIn("next_action", state)
+            self.assertIn("newsroom root", state["next_action"])
 
             setup = (root / "SETUP.md").read_text(encoding="utf-8")
             self.assertIn("Installed version", setup)
@@ -81,6 +82,9 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Local folders / exports", setup)
             self.assertNotIn("Hacker News", setup)
             self.assertIn("Printer", setup)
+
+            readme = (root / "README.md").read_text(encoding="utf-8")
+            self.assertIn("Run `morning-paper sources check` from this newsroom root", readme)
 
             constitution = (root / "CLAUDE.md").read_text(encoding="utf-8")
             self.assertIn("The Read leads", constitution)
