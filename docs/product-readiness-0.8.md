@@ -44,6 +44,9 @@ The product promise stays narrow:
   knowledge, exports, folders, and agent/tool outputs can all arrive through
   feeds, collectors, host-agent workflows, or staged markdown for a specific
   edition date.
+- Source inventory is honest about starter collector limits: the local drop
+  reports supported staging candidates separately from unsupported files that
+  need a converter collector.
 - `doctor --strict` proves actual layout for the production print path.
 - The chart furniture now has renderer-level guardrails: built-in `mp-bars`,
   `mp-spark`, and `mp-stats` align with the available measure, cap print

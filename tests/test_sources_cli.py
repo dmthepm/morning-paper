@@ -119,8 +119,10 @@ class SourcesCliTest(unittest.TestCase):
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["newsroom"]["status"], "configured")
         self.assertEqual(payload["newsroom"]["local_drop"]["status"], "configured")
+        self.assertEqual(payload["newsroom"]["local_drop"]["visible_file_count"], 1)
         self.assertEqual(payload["newsroom"]["local_drop"]["candidate_count"], 1)
         self.assertEqual(payload["newsroom"]["local_drop"]["accepts"], [".md", ".markdown", ".txt", ".url"])
+        self.assertEqual(payload["newsroom"]["local_drop"]["unsupported_count"], 0)
         self.assertEqual(payload["newsroom"]["local_drop"]["sample_files"], ["note.txt"])
         self.assertIn(str(newsroom / "inbox"), payload["newsroom"]["local_drop"]["path"])
         self.assertIn("put .md", " ".join(payload["next_actions"]))
@@ -151,6 +153,29 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(payload["newsroom"]["local_drop"]["candidate_count"], 1)
         collectors = {item["id"]: item for item in payload["newsroom"]["collectors"]}
         self.assertTrue(collectors["collector:local-drop"]["syntax_ok"])
+
+    def test_sources_list_separates_unsupported_local_drop_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+            newsroom = tmp_path / "newsroom"
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            (newsroom / "inbox" / "note.txt").write_text("Something to read.\n", encoding="utf-8")
+            (newsroom / "inbox" / "report.pdf").write_bytes(b"%PDF-1.4\n")
+            (newsroom / "inbox" / "data.csv").write_text("name,value\nA,1\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["sources", "list", "--config", str(config_path), "--newsroom", str(newsroom)])
+        self.assertEqual(rc, 0)
+        payload = json.loads(stdout.getvalue())
+        local_drop = payload["newsroom"]["local_drop"]
+        self.assertEqual(local_drop["visible_file_count"], 3)
+        self.assertEqual(local_drop["candidate_count"], 1)
+        self.assertEqual(local_drop["sample_files"], ["note.txt"])
+        self.assertEqual(local_drop["unsupported_count"], 2)
+        self.assertEqual(local_drop["unsupported_sample_files"], ["data.csv", "report.pdf"])
+        self.assertIn("Unsupported local-drop files need a converter collector", " ".join(payload["next_actions"]))
 
     def test_sources_check_reports_full_text_summary_and_errors(self) -> None:
         def fake_get(url: str, timeout: int = 30) -> _FakeResponse:

@@ -32,6 +32,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `sources list` / `sources check` now auto-detect a scaffolded newsroom when
   run from its root, so the local drop folder and collector scripts appear even
   when a fresh agent forgets `--newsroom .`.
+- `sources list` / `sources check` now separate supported local-drop candidates
+  from unsupported files. The starter collector stages `.md`, `.markdown`,
+  `.txt`, and `.url`; PDFs, CSVs, JSON exports, browser dumps, and other files
+  are reported as needing a converter collector instead of being implied as
+  ready-to-stage.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
 - Active setup, edition, collector, roadmap, and readiness docs now describe a
@@ -71,6 +76,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   fail if the 0.8.x plugin exposes anything other than the shipped
   `setup`/`edition`/`writing` skill set. Future newsroom desk skills must land
   deliberately with updated manifests, evals, and docs.
+- `morning-paper review` now includes an advisory `visual-provenance` check for
+  standalone images, missing captions/source notes, explicit narrow visual
+  widths, and one-item visual grids.
 
 ### Fixed
 - `doctor --strict` now refuses to certify an imported WeasyPrint renderer when

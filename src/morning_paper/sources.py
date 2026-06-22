@@ -14,6 +14,8 @@ import requests
 from .config import MorningPaperConfig
 from .models import SourceItem
 
+LOCAL_DROP_EXTENSIONS = (".md", ".markdown", ".txt", ".url")
+
 
 def _clean_summary(value: str, *, max_chars: int = 280) -> str:
     text = html.unescape(value or "")
@@ -211,12 +213,15 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
                         )
             collectors.append(item)
     drop_files = []
+    unsupported_files = []
     if drop_dir.is_dir():
-        drop_files = [
-            item.name
-            for item in sorted(drop_dir.iterdir())
-            if item.is_file() and not item.name.startswith(".") and item.name != "README.md"
-        ]
+        for item in sorted(drop_dir.iterdir()):
+            if not item.is_file() or item.name.startswith(".") or item.name == "README.md":
+                continue
+            if item.suffix.lower() in LOCAL_DROP_EXTENSIONS:
+                drop_files.append(item.name)
+            else:
+                unsupported_files.append(item.name)
     return {
         "newsroom_path": str(root),
         "collectors_dir": str(collectors_dir),
@@ -227,9 +232,12 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
             "path": str(drop_dir),
             "status": "configured" if drop_dir.is_dir() else "not_found",
             "file_count": len(drop_files),
+            "visible_file_count": len(drop_files) + len(unsupported_files),
             "candidate_count": len(drop_files),
             "sample_files": drop_files[:10],
-            "accepts": [".md", ".markdown", ".txt", ".url"],
+            "unsupported_count": len(unsupported_files),
+            "unsupported_sample_files": unsupported_files[:10],
+            "accepts": list(LOCAL_DROP_EXTENSIONS),
             "next_action": f"put .md, .txt, or .url files in {drop_dir}",
         },
     }
@@ -250,6 +258,10 @@ def _source_next_actions(sources: list[dict[str, object]], newsroom_info: dict[s
     local_drop = newsroom_info.get("local_drop") if isinstance(newsroom_info.get("local_drop"), dict) else {}
     if local_drop.get("status") == "configured":
         actions.append(str(local_drop.get("next_action") or "Put local files in the newsroom inbox."))
+        if int(local_drop.get("unsupported_count") or 0) > 0:
+            actions.append(
+                "Unsupported local-drop files need a converter collector before they will be staged."
+            )
     collectors = newsroom_info.get("collectors") if isinstance(newsroom_info.get("collectors"), list) else []
     if not collectors:
         actions.append("Create a collector script when the reader names a source that is not a feed or local file.")

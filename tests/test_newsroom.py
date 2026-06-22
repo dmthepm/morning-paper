@@ -246,6 +246,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             rc = cli.main(["newsroom", "init", str(root)])
             self.assertEqual(rc, 0)
             (root / "inbox" / "daily-note.txt").write_text("A note for the paper.\n", encoding="utf-8")
+            (root / "inbox" / "raw-export.pdf").write_bytes(b"%PDF-1.4\n")
 
             env = os.environ.copy()
             env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
@@ -263,6 +264,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             calls = log.read_text(encoding="utf-8")
             self.assertIn("stage", calls)
             self.assertIn("--date 2026-06-22", calls)
+            self.assertNotIn("raw-export.pdf", calls)
             self.assertIn("queue list --date 2026-06-22", calls)
 
 

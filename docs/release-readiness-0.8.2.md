@@ -30,6 +30,9 @@ surfaces again.
 - `sources list` / `sources check` now auto-detect a scaffolded newsroom when
   run from its root, so a fresh agent sees the local drop folder and collector
   scripts even if it forgets `--newsroom .`.
+- Local-drop inventory now distinguishes supported staging candidates from
+  unsupported files, so PDFs/CSVs/exports prompt a converter collector instead
+  of looking ready when the starter collector will skip them.
 - Legacy built-in source labels are no longer friend-facing identity claims.
   The reader-facing model is the whole personal source stack.
 - Remote URL extraction is explicit. `article_extractor: local` stays local
@@ -74,7 +77,7 @@ claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-pap
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-082 --install-check
 ```
 
-Last full isolated local result: `214 passed`.
+Last full isolated local result: `215 passed`.
 
 The release-candidate artifact check builds a clean wheel and sdist, installs
 both with `[pretty]`, verifies the reported core dependency and print-stack
