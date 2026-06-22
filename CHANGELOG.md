@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-22
+
+### Fixed
+- **`review` headline length checks no longer cry wolf on deck/department titles.** The `headline-line-count` and `headline-length` checks (shipped in 0.6.0) treated EVERY composed head the same — `.mg-title`, `.dept-title`, and `.oc-title` alike — and flagged each one that ran past the line/character budget. But `.dept-title` is a broadsheet DEPARTMENT title: a multi-sentence summary that the renderer emits for every read/department/staged item, long BY DESIGN. The result was ~90% false positives on a normal edition (a known-good delivered edition trips them too), which trained the editor to ignore the one QC gate the `edition` skill says to act on. The two LENGTH checks now flag only TRUE headlines — the lead/front head (`.mg-title`), a printed article's headline (`.article-title`), the field-card title (`.oc-title`), and markdown `#`/`##` heads in the simpler packs — and EXEMPT deck/department/section-label elements (`.dept-title`, `.mg-dek`, kickers). The class → role map is explicit and documented in `reviewers.py` (`_TRUE_HEAD_CLASSES` / `_DECK_HEAD_CLASSES`, `Headline.role`). The other headline checks are unchanged: `headline-verb-presence`, `hed-dek-redundancy`, and `duplicate-headline` still read every head regardless of role, so a label-style department title with no verb still flags. A genuinely-overlong real headline still flags exactly as before — only the deck false positives drop out
+- Tests: a long `.dept-title` deck does NOT trip `headline-line-count` or `headline-length`; a real `.mg-title` headline over the line/char limit still flags (both the line-count flag and the length nudge); the existing length-check fixtures were retargeted from `.dept-title` (now a deck) to `.mg-title` (a true headline)
+
 ## [0.6.0] - 2026-06-21
 
 ### Added
