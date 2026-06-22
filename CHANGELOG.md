@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-22
+
+### Fixed
+- **Deterministic typography — the paper renders identically on every machine.**
+  The broadsheet body previously leaned on system fonts (Palatino, Helvetica
+  Neue) and chart labels on Courier New, so a paper that looked right on macOS
+  fell back to substitute fonts on Linux (and any machine without those faces
+  installed). Two metric-compatible libre families are now vendored and wired
+  via `@font-face` over absolute `file://` URLs: **MP Serif** (TeX Gyre
+  Pagella, a Palatino-metric serif, GUST Font License) and **MP Sans** (Arimo,
+  a Helvetica/Arial-metric sans, SIL OFL 1.1). Every pack leads its serif/sans
+  with the bundled face and keeps the legacy system names only as fallback;
+  chart labels lead with the vendored Courier Prime. The cross-platform
+  front-page visual snapshot now renders the same glyphs everywhere instead of
+  diverging by ~11 mean pixel levels on Linux.
+- `_font_face_css` now emits the correct `format()` hint per file
+  (`opentype` for `.otf`, `truetype` for `.ttf`) so WeasyPrint loads the OTF
+  serif instead of skipping it.
+- `tests/test_friend_contract.py` reads `pyproject.toml` with a tolerant regex
+  instead of `tomllib`, so the friend-contract guardrail runs on Python 3.10
+  (the package's floor) instead of erroring at import.
+
 ## [0.8.0] - 2026-06-22
 
 ### Added

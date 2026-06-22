@@ -35,7 +35,10 @@ import math
 import re
 
 
-_FONT = "Courier New, Courier, monospace"
+# Lead with the vendored mono (Courier Prime) so chart labels are pixel-identical
+# on every machine, not just one with Courier New installed; the system names
+# stay as fallback for a font-stripped install.
+_FONT = "'Courier Prime', 'Courier New', Courier, monospace"
 DEFAULT_INK = "#222222"
 DEFAULT_TRACK = "#dddddd"
 DEFAULT_TEXT = "#111111"

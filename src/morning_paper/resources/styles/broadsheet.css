@@ -15,8 +15,8 @@
  */
 
 :root {
-  --ed-serif: 'Palatino', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Times New Roman', serif;
-  --ed-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ed-serif: 'MP Serif', 'Palatino', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Times New Roman', serif;
+  --ed-sans: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --ed-mono: 'Courier Prime', 'Courier New', Courier, monospace;
 }
 
@@ -26,19 +26,19 @@
 @page {
   size: Letter;
   margin: 0.8in 0.9in 0.9in 0.9in;
-  @bottom-center { content: string(mp-name); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 7pt; letter-spacing: 0.14em; color: #888888; }
+  @bottom-center { content: string(mp-name); font-family: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 7pt; letter-spacing: 0.14em; color: #888888; }
 }
 @page :right {
   margin-left: 1.0in; margin-right: 0.8in;
-  @bottom-right { content: string(mp-refcode, last) counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
-  @bottom-left  { content: string(mp-date); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7pt; color: #888888; }
-  @top-right { content: string(mp-section, first); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 6.5pt; letter-spacing: 0.14em; color: #999999; }
+  @bottom-right { content: string(mp-refcode, last) counter(page); font-family: 'MP Serif', 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
+  @bottom-left  { content: string(mp-date); font-family: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7pt; color: #888888; }
+  @top-right { content: string(mp-section, first); font-family: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 6.5pt; letter-spacing: 0.14em; color: #999999; }
 }
 @page :left {
   margin-left: 0.8in; margin-right: 1.0in;
-  @bottom-left  { content: string(mp-refcode, last) counter(page); font-family: 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
-  @bottom-right { content: string(mp-date); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7pt; color: #888888; }
-  @top-left { content: string(mp-section, first); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 6.5pt; letter-spacing: 0.14em; color: #999999; }
+  @bottom-left  { content: string(mp-refcode, last) counter(page); font-family: 'MP Serif', 'Palatino', Georgia, serif; font-size: 9pt; color: #555555; }
+  @bottom-right { content: string(mp-date); font-family: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 7pt; color: #888888; }
+  @top-left { content: string(mp-section, first); font-family: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 6.5pt; letter-spacing: 0.14em; color: #999999; }
 }
 @page :first {
   @top-right { content: none; }

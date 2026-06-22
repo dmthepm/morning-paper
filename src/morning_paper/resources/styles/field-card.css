@@ -8,7 +8,7 @@
  */
 
 :root {
-  --oc-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --oc-font: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --oc-body: 8.5pt;
 }
 
@@ -17,8 +17,8 @@
 @page {
   size: Letter;
   margin: 0.45in 0.5in;
-  @bottom-left  { content: string(mp-date); font-family: Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #555555; }
-  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #555555; }
+  @bottom-left  { content: string(mp-date); font-family: 'MP Sans', Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #555555; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: 'MP Sans', Helvetica, Arial, sans-serif; font-size: 6.5pt; color: #555555; }
 }
 
 .mp-footer-date, .mp-footer-name {

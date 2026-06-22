@@ -41,7 +41,7 @@
 :root {
   --z2-display: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
   --z2-mono: 'Courier Prime', 'Courier New', Courier, monospace;
-  --z2-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --z2-sans: 'MP Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --z2-body: 8.5pt;
 }
 

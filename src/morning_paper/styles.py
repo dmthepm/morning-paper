@@ -108,16 +108,41 @@ def _resource_text(relative: str) -> str:
 
 
 # Vendored fonts so rendering is offline-deterministic: same glyphs whether or
-# not the network is up. Every font family a shipped stylesheet declares first
-# must be in this table — never advertise a face the engine cannot load.
+# not the network is up — and identical on every machine, not just one that
+# happens to have Palatino/Helvetica installed. Every font family a shipped
+# stylesheet declares first must be in this table — never advertise a face the
+# engine cannot load.
+#   MP Serif         — TeX Gyre Pagella, a Palatino-metric serif
+#                      (GUST Font License, resources/fonts/GUST-FONT-LICENSE.txt)
+#   MP Sans          — Arimo, a Helvetica/Arial-metric sans
+#                      (SIL OFL 1.1, resources/fonts/LICENSE-Arimo.txt)
 #   Courier Prime    — SIL OFL 1.1 (resources/fonts/OFL.txt)
 #   Permanent Marker — Apache 2.0 (resources/fonts/LICENSE-PermanentMarker.txt)
+# MP Serif/MP Sans are the body faces every pack leads with; the legacy system
+# names (Palatino, Helvetica Neue) stay in the CSS chains as fallback so a
+# font-stripped install still renders, just not pixel-identically.
 _VENDORED_FONT_FACES: tuple[tuple[str, str, int, str], ...] = (
+    ("MP Serif", "texgyrepagella-regular.otf", 400, "normal"),
+    ("MP Serif", "texgyrepagella-bold.otf", 700, "normal"),
+    ("MP Serif", "texgyrepagella-italic.otf", 400, "italic"),
+    ("MP Sans", "Arimo-Regular.ttf", 400, "normal"),
+    ("MP Sans", "Arimo-Bold.ttf", 700, "normal"),
+    ("MP Sans", "Arimo-Italic.ttf", 400, "italic"),
     ("Courier Prime", "CourierPrime-Regular.ttf", 400, "normal"),
     ("Courier Prime", "CourierPrime-Bold.ttf", 700, "normal"),
     ("Courier Prime", "CourierPrime-Italic.ttf", 400, "italic"),
     ("Permanent Marker", "PermanentMarker-Regular.ttf", 400, "normal"),
 )
+
+
+def _font_src_format(filename: str) -> str:
+    """The @font-face src format() hint WeasyPrint matches against the file.
+
+    A wrong hint makes WeasyPrint skip the face, so derive it from the suffix:
+    OpenType/CFF (.otf, e.g. Pagella) is 'opentype'; TrueType (.ttf) is
+    'truetype'.
+    """
+    return "opentype" if filename.lower().endswith(".otf") else "truetype"
 
 _GOOGLE_FONTS_IMPORT = re.compile(
     r"^@import\s+url\(\s*['\"]?https://fonts\.googleapis\.com/[^)]*\)\s*;\s*$",
@@ -149,7 +174,8 @@ def _font_face_css() -> str:
         rules.append(
             f"@font-face {{ font-family: '{family}'; "
             f"font-style: {font_style}; font-weight: {weight}; "
-            f"src: url('{font_path.resolve().as_uri()}') format('truetype'); }}"
+            f"src: url('{font_path.resolve().as_uri()}') "
+            f"format('{_font_src_format(filename)}'); }}"
         )
     if not rules:
         return ""
