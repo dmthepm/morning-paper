@@ -68,8 +68,9 @@ Required durable artifacts:
    keeps an `inbox/scans/` directory, check it for untriaged captures before
    composing.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
-   docs/composing.md for the class vocabulary and `mp-bars`/`mp-spark`/
-   `mp-stats` chart directives). The newsroom's `examples/edition-skeleton.md`
+   docs/composing.md for the class vocabulary, visual/figure primitives, and
+   `mp-bars`/`mp-spark`/`mp-stats` chart directives). The newsroom's
+   `examples/edition-skeleton.md`
    is the masthead/strip/section furniture setup scaffolded for this reader —
    lead with The Read:
    - A front synthesis: the single thing that matters today, as a judgment.
@@ -92,7 +93,11 @@ Required durable artifacts:
    <their palette> --date <today> --slug edition`. Save the command's JSON as
    `render-result.json`.
 7. **QA.** Rasterize page 1 + one inner page (`pdftoppm -png -r 60`) and look:
-   no overflow, no missing glyphs (tofu), footers present.
+   no overflow, no missing glyphs (tofu), footers present. For every page that
+   contains a chart, image, illustration, or diagram, verify it is either
+   full-measure, part of a deliberate visual grid, or cut. It must not leave a
+   narrow orphan line beside/under it, collide with labels, or lack a caption
+   or source/synthetic note when provenance matters.
 8. **Editorial review.** Run the copy desk over the finished edition before it
    ships: `morning-paper review <edition-dir> --json`. Save the output as
    `review.json`. It reads the composed artifacts and returns editorial

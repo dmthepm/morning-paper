@@ -221,7 +221,8 @@ def _render_directive(kind: str, body: str, *, ink: str, track: str, text: str) 
         except ValueError:
             return _placeholder(title or "mp-spark", "non-numeric values")
         if len(values) > MAX_SPARK_VALUES:
-            title = title or "mp-spark"
+            hidden = len(values) - MAX_SPARK_VALUES
+            title = f"{title or 'mp-spark'} (+{hidden} older values not shown)"
         return sparkline(values, title=title, ink=ink, track=track, text=text)
     if kind == "stats":
         stats: list[tuple[str, str, str]] = []

@@ -145,8 +145,42 @@ class BaseTasteLayerTest(unittest.TestCase):
 
     def test_base_keeps_furniture_atomic(self) -> None:
         css = compose_css("brief", "color")
-        for selector in (".mp-chart", ".mp-stat", ".move", ".action-required", "table.data tr", "blockquote"):
+        for selector in (
+            ".mp-chart",
+            ".mp-stat",
+            ".move",
+            ".action-required",
+            "table.data tr",
+            "figure",
+            ".mp-figure",
+            ".mp-visual-grid",
+            "blockquote",
+        ):
             self.assertIn(selector, css, selector)
+
+    def test_base_normalizes_figures_and_source_notes(self) -> None:
+        css = compose_css("zine", "color")
+        for rule in (
+            "p > img:only-child",
+            "figure img, .mp-figure img",
+            "figcaption, .mp-caption, .mp-source-note",
+            ".mp-visual-grid > *",
+        ):
+            self.assertIn(rule, css)
+        self.assertIn("width: 100%", css)
+        self.assertIn("display: flex", css)
+
+    def test_field_card_has_native_chart_furniture(self) -> None:
+        css = compose_css("field-card", "mono")
+        for rule in (
+            ".mp-chart",
+            ".mp-chart-title",
+            ".mp-chart svg",
+            ".mp-stats",
+            ".mp-stat-value",
+        ):
+            self.assertIn(rule, css)
+        self.assertIn("width: 100%", css)
 
     @unittest.skipUnless(_pretty_stack_ready(), "render requires the pretty print stack (weasyprint)")
     def test_broadsheet_default_look_unchanged_by_base(self) -> None:

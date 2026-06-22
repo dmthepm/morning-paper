@@ -53,8 +53,47 @@ p { orphans: 3; widows: 3; }
  *    table rows, and the honesty/truncation box all stay whole. Reaches the
  *    chart WRAPPER (.mp-chart), never the inline SVG inside it. */
 .mp-chart, .mp-stat, .move, .action-required,
-table.data tr, .trunc-notice,
+table.data tr, .trunc-notice, figure, .mp-figure, .mp-visual-grid,
 blockquote { break-inside: avoid; page-break-inside: avoid; }
+
+/* 4b. Reader-supplied and agent-made visuals default to the full available
+ *     measure. A narrow floating image is almost always worse in print than a
+ *     full-width figure with a caption and source note. */
+img { max-width: 100%; height: auto; }
+p > img:only-child {
+  display: block;
+  width: 100%;
+  margin: 0.08in 0;
+}
+figure, .mp-figure {
+  width: 100%;
+  margin: 0.1in 0 0.12in;
+}
+figure img, .mp-figure img {
+  display: block;
+  width: 100%;
+}
+figcaption, .mp-caption, .mp-source-note {
+  display: block;
+  margin-top: 0.035in;
+  font-family: var(--mp-sans, 'MP Sans', Helvetica, Arial, sans-serif);
+  font-size: 7pt;
+  line-height: 1.35;
+  color: var(--mp-muted);
+}
+.mp-source-note {
+  text-transform: none;
+}
+.mp-visual-grid {
+  display: flex;
+  gap: 0.12in;
+  width: 100%;
+  margin: 0.1in 0 0.12in;
+}
+.mp-visual-grid > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
 
 /* 5. Split blocks look finished: when a ruled callout / card / pull-quote is
  *    genuinely too tall to keep whole and must split, redraw its border and

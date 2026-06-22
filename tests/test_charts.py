@@ -56,6 +56,7 @@ def test_sparkline_caps_large_value_series() -> None:
     values = " ".join(str(i) for i in range(120))
     html = expand_chart_directives(f"```mp-spark\n{values}\n```")
 
+    assert "+30 older values not shown" in html
     assert ">0<" not in html
     assert ">30<" in html
     assert ">29<" not in html

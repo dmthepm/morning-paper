@@ -216,8 +216,39 @@ and the built-in bar/spark primitives use the full available measure so visuals
 align with the section above and below instead of floating as narrow inserts.
 They also have print-density bounds: `mp-bars` shows up to 12 rows, `mp-stats`
 shows up to 6 primary blocks plus an honest "not shown" note, and `mp-spark`
-uses the most recent 90 values. Labels and annotations are clipped rather than
-allowed to collide. If a chart needs more than that, split it or summarize.
+uses the most recent 90 values with an honest title note when older values are
+omitted. Labels and annotations are clipped rather than allowed to collide. If
+a chart needs more than that, split it or summarize.
+
+## Visual and figure primitives
+
+Images should earn ink. Use a visual when it explains something prose cannot:
+a map, annotated screenshot, object photo, chart, diagram, or generated
+illustration that adds editorial texture. Cut decorative visuals before they
+steal space from the read.
+
+Markdown images and explicit figures default to the full available measure so
+they align with the section above and below:
+
+```html
+<figure class="mp-figure">
+  <img src="images/harbor-seals.png" alt="Harbor seal count over 14 days">
+  <figcaption>Harbor seals counted at the breakwater, last 14 days.</figcaption>
+  <span class="mp-source-note">Source: reader collector, 2026-06-22.</span>
+</figure>
+```
+
+For two related visuals, use a shared block so the pair moves together:
+
+```html
+<div class="mp-visual-grid">
+  <figure class="mp-figure">...</figure>
+  <figure class="mp-figure">...</figure>
+</div>
+```
+
+Avoid narrow orphan images. If a visual cannot fill the measure or pair with a
+neighbor, rewrite it as a chart/table, make it full-width, or cut it.
 
 ## Class vocabulary
 
@@ -230,8 +261,9 @@ file (`src/morning_paper/resources/styles/`). The most portable ones:
   `.strip`/`.strip-item`, `.mg-kicker`/`.dept-kicker`
   (article heads; either may end with a `.ref-code`), `.mg-title`/`.dept-title`,
   `.mg-dek`, `.mg-byline`, `.q-row` (queue items), `.flag`, `.mp-stats`,
-  `.mg-pull`, `.move`/`.dictation`, `.action-required`, `.not-configured`,
-  `.trunc-notice` (the honesty box for clipped copy), `.page-break`,
+  `.mp-chart`, `.mp-figure`, `.mp-visual-grid`, `.mp-source-note`, `.mg-pull`,
+  `.move`/`.dictation`, `.action-required`, `.not-configured`, `.trunc-notice`
+  (the honesty box for clipped copy), `.page-break`,
   fenced code blocks (`pre`, merged from the retired magazine pack),
   plus the `.ds-*` desk-sheet family below
 - `brief`: `.masthead`, `.strip`/`.strip-item`, `.read`, `.sig`/`.sig-pair`,

@@ -140,6 +140,54 @@ table.oc-table td strong { font-weight: 700; }
 .oc-foot strong { color: var(--mp-ink); font-weight: 700; }
 .oc-foot code { font-family: 'Courier New', monospace; font-size: 6.8pt; }
 
+/* shared chart furniture */
+.mp-chart {
+  width: 100%;
+  margin: 0.06in 0 0.08in;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.mp-chart-title {
+  font-size: 7pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mp-muted);
+  margin-bottom: 0.025in;
+}
+.mp-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.mp-stats {
+  display: flex;
+  gap: 0.06in;
+  margin: 0.06in 0 0.08in;
+}
+.mp-stat {
+  flex: 1 1 0;
+  border-top: 1.5px solid var(--mp-rule);
+  padding-top: 0.035in;
+}
+.mp-stat-value {
+  font-size: 12pt;
+  font-weight: 800;
+  line-height: 1.05;
+}
+.mp-stat-delta {
+  font-size: 6.8pt;
+  color: var(--mp-muted);
+  margin-top: 0.015in;
+}
+.mp-stat-label {
+  font-size: 6.8pt;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 0.02in;
+}
+
 ul { margin: 0.02in 0 0.04in 0.18in; }
 li { font-size: 8pt; line-height: 1.4; margin-bottom: 0.015in; }
 p { font-size: calc(var(--mp-font-scale, 1) * var(--oc-body)); }
