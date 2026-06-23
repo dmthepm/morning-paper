@@ -52,6 +52,8 @@ EXPECTED_SNIPPETS = {
         "feedback_plan_template",
         "feedback-plan.md",
         "Applied Feedback",
+        "final_editor_pass",
+        "final-editor.json",
         "def apply_feedback",
     ),
     "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md"),

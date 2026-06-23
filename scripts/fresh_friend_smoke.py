@@ -109,7 +109,7 @@ and one clear feedback route.
 
 ```mp-stats
 Reader-owned sources | 1 | staged today
-Edition artifacts | 8 | compaction-safe
+Edition artifacts | 10 | compaction-safe
 Feedback route | 1 | feedback-plan.md
 ```
 
@@ -153,6 +153,7 @@ def assert_first_edition_quality(
     edition_dir: Path,
     render_payload: dict[str, object],
     review_payload: dict[str, object],
+    final_editor_payload: dict[str, object],
 ) -> list[str]:
     errors: list[str] = []
     draft = (edition_dir / "draft.md").read_text(encoding="utf-8")
@@ -211,6 +212,10 @@ def assert_first_edition_quality(
             errors.append(f"{persona['id']}: operator answers missing `{phrase}`")
     if review_payload.get("status") == "review":
         errors.append(f"{persona['id']}: review requested revision")
+    if final_editor_payload.get("status") == "review":
+        errors.append(f"{persona['id']}: final editor requested revision")
+    if final_editor_payload.get("ship_rule") not in {"deliver", "deliver with a short final-editor note"}:
+        errors.append(f"{persona['id']}: final editor did not produce a deliverable ship rule")
     if not Path(render_payload["outputs"]["pdf"]).is_file():
         errors.append(f"{persona['id']}: rendered PDF missing")
     if int(render_payload.get("pages") or 0) < 1:
@@ -266,11 +271,19 @@ def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dic
     require_ok(review, f"{persona['id']} review")
     review_payload = json.loads(review.stdout)
     (edition_dir / "review.json").write_text(json.dumps(review_payload, indent=2), encoding="utf-8")
+
+    final_editor = run_cli(
+        ["edition", "final-editor", str(newsroom), "--config", str(config_path), "--date", DATE],
+        env=env,
+    )
+    require_ok(final_editor, f"{persona['id']} final-editor")
+    final_editor_payload = json.loads(final_editor.stdout)
     quality_errors = assert_first_edition_quality(
         persona=persona,
         edition_dir=edition_dir,
         render_payload=render_payload,
         review_payload=review_payload,
+        final_editor_payload=final_editor_payload,
     )
 
     required = [
@@ -280,6 +293,8 @@ def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dic
         "draft.md",
         "render-result.json",
         "review.json",
+        "final-editor.json",
+        "final-editor.md",
         "operator-answers.md",
         "feedback-plan.md",
     ]
@@ -293,6 +308,7 @@ def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dic
         "pdf": str(pdf_path),
         "pages": render_payload.get("pages"),
         "review_status": review_payload.get("status"),
+        "final_editor_status": final_editor_payload.get("status"),
         "missing": missing,
         "quality_errors": quality_errors,
     }

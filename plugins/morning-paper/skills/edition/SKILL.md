@@ -34,6 +34,9 @@ Required durable artifacts:
 - `draft.md` — current composed edition, written before estimating.
 - `render-result.json` — JSON output from `morning-paper render`.
 - `review.json` — JSON output from `morning-paper review`.
+- `final-editor.json` / `final-editor.md` — independent pre-delivery proof
+  over newsroom contracts, source inventory, render result, review result,
+  visual/source warnings, page budget, and feedback route.
 - `operator-answers.md` — a short feedback sheet for the reader to mark up or
   answer in chat.
 - `feedback-plan.md` — the route from reader notes to durable newsroom files.
@@ -114,7 +117,17 @@ Required durable artifacts:
      in `preferences/checks.yaml` so tomorrow's review stays quiet. The newsroom
      `preferences/checks.yaml`, when present, already tunes thresholds and
      mutes; `review` reads it automatically.
-9. **Deliver.** Their saved print command (duplex flag and all), or just hand
+9. **Final editor.** Run the final pre-delivery proof:
+   `morning-paper edition final-editor . --date <edition-date>`. Save nothing
+   manually; the command writes `final-editor.json` and `final-editor.md`.
+   If the host supports a separate context/subagent, have that fresh editor
+   read `final-editor.md`, `render-result.json`, `review.json`, and the PDF
+   path before delivery. The JSON `status` is the ship rule:
+   - `clean` → deliver.
+   - `notes` → deliver, but include the short final-editor note in the handoff.
+   - `review` → revise, re-render, re-review, and run final-editor again; or
+     record the explicit editorial rationale for shipping despite the flag.
+10. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. Archive markdown + html into `editions/<date>/`. End by
    pointing at `operator-answers.md` and `feedback-plan.md`, then asking for
    natural-language feedback: what to keep, cut, expand, change visually, add

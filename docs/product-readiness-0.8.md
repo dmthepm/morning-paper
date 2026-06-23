@@ -136,9 +136,12 @@ Acceptance:
 
 - edition work writes durable intermediate files early:
   `source-inventory.json`, `collector-report.md`, `queue-snapshot.json`,
-  `draft.md`, `render-result.json`, `review.json`, `operator-answers.md`, and
-  `feedback-plan.md`;
+  `draft.md`, `render-result.json`, `review.json`, `final-editor.json`,
+  `final-editor.md`, `operator-answers.md`, and `feedback-plan.md`;
 - the edition skill reads those files before restarting work;
+- `morning-paper edition final-editor` performs an independent pre-delivery
+  proof over the newsroom contracts, render result, review result, source
+  warnings, visual warnings, page budget, and feedback route;
 - delivery ends by asking for natural-language feedback;
 - `feedback-plan.md` gives the agent a compaction-safe route from notes to the
   smallest durable newsroom file;

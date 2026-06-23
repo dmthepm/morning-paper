@@ -72,7 +72,9 @@ def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
     cli_text = _read("src/morning_paper/cli.py")
     edition_workspace = _read("src/morning_paper/edition_workspace.py")
     assert "edition apply-feedback" in cli_text
+    assert "edition final-editor" in cli_text
     assert "def apply_feedback" in edition_workspace
+    assert "def final_editor_pass" in edition_workspace
     for route in ("voice", "prior", "checks", "the-read", "front-page", "reading"):
         assert route in edition_workspace
         assert route in cli_text
@@ -120,6 +122,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "Latest full local verification" in release_readiness
     assert "current `main` HEAD" in release_readiness
     assert "edition apply-feedback" in readiness
+    assert "edition final-editor" in _read("plugins/morning-paper/skills/edition/SKILL.md")
     for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         assert newsroom_file in skill_suite
 

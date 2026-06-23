@@ -56,6 +56,8 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "draft.md",
                 "render-result.json",
                 "review.json",
+                "final-editor.json",
+                "final-editor.md",
                 "operator-answers.md",
                 "feedback-plan.md",
             }
@@ -80,6 +82,10 @@ class EditionWorkspaceTest(unittest.TestCase):
             review = json.loads((edition_dir / "review.json").read_text(encoding="utf-8"))
             self.assertEqual(review["status"], "pending")
             self.assertIn("morning-paper review", review["command"])
+            final_editor = json.loads((edition_dir / "final-editor.json").read_text(encoding="utf-8"))
+            self.assertEqual(final_editor["status"], "pending")
+            self.assertIn("morning-paper edition final-editor", final_editor["command"])
+            self.assertIn("Status: pending", (edition_dir / "final-editor.md").read_text(encoding="utf-8"))
             operator_answers = (edition_dir / "operator-answers.md").read_text(encoding="utf-8")
             self.assertIn("Visuals", operator_answers)
             self.assertIn("Delivery", operator_answers)
@@ -98,7 +104,129 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("Do not overfit", feedback_plan)
             self.assertIn("YAML targets", feedback_plan)
             self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
-            self.assertIn("feedback-plan.md", payload["next_action"])
+            self.assertEqual(payload["artifacts"]["final_editor"], str((edition_dir / "final-editor.json").resolve()))
+            self.assertIn("final-editor", payload["next_action"])
+
+    def test_final_editor_passes_clean_rendered_reviewed_edition(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            rendered = edition_dir / "edition"
+            rendered.mkdir()
+            pdf = rendered / "edition.pdf"
+            pdf.write_bytes(b"%PDF-1.4\n% fixture\n")
+            (rendered / "edition.md").write_text("# Done\n", encoding="utf-8")
+            (edition_dir / "render-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "rendered",
+                        "date": "2026-06-22",
+                        "pages": 2,
+                        "warnings": [],
+                        "output_dir": str(rendered),
+                        "outputs": {
+                            "pdf": str(pdf),
+                            "markdown": str(rendered / "edition.md"),
+                        },
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "review.json").write_text(
+                json.dumps(
+                    {
+                        "status": "clean",
+                        "summary": {"flag": 0, "nudge": 0, "info": 0},
+                        "findings": [],
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "final-editor",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["status"], "clean")
+            self.assertEqual(payload["ship_rule"], "deliver")
+            self.assertEqual(payload["summary"], {"flag": 0, "nudge": 0, "info": 0})
+            self.assertTrue((edition_dir / "final-editor.json").is_file())
+            self.assertTrue((edition_dir / "final-editor.md").is_file())
+            self.assertIn(str((newsroom / "EDITORIAL.md").resolve()), payload["files_read"])
+            self.assertIn("Ship rule: deliver", (edition_dir / "final-editor.md").read_text(encoding="utf-8"))
+
+    def test_final_editor_flags_unproven_delivery(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "final-editor",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["status"], "review")
+            self.assertEqual(payload["ship_rule"], "revise or record an explicit rationale before delivery")
+            checks = {item["check"] for item in payload["findings"]}
+            self.assertIn("render-complete", checks)
+            self.assertIn("review-complete", checks)
+            self.assertIn("delivery-proof", checks)
 
     def test_edition_prepare_preserves_draft_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

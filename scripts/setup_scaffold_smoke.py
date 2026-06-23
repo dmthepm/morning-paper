@@ -265,6 +265,12 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     if review_payload.get("status") != "clean":
         raise RuntimeError(f"review was not clean: {json.dumps(review_payload, indent=2)}")
 
+    final_editor = run_cli(["edition", "final-editor", str(newsroom), "--date", DATE], env=env)
+    require_ok(final_editor, "final-editor")
+    final_editor_payload = json.loads(final_editor.stdout)
+    if final_editor_payload.get("status") != "clean":
+        raise RuntimeError(f"final editor was not clean: {json.dumps(final_editor_payload, indent=2)}")
+
     required_artifacts = [
         "source-inventory.json",
         "collector-report.md",
@@ -272,6 +278,8 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
         "draft.md",
         "render-result.json",
         "review.json",
+        "final-editor.json",
+        "final-editor.md",
         "operator-answers.md",
         "feedback-plan.md",
     ]
@@ -296,6 +304,7 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
         "pdf": str(pdf_path),
         "pages": render_payload.get("pages"),
         "review_status": review_payload.get("status"),
+        "final_editor_status": final_editor_payload.get("status"),
         "doctor": {
             "python": doctor_payload["dependencies"]["python"]["version"],
             "weasyprint": doctor_payload["dependencies"]["packages"]["weasyprint"],

@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- `morning-paper edition final-editor` now writes `final-editor.json` and
+  `final-editor.md`, giving agents a separate pre-delivery ship rule after
+  render and review. It checks required edition artifacts, the PDF path, page
+  budget, review status, visual/source warnings, and the feedback route before
+  the reader sees the paper.
+
 ## [0.8.2] - 2026-06-22
 
 ### Added

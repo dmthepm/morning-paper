@@ -24,6 +24,330 @@ FEEDBACK_ROUTES = {
 }
 
 
+def _utc_stamp() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _load_json_object(path: Path) -> dict[str, object]:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _int_or_zero(value: object) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _final_finding(
+    findings: list[dict[str, object]],
+    *,
+    check: str,
+    severity: str,
+    issue: str,
+    why: str,
+    hint: str,
+    location: str = "",
+    measured: dict[str, object] | None = None,
+) -> None:
+    item: dict[str, object] = {
+        "check": check,
+        "severity": severity,
+        "issue": issue,
+        "why": why,
+        "hint": hint,
+    }
+    if location:
+        item["location"] = location
+    if measured:
+        item["measured"] = measured
+    findings.append(item)
+
+
+def _final_status(findings: list[dict[str, object]]) -> str:
+    severities = {str(item.get("severity", "")) for item in findings}
+    if "flag" in severities:
+        return "review"
+    if severities:
+        return "notes"
+    return "clean"
+
+
+def _final_summary(findings: list[dict[str, object]]) -> dict[str, int]:
+    return {
+        "flag": sum(1 for item in findings if item.get("severity") == "flag"),
+        "nudge": sum(1 for item in findings if item.get("severity") == "nudge"),
+        "info": sum(1 for item in findings if item.get("severity") == "info"),
+    }
+
+
+def _render_final_editor_markdown(report: dict[str, object]) -> str:
+    findings = report.get("findings") if isinstance(report.get("findings"), list) else []
+    lines = [
+        f"# Final Editor - {report.get('date', '')}",
+        "",
+        f"Status: {report.get('status', '')}",
+        f"Ship rule: {report.get('ship_rule', '')}",
+        "",
+        "## Findings",
+    ]
+    if not findings:
+        lines.append("- None.")
+    else:
+        for item in findings:
+            if not isinstance(item, dict):
+                continue
+            severity = str(item.get("severity", "")).upper()
+            check = item.get("check", "")
+            issue = item.get("issue", "")
+            hint = item.get("hint", "")
+            lines.append(f"- {severity} `{check}` - {issue}")
+            if hint:
+                lines.append(f"  Fix: {hint}")
+    lines.extend(
+        [
+            "",
+            "## Files Read",
+        ]
+    )
+    for path in report.get("files_read", []) if isinstance(report.get("files_read"), list) else []:
+        lines.append(f"- `{path}`")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def final_editor_pass(
+    newsroom: Path,
+    config: MorningPaperConfig,
+    *,
+    date_str: str,
+) -> dict[str, object]:
+    """Independent pre-delivery proof over the prepared edition workspace.
+
+    This is not a second copy editor. It is the editor-in-chief checklist that
+    reads the durable newsroom contracts plus render/review artifacts and tells
+    the agent whether it can ship, needs to note something, or must revise.
+    """
+    root = newsroom.expanduser().resolve()
+    edition_dir = root / "editions" / date_str
+    if not edition_dir.is_dir():
+        raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+
+    contract_files = [
+        root / "EDITORIAL.md",
+        root / "VISUALS.md",
+        root / "SOURCES.md",
+        root / "DELIVERY.md",
+        root / "TASTELOG.md",
+        root / "specs" / "the-read.md",
+        root / "specs" / "front-page.md",
+        root / "specs" / "reading.md",
+        edition_dir / "source-inventory.json",
+        edition_dir / "collector-report.md",
+        edition_dir / "queue-snapshot.json",
+        edition_dir / "render-result.json",
+        edition_dir / "review.json",
+        edition_dir / "operator-answers.md",
+        edition_dir / "feedback-plan.md",
+    ]
+    findings: list[dict[str, object]] = []
+    files_read: list[str] = []
+    for path in contract_files:
+        if path.is_file():
+            files_read.append(str(path))
+        else:
+            _final_finding(
+                findings,
+                check="required-artifact",
+                severity="flag",
+                location=str(path),
+                issue=f"Missing required final-editor input `{path.name}`.",
+                why="The final editor cannot prove the paper is ready without the full newsroom and edition contract.",
+                hint="Run setup/edition prepare or restore the missing artifact before delivery.",
+            )
+
+    source_inventory = _load_json_object(edition_dir / "source-inventory.json")
+    queue_snapshot = _load_json_object(edition_dir / "queue-snapshot.json")
+    render_result = _load_json_object(edition_dir / "render-result.json")
+    review = _load_json_object(edition_dir / "review.json")
+
+    if render_result.get("status") == "pending":
+        _final_finding(
+            findings,
+            check="render-complete",
+            severity="flag",
+            issue="Render result is still pending.",
+            why="The paper must be rendered before the final editor can judge page count, outputs, or delivery.",
+            hint="Run `morning-paper render`, save `render-result.json`, then run final-editor again.",
+        )
+    pages = _int_or_zero(render_result.get("pages"))
+    if pages <= 0:
+        _final_finding(
+            findings,
+            check="render-complete",
+            severity="flag",
+            issue="Render result does not report a positive page count.",
+            why="A paper with no proven pages is not ready to hand to the reader.",
+            hint="Re-render and confirm the PDF exists.",
+        )
+    elif pages > config.page_budget + 2:
+        _final_finding(
+            findings,
+            check="page-budget",
+            severity="flag",
+            issue=f"Rendered paper is {pages} pages against a {config.page_budget}-page budget.",
+            why="The reader asked for a finite paper; overshooting by more than two pages should be an explicit editorial decision.",
+            hint="Cut or compress the weakest material, or record the intentional exception in DELIVERY.md.",
+            measured={"pages": pages, "page_budget": config.page_budget},
+        )
+    elif pages > config.page_budget:
+        _final_finding(
+            findings,
+            check="page-budget",
+            severity="nudge",
+            issue=f"Rendered paper is {pages} pages against a {config.page_budget}-page budget.",
+            why="A small overage can ship, but the editor should name the tradeoff.",
+            hint="Mention the overage in the handoff or cut a weak item.",
+            measured={"pages": pages, "page_budget": config.page_budget},
+        )
+
+    outputs = render_result.get("outputs") if isinstance(render_result.get("outputs"), dict) else {}
+    pdf_path = Path(str(outputs.get("pdf", ""))).expanduser() if outputs else Path()
+    if not outputs or not pdf_path.is_file():
+        _final_finding(
+            findings,
+            check="delivery-proof",
+            severity="flag",
+            issue="Rendered PDF path is missing or does not exist.",
+            why="Delivery starts with a real PDF, not a successful command transcript.",
+            hint="Re-render the edition and verify the `outputs.pdf` path.",
+        )
+
+    if review.get("status") == "pending":
+        _final_finding(
+            findings,
+            check="review-complete",
+            severity="flag",
+            issue="Editorial review is still pending.",
+            why="The copy/art desk must run before the final editor decides to ship.",
+            hint="Run `morning-paper review <edition-dir> --json` and save `review.json`.",
+        )
+    elif review.get("status") == "review":
+        _final_finding(
+            findings,
+            check="review-status",
+            severity="flag",
+            issue="Editorial review requested revision.",
+            why="A review flag means the agent should revise or record an explicit rationale before delivery.",
+            hint="Address the flagged review findings, re-render, re-review, then run final-editor again.",
+            measured={"review_summary": review.get("summary", {})},
+        )
+    elif review.get("status") == "notes":
+        _final_finding(
+            findings,
+            check="review-status",
+            severity="nudge",
+            issue="Editorial review has notes.",
+            why="Notes can ship, but the handoff should summarize what the editor noticed.",
+            hint="Include a one-line review-note summary when delivering the PDF.",
+            measured={"review_summary": review.get("summary", {})},
+        )
+    visual_findings = [
+        item
+        for item in review.get("findings", [])
+        if isinstance(item, dict) and item.get("check") == "visual-provenance"
+    ] if isinstance(review.get("findings"), list) else []
+    if visual_findings:
+        _final_finding(
+            findings,
+            check="visual-fit",
+            severity="flag" if any(item.get("severity") == "flag" for item in visual_findings) else "nudge",
+            issue=f"Review found {len(visual_findings)} visual provenance/layout issue(s).",
+            why="The final editor exists partly to catch visuals that waste measure, lack provenance, or break print trust.",
+            hint="Fix captions/source notes/widths or record why the visual still earns space.",
+            measured={"visual_findings": len(visual_findings)},
+        )
+
+    newsroom_info = source_inventory.get("newsroom") if isinstance(source_inventory.get("newsroom"), dict) else {}
+    local_drop = newsroom_info.get("local_drop") if isinstance(newsroom_info.get("local_drop"), dict) else {}
+    unsupported = _int_or_zero(local_drop.get("unsupported_count")) if isinstance(local_drop, dict) else 0
+    if unsupported > 0:
+        _final_finding(
+            findings,
+            check="source-honesty",
+            severity="nudge",
+            issue=f"{unsupported} local-drop file(s) need a converter collector.",
+            why="The paper can ship, but the reader should know some owned sources were visible and not staged.",
+            hint="Name the skipped files and propose a converter collector for tomorrow.",
+            measured={"unsupported_local_drop": unsupported},
+        )
+    if isinstance(queue_snapshot.get("items"), list):
+        flagged_items = [
+            item for item in queue_snapshot["items"]
+            if isinstance(item, dict) and (item.get("truncated") or item.get("warning") or item.get("extractor_note"))
+        ]
+        if flagged_items:
+            _final_finding(
+                findings,
+                check="source-honesty",
+                severity="nudge",
+                issue=f"{len(flagged_items)} staged item(s) carry truncation or remote-extraction notes.",
+                why="The final handoff should not let clipped or remote-fetched material masquerade as complete/local.",
+                hint="Surface the warning in the paper or cut the item.",
+                measured={"flagged_staged_items": len(flagged_items)},
+            )
+
+    feedback_plan = edition_dir / "feedback-plan.md"
+    operator_answers = edition_dir / "operator-answers.md"
+    if feedback_plan.is_file() and "Applied Feedback" not in feedback_plan.read_text(encoding="utf-8"):
+        _final_finding(
+            findings,
+            check="feedback-route",
+            severity="flag",
+            issue="Feedback plan does not expose an Applied Feedback section.",
+            why="The reader's notes need a durable route back into newsroom taste after delivery.",
+            hint="Regenerate or repair `feedback-plan.md` before handoff.",
+        )
+    if operator_answers.is_file() and "## Visuals" not in operator_answers.read_text(encoding="utf-8"):
+        _final_finding(
+            findings,
+            check="feedback-route",
+            severity="nudge",
+            issue="Operator answers sheet is missing the Visuals prompt.",
+            why="The desk-sheet should ask about content, layout, sources, delivery, and taste.",
+            hint="Refresh `operator-answers.md` with `morning-paper edition prepare --force` or repair it manually.",
+        )
+
+    status = _final_status(findings)
+    ship_rule = {
+        "clean": "deliver",
+        "notes": "deliver with a short final-editor note",
+        "review": "revise or record an explicit rationale before delivery",
+    }[status]
+    report: dict[str, object] = {
+        "status": status,
+        "date": date_str,
+        "edition_dir": str(edition_dir),
+        "ship_rule": ship_rule,
+        "summary": _final_summary(findings),
+        "findings": findings,
+        "files_read": files_read,
+        "artifacts": {
+            "json": str(edition_dir / "final-editor.json"),
+            "markdown": str(edition_dir / "final-editor.md"),
+        },
+        "updated_at": _utc_stamp(),
+    }
+    (edition_dir / "final-editor.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (edition_dir / "final-editor.md").write_text(_render_final_editor_markdown(report), encoding="utf-8")
+    return report
+
+
 def operator_answers_template(date_str: str) -> str:
     return f"""# Operator Answers - {date_str}
 
@@ -270,9 +594,28 @@ must be reported as "not configured"; never invent source data.
         "status": "pending",
         "date": date_str,
         "command": f"morning-paper review {edition_dir} --json",
-        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "updated_at": _utc_stamp(),
     }
     record("review.json", _write_json(edition_dir / "review.json", review_pending, force=force))
+
+    final_editor_pending = {
+        "status": "pending",
+        "date": date_str,
+        "command": f"morning-paper edition final-editor {root} --date {date_str}",
+        "updated_at": _utc_stamp(),
+    }
+    record("final-editor.json", _write_json(edition_dir / "final-editor.json", final_editor_pending, force=force))
+    final_editor_markdown = f"""# Final Editor - {date_str}
+
+Status: pending
+
+Run after render and review:
+
+```bash
+morning-paper edition final-editor {root} --date {date_str}
+```
+"""
+    record("final-editor.md", _write(edition_dir / "final-editor.md", final_editor_markdown, force=force))
 
     record("operator-answers.md", _write(edition_dir / "operator-answers.md", operator_answers_template(date_str), force=force))
     record("feedback-plan.md", _write(edition_dir / "feedback-plan.md", feedback_plan_template(date_str), force=force))
@@ -289,8 +632,10 @@ must be reported as "not configured"; never invent source data.
             "draft": str(edition_dir / "draft.md"),
             "render_result": str(edition_dir / "render-result.json"),
             "review": str(edition_dir / "review.json"),
+            "final_editor": str(edition_dir / "final-editor.json"),
+            "final_editor_markdown": str(edition_dir / "final-editor.md"),
             "operator_answers": str(edition_dir / "operator-answers.md"),
             "feedback_plan": str(edition_dir / "feedback-plan.md"),
         },
-        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render, review, then ask for feedback and route it through feedback-plan.md",
+        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render, review, final-editor, then ask for feedback and route it through feedback-plan.md",
     }

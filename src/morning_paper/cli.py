@@ -54,7 +54,8 @@ Commands:
   inbox             Poll the contributor inbox: mail from your masthead becomes
                     staged pages, the sender gets a confirmation (--dry-run)
   queue             Show/list/read/remove staged material vs the page budget
-  edition           Prepare/apply durable edition files (prepare|apply-feedback)
+  edition           Prepare/proof/apply durable edition files
+                    (prepare|final-editor|apply-feedback)
   estimate <file>   Page count for a markdown file, nothing written
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)
@@ -68,10 +69,10 @@ Commands:
 
 Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
 the bare version). `newsroom init` creates the private file contract; `edition
-prepare` creates compaction-safe edition files; `edition apply-feedback`
-records reader notes into durable taste; `sources` inventories the source
-stack; `stage` and `queue` are the seam for "add this to tomorrow's brief"
-workflows.
+prepare` creates compaction-safe edition files; `edition final-editor` proves
+the paper is ready to ship; `edition apply-feedback` records reader notes into
+durable taste; `sources` inventories the source stack; `stage` and `queue` are
+the seam for "add this to tomorrow's brief" workflows.
 See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
@@ -1069,11 +1070,13 @@ def sources_command(args: list[str]) -> int:
 
 
 def edition_command(args: list[str]) -> int:
-    from .edition_workspace import apply_feedback, prepare_edition_workspace
+    from .edition_workspace import apply_feedback, final_editor_pass, prepare_edition_workspace
 
     usage = (
         "usage: morning-paper edition prepare <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]\n"
+        "       morning-paper edition final-editor <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition apply-feedback <newsroom-path> --route ROUTE --note TEXT "
         "[--decision accepted|rejected] [--why TEXT] [--date YYYY-MM-DD]\n"
         "       routes: editorial, voice, visuals, sources, prior, delivery, checks, "
@@ -1128,7 +1131,7 @@ def edition_command(args: list[str]) -> int:
             continue
         rest.append(arg)
         index += 1
-    if len(rest) != 2 or rest[0] not in {"prepare", "apply-feedback"}:
+    if len(rest) != 2 or rest[0] not in {"prepare", "final-editor", "apply-feedback"}:
         print(usage, file=sys.stderr)
         return 2
     try:
@@ -1146,6 +1149,8 @@ def edition_command(args: list[str]) -> int:
                 check_sources=check_sources,
                 force=force,
             )
+        elif rest[0] == "final-editor":
+            payload = final_editor_pass(Path(rest[1]), config, date_str=date_str)
         else:
             payload = apply_feedback(
                 Path(rest[1]),
