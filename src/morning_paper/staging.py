@@ -27,7 +27,7 @@ from .article_print import (
     render_article_markdown,
 )
 from .config import MorningPaperConfig
-from .renderers import _safe_filename
+from .renderers import _page_count_worker_env, _safe_filename
 
 
 @dataclass(slots=True)
@@ -92,6 +92,7 @@ def _estimate_pages(config: MorningPaperConfig, markdown: str) -> int:
             stderr=subprocess.PIPE,
             timeout=20,
             check=False,
+            env=_page_count_worker_env(),
         )
         if result.returncode == 0:
             payload = json.loads(result.stdout)

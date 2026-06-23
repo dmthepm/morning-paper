@@ -203,7 +203,7 @@ use `--newsroom <path>` when checking from somewhere else.
 git clone https://github.com/dmthepm/morning-paper.git
 cd morning-paper
 pip install -e ".[dev,pretty]"
-python -m pytest tests/
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=src python -m pytest tests/
 python scripts/setup_scaffold_smoke.py --isolated
 python scripts/fresh_friend_smoke.py
 python scripts/dogfood_newsroom_smoke.py

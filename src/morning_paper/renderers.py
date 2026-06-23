@@ -28,6 +28,19 @@ class TypewriterRendererUnavailable(RuntimeError):
     pass
 
 
+def _page_count_worker_env() -> dict[str, str]:
+    env = os.environ.copy()
+    src_root = str(Path(__file__).resolve().parents[1])
+    existing = env.get("PYTHONPATH")
+    if existing:
+        paths = existing.split(os.pathsep)
+        if src_root not in paths:
+            env["PYTHONPATH"] = os.pathsep.join([src_root, existing])
+    else:
+        env["PYTHONPATH"] = src_root
+    return env
+
+
 def _safe_filename(label: str) -> str:
     return "".join(ch.lower() if ch.isalnum() else "-" for ch in label).strip("-") or "morning-paper"
 
@@ -567,6 +580,7 @@ def count_pages(markdown: str, *, style: str = "broadsheet", palette: str = "mon
             stderr=subprocess.PIPE,
             timeout=20,
             check=False,
+            env=_page_count_worker_env(),
         )
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError("page count worker timed out") from exc
