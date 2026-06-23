@@ -206,6 +206,7 @@ pip install -e ".[dev,pretty]"
 python -m pytest tests/
 python scripts/setup_scaffold_smoke.py --isolated
 python scripts/fresh_friend_smoke.py
+python scripts/dogfood_newsroom_smoke.py
 python scripts/host_plugin_smoke.py
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-dist --install-check
 ```

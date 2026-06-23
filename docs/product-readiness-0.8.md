@@ -173,6 +173,16 @@ smallest durable file, append `TASTELOG.md`, and update that edition's
 voice, visuals, sources, delivery, `prior`, `checks`, section specs, and
 rejected taste. YAML targets receive comments first so they remain parseable.
 
+## Dogfood Smoke
+
+`scripts/dogfood_newsroom_smoke.py` is the current private-newsroom proxy. It
+uses synthetic fixtures only, but exercises the user-shaped path: work pulse,
+saved reading, local note, CSV/JSON export files, converter digest, staged
+queue, rendered PDF, review, final-editor, feedback applied to `SOURCES.md`,
+and a private-term scan over temp markdown/JSON/YAML/text artifacts. A passing
+run may ship with `notes` when unsupported exports are visible; that is
+intentional source honesty, not a failure.
+
 ## Native Recurrence Policy
 
 The daily paper should lean into the recurring primitive of the host the reader

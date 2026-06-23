@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `docs/feedback-loop.md` now documents how natural-language and desk-sheet
   feedback should become the smallest durable newsroom change, including
   rejected taste and YAML-safe preference updates.
+- `scripts/dogfood_newsroom_smoke.py` now exercises a synthetic but
+  user-shaped private newsroom path: work pulse, saved reading, local note,
+  CSV/JSON exports, converter digest, render, review, final-editor, feedback
+  routing, and private-term scan.
 
 ## [0.8.2] - 2026-06-22
 
