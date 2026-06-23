@@ -40,6 +40,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
                 "preferences/voice.md",
                 "preferences/algorithm-prior.yaml",
                 "preferences/checks.yaml",
+                "collectors/CONVERTERS.md",
                 "collectors/_lib.sh",
                 "collectors/run_all.sh",
                 "collectors/shipped.sh",
@@ -121,6 +122,17 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn(".md", inbox)
             self.assertIn("morning-paper stage", inbox)
             self.assertIn("converter", inbox)
+            self.assertIn("collectors/CONVERTERS.md", inbox)
+
+            converters = (root / "collectors" / "CONVERTERS.md").read_text(encoding="utf-8")
+            self.assertIn("Converter Playbook", converters)
+            self.assertIn("CSV", converters)
+            self.assertIn("JSON", converters)
+            self.assertIn("PDF", converters)
+            self.assertIn("Obsidian", converters)
+            self.assertIn("GitHub / Main Branch", converters)
+            self.assertIn("Social / Video", converters)
+            self.assertIn("Do not move or mutate originals", converters)
 
             delivery = (root / "DELIVERY.md").read_text(encoding="utf-8")
             self.assertIn("Email / Article View", delivery)

@@ -56,7 +56,7 @@ EXPECTED_SNIPPETS = {
         "final-editor.json",
         "def apply_feedback",
     ),
-    "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md"),
+    "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md", "CONVERTERS.md"),
     "morning_paper/config.py": ("remote_extractor_fallback", "remote_extractor_fallback: false"),
     "morning_paper/article_print.py": ("allow_remote_fallback", "Remote fallback is opt-in"),
 }
@@ -219,6 +219,7 @@ def _inspect_sdist(sdist: Path, version: str) -> dict[str, object]:
             f"{expected_prefix}pyproject.toml",
             f"{expected_prefix}README.md",
             f"{expected_prefix}LICENSE",
+            f"{expected_prefix}docs/source-conversion.md",
         ]
         for name in required:
             if name not in names:

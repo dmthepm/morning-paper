@@ -114,6 +114,9 @@ source-backed material honestly, record when extraction was partial or remote,
 and let the editor decide what earns space.
 
 See [docs/collectors.md](docs/collectors.md) for the staging contract.
+See [docs/source-conversion.md](docs/source-conversion.md) for small converter
+recipes when the local drop folder contains CSV, JSON, PDFs, vaults, work
+exports, or social/video history.
 
 ## Daily Routine
 
@@ -186,6 +189,7 @@ use `--newsroom <path>` when checking from somewhere else.
 ## Docs
 
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
+- [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
 - [docs/inbox.md](docs/inbox.md) — trusted contributor email intake
 - [docs/newsroom-skill-suite.md](docs/newsroom-skill-suite.md) — next skill architecture

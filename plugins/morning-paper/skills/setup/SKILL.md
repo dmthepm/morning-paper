@@ -104,7 +104,9 @@ for the contract.
   their repos (scaffolded as `collectors/shipped.sh` in §5).
 - **Local drop folder**: a collector that stages `.md`, `.txt`, and `.url`
   files from a folder the user already owns: Obsidian exports, synced folders,
-  agent-produced files, or manual dumps.
+  agent-produced files, or manual dumps. Unsupported files should lead to a
+  small converter collector from `collectors/CONVERTERS.md`, not a new engine
+  integration.
 Each collector they skip = a section that prints "not configured", never fake data.
 
 ## 4. The masthead (the contributor inbox)
@@ -181,6 +183,7 @@ newsroom/
     algorithm-prior.yaml     # the owned-algorithm artifact (commented stub)
     checks.yaml              # review thresholds/mutes (commented stub)
   collectors/
+    CONVERTERS.md            # converter recipes for CSV, JSON, PDF, vault/work/social exports
     _lib.sh                  # the collector contract helpers (stage-based)
     run_all.sh               # run every collector, write a status report
     shipped.sh               # example: "shipped while you slept" (gh)

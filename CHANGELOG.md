@@ -12,6 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   render and review. It checks required edition artifacts, the PDF path, page
   budget, review status, visual/source warnings, and the feedback route before
   the reader sees the paper.
+- Source conversion guidance now lives in both the public
+  `docs/source-conversion.md` playbook and each scaffolded newsroom's
+  `collectors/CONVERTERS.md`, giving agents practical local-first recipes for
+  CSV, JSON, PDF, Obsidian/folder, GitHub/Main Branch/work, and social/video
+  exports without expanding the engine into a scraper registry.
 
 ## [0.8.2] - 2026-06-22
 

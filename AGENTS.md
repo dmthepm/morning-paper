@@ -68,7 +68,10 @@ apply-feedback <path> --route ROUTE --note ...` records stable reader feedback
 into the smallest durable file, TASTELOG, and that edition's feedback plan.
 Use `editorial`, `voice`, `visuals`, `sources`, `prior`, `delivery`, `checks`,
 `the-read`, `front-page`, `reading`, or `taste`. `stage` takes a real file
-path, never `/dev/stdin` — write a temp file first.
+path, never `/dev/stdin` — write a temp file first. Unsupported local-drop
+files become private converter collectors from `collectors/CONVERTERS.md` or
+`docs/source-conversion.md`; do not add a hosted scraper/OAuth registry to the
+engine without an explicit scope change.
 
 ## The single-source rule (hold it forever)
 

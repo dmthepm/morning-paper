@@ -125,6 +125,10 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(payload["newsroom"]["local_drop"]["unsupported_count"], 0)
         self.assertEqual(payload["newsroom"]["local_drop"]["sample_files"], ["note.txt"])
         self.assertIn(str(newsroom / "inbox"), payload["newsroom"]["local_drop"]["path"])
+        self.assertEqual(
+            payload["newsroom"]["local_drop"]["converter_playbook"],
+            str((newsroom / "collectors" / "CONVERTERS.md").resolve()),
+        )
         self.assertIn("put .md", " ".join(payload["next_actions"]))
         collectors = {item["id"]: item for item in payload["newsroom"]["collectors"]}
         self.assertIn("collector:local-drop", collectors)
@@ -175,7 +179,9 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(local_drop["sample_files"], ["note.txt"])
         self.assertEqual(local_drop["unsupported_count"], 2)
         self.assertEqual(local_drop["unsupported_sample_files"], ["data.csv", "report.pdf"])
-        self.assertIn("Unsupported local-drop files need a converter collector", " ".join(payload["next_actions"]))
+        next_actions = " ".join(payload["next_actions"])
+        self.assertIn("Unsupported local-drop files need a converter collector", next_actions)
+        self.assertIn("collectors/CONVERTERS.md", next_actions)
 
     def test_sources_check_reports_full_text_summary_and_errors(self) -> None:
         def fake_get(url: str, timeout: int = 30) -> _FakeResponse:

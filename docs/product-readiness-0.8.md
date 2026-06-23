@@ -153,6 +153,17 @@ Acceptance:
   `voice`, `visuals`, `sources`, `prior`, `delivery`, `checks`, `the-read`,
   `front-page`, `reading`, and `taste`.
 
+### Source Conversion UX
+
+Unsupported local-drop files should become small private converter collectors,
+not engine integrations. The public source conversion playbook
+(`docs/source-conversion.md`) and scaffolded private playbook
+(`collectors/CONVERTERS.md`) cover CSV, JSON, PDFs, Obsidian/folders, GitHub /
+Main Branch/work systems, and social/video/browser exports. The invariant is
+stable: convert to markdown, stage with `morning-paper stage --date`, report
+skips/truncation/remote extraction honestly, and let the editor decide what
+earns ink.
+
 ## Native Recurrence Policy
 
 The daily paper should lean into the recurring primitive of the host the reader

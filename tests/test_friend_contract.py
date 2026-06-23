@@ -158,6 +158,7 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "docs/collectors.md": _read("docs/collectors.md"),
         "docs/composing.md": _read("docs/composing.md"),
         "docs/product-readiness-0.8.md": _read("docs/product-readiness-0.8.md"),
+        "docs/source-conversion.md": _read("docs/source-conversion.md"),
         "plugins/morning-paper/skills/setup/SKILL.md": _read("plugins/morning-paper/skills/setup/SKILL.md"),
         "plugins/morning-paper/skills/edition/SKILL.md": _read("plugins/morning-paper/skills/edition/SKILL.md"),
         "src/morning_paper/cli.py": _read("src/morning_paper/cli.py"),
@@ -195,6 +196,11 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "agent-generated reports",
     ):
         assert phrase in readme_sources
+
+    conversion = current_docs["docs/source-conversion.md"]
+    for phrase in ("CSV", "JSON", "PDFs", "Obsidian", "Main Branch", "Social", "morning-paper stage"):
+        assert phrase in conversion
+    assert "No hosted OAuth registry inside the engine" in conversion
 
 
 def test_recurrence_guidance_prefers_host_native_primitives() -> None:

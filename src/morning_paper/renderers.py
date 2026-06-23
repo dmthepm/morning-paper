@@ -4,6 +4,7 @@ import html
 import io
 import json
 import os
+import subprocess
 import sys
 import unicodedata
 from contextlib import redirect_stderr, redirect_stdout
@@ -532,17 +533,51 @@ def _render_typewriter_pdf(
     return len(document.pages)
 
 
-def count_pages(markdown: str, *, style: str = "broadsheet", palette: str = "mono", font_scale: float = 1.0) -> int:
-    """Lay the document out without writing anything; return its page count.
-
-    The agent-facing `estimate`/`stage` verbs use this to answer "how many
-    pages would this add?" before composition time.
-    """
+def _count_pages_direct(
+    markdown: str, *, style: str = "broadsheet", palette: str = "mono", font_scale: float = 1.0
+) -> int:
     html_cls, error = _load_weasyprint()
     if html_cls is None:
         raise RuntimeError(error or "WeasyPrint unavailable")
     html_doc = _render_html_from_markdown(markdown, style=style, palette=palette, font_scale=font_scale)
     return len(html_cls(string=html_doc).render().pages)
+
+
+def count_pages(markdown: str, *, style: str = "broadsheet", palette: str = "mono", font_scale: float = 1.0) -> int:
+    """Lay the document out in an isolated process; return its page count.
+
+    The agent-facing `estimate`/`stage` verbs use this to answer "how many
+    pages would this add?" before composition time. The isolation is deliberate:
+    WeasyPrint is a native-library stack, and long-lived agent/test processes
+    should not keep accumulating renderer state just to answer an estimate.
+    """
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "morning_paper.page_count_worker"],
+            input=json.dumps(
+                {
+                    "markdown": markdown,
+                    "style": style,
+                    "palette": palette,
+                    "font_scale": font_scale,
+                }
+            ),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=20,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("page count worker timed out") from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(f"page count worker failed: {detail}")
+    try:
+        payload = json.loads(result.stdout)
+        return int(payload["pages"])
+    except Exception as exc:
+        raise RuntimeError(f"page count worker returned invalid output: {result.stdout!r}") from exc
 
 
 def _render_markdown_text_pdf(config: MorningPaperConfig, markdown: str, *, date_str: str, output_path: Path) -> int:

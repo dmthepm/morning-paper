@@ -559,6 +559,73 @@ If a section is thin, say so instead of padding.
 #   - check: headline-length
 #     when: { section: "Field Notes" }
 """,
+        "collectors/CONVERTERS.md": """# Converter Playbook
+
+Use this when `morning-paper sources check --newsroom .` reports unsupported
+files in `inbox/`. A converter collector is a small private script that turns a
+source the reader already owns into staged markdown:
+
+```bash
+morning-paper stage /tmp/converted-source.md --title "Source name" --date YYYY-MM-DD
+```
+
+Do not move or mutate originals. Do not commit credentials. Do not silently use
+remote extraction. If you skip rows, see only metadata, OCR a scan, or produce
+a partial digest, say so in the markdown.
+
+## CSV
+
+- Inspect headers and row count.
+- Group by date, project, person, topic, channel, or source.
+- Stage one digest, not every row.
+- Good for analytics exports, watch history, calendar logs, tickets, and
+  reading lists.
+
+## JSON
+
+- Identify whether the export is a list, object, or nested archive.
+- Keep IDs, URLs, timestamps, and source names when present.
+- Convert only the records relevant to the edition date or reader question.
+- Good for app exports, social exports, API dumps, issue lists, and agent logs.
+
+## PDF
+
+- Prefer local text extraction (`pdftotext`, Python document tools, or the host
+  agent's document tools).
+- Record page count and extraction quality.
+- If text is poor, stage a source trace instead of pretending it is a full read.
+- Ask before slow/private OCR.
+
+## Obsidian / Folders
+
+- Do not ingest the whole vault by default.
+- Select by folder, modified date, tag, backlink, or filename.
+- Preserve local paths in the digest.
+- Good for daily notes, project notes, reports, saved articles, and agent files.
+
+## GitHub / Main Branch / Work Systems
+
+- Prefer an existing CLI or export (`gh`, local reports, Main Branch output).
+- Group by shipped work, blocked work, open asks, decisions, bets, pushes, and
+  risks.
+- Stage one operational digest with source links.
+
+## Social / Video / Browser Exports
+
+- Treat exports as private taste/source intelligence, not a new feed.
+- Group by story, creator, topic, repeated interest, or blind spot.
+- Prefer "what this says about the reader's algorithm" over raw chronology.
+- Mark sensitive analysis before printing it.
+
+## Agent Prompt
+
+```text
+Write a Morning Paper converter collector for the unsupported files in inbox/.
+Keep it local-first. Turn the source into markdown, stage it with
+morning-paper stage --date YYYY-MM-DD, and report exactly what was skipped,
+truncated, inferred, or unavailable. Do not move or mutate the originals.
+```
+""",
         "collectors/_lib.sh": """#!/usr/bin/env bash
 # _lib.sh - shared helpers for collectors. Source this from each collector.
 #
@@ -780,9 +847,10 @@ collectors/local-drop.sh YYYY-MM-DD
 morning-paper queue list --date YYYY-MM-DD
 ```
 
-For PDFs, CSVs, JSON exports, browser dumps, or app-specific exports, ask the
-agent to write a converter collector that turns the source into markdown and
-calls `morning-paper stage`.
+For PDFs, CSVs, JSON exports, browser dumps, Obsidian vaults, work-system
+exports, or social/video history, ask the agent to write a converter collector
+from `collectors/CONVERTERS.md`. The converter should turn the source into
+markdown and call `morning-paper stage`.
 """,
         "inbox/.gitkeep": "",
     }

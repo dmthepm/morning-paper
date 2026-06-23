@@ -239,3 +239,9 @@ The `setup` skill scaffolds this exact pattern into your newsroom's
 `run_all.sh` (run every collector, then print the queue), and worked examples
 (`shipped.sh`, `read.sh`, and `local-drop.sh`). Start from those rather than
 from a blank file.
+
+If `local-drop.sh` reports unsupported files, do not make the engine bigger.
+Write a converter collector in the private newsroom. Start from the scaffolded
+`collectors/CONVERTERS.md` or the public
+[source conversion playbook](source-conversion.md), then stage the converted
+markdown with `morning-paper stage`.

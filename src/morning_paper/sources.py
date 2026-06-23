@@ -214,6 +214,7 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
             collectors.append(item)
     drop_files = []
     unsupported_files = []
+    converter_playbook = root / "collectors" / "CONVERTERS.md"
     if drop_dir.is_dir():
         for item in sorted(drop_dir.iterdir()):
             if not item.is_file() or item.name.startswith(".") or item.name == "README.md":
@@ -238,7 +239,12 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
             "unsupported_count": len(unsupported_files),
             "unsupported_sample_files": unsupported_files[:10],
             "accepts": list(LOCAL_DROP_EXTENSIONS),
-            "next_action": f"put .md, .txt, or .url files in {drop_dir}",
+            "converter_playbook": str(converter_playbook) if converter_playbook.is_file() else "",
+            "next_action": (
+                f"put .md, .txt, or .url files in {drop_dir}; for CSV, JSON, PDF, vault, "
+                "work-system, or social/video exports, use collectors/CONVERTERS.md to write "
+                "a converter collector"
+            ),
         },
     }
 
@@ -260,7 +266,7 @@ def _source_next_actions(sources: list[dict[str, object]], newsroom_info: dict[s
         actions.append(str(local_drop.get("next_action") or "Put local files in the newsroom inbox."))
         if int(local_drop.get("unsupported_count") or 0) > 0:
             actions.append(
-                "Unsupported local-drop files need a converter collector before they will be staged."
+                "Unsupported local-drop files need a converter collector before they will be staged; start from collectors/CONVERTERS.md."
             )
     collectors = newsroom_info.get("collectors") if isinstance(newsroom_info.get("collectors"), list) else []
     if not collectors:
@@ -359,6 +365,10 @@ def source_inventory(
         "collector_contract": {
             "command": "morning-paper stage <url|file> --date YYYY-MM-DD",
             "meaning": "anything not built in should arrive as staged markdown for a specific edition date",
+            "converter_playbook": (
+                "collectors/CONVERTERS.md in a scaffolded private newsroom, plus "
+                "docs/source-conversion.md in the engine repo"
+            ),
         },
         "next_actions": _source_next_actions(sources, newsroom_info),
     }

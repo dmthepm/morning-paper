@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import sys
 
-from .renderers import count_pages
+from .renderers import _count_pages_direct
 
 
 def main() -> int:
     payload = json.loads(sys.stdin.read())
-    pages = count_pages(
+    pages = _count_pages_direct(
         str(payload["markdown"]),
         style=str(payload["style"]),
         palette=str(payload["palette"]),
