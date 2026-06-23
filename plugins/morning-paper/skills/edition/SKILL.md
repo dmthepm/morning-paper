@@ -22,7 +22,12 @@ morning-paper edition prepare . --date <edition-date>
 
 from the newsroom root. It creates `editions/<date>/` and the required durable
 files. If the run resumes after compaction, read the files in that folder first
-and continue from the latest complete artifact instead of starting over.
+and continue from the latest complete artifact instead of starting over. The
+edition folder is the run state; do not invent a separate `RUN_STATE` file or
+state machine. JSON artifacts with `"status": "pending"` are unfinished work.
+If `data/*.tmp` exists, treat collector work as interrupted scratch: rerun the
+collectors cleanly, refresh `collector-report.md` and `queue-snapshot.json`,
+then compose.
 
 Required durable artifacts:
 
@@ -144,7 +149,9 @@ Required durable artifacts:
    back the PDF path. Archive markdown + html into `editions/<date>/`. End by
    pointing at `operator-answers.md` and `feedback-plan.md`, then asking for
    natural-language feedback: what to keep, cut, expand, change visually, add
-   as a source, change about delivery, save as taste, or print tomorrow.
+   as a source, change about delivery, save as taste, or print tomorrow. Then
+   stop. Do not run `morning-paper edition prepare` for tomorrow or start
+   tomorrow's edition unless the reader explicitly asks.
 
 Write `operator-answers.md` like this:
 

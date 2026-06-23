@@ -80,6 +80,20 @@ def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
         assert route in cli_text
 
 
+def test_edition_skill_resumes_from_artifacts_and_stops_after_delivery() -> None:
+    edition_skill = _read("plugins/morning-paper/skills/edition/SKILL.md")
+    normalized = " ".join(edition_skill.split())
+
+    assert "The edition folder is the run state" in normalized
+    assert "do not invent a separate `RUN_STATE` file" in edition_skill
+    assert 'JSON artifacts with `"status": "pending"` are unfinished work' in normalized
+    assert "`data/*.tmp`" in edition_skill
+    assert "rerun the collectors cleanly" in normalized
+    assert "Then stop" in normalized
+    assert "Do not run `morning-paper edition prepare` for tomorrow" in normalized
+    assert "unless the reader explicitly asks" in edition_skill
+
+
 def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> None:
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
