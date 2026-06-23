@@ -25,7 +25,8 @@ newsroom-native primitives already:
 - `EDITORIAL.md` — what earns ink, what gets cut, what makes The Read.
 - `VISUALS.md` — layout, charts, illustrations, image policy, PDF/email taste.
 - `SOURCES.md` — source purpose, trust, cadence, health, backlog.
-- `DELIVERY.md` — print, email, routine, page budget, opening behavior.
+- `DELIVERY.md` — print, email, host-native recurrence/local fallback, page
+  budget, opening behavior.
 - `TASTELOG.md` — accepted/rejected feedback with dates and provenance.
 
 ## Current Problem

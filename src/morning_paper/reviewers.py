@@ -825,7 +825,7 @@ def check_duplicate_headline(ed: ParsedEdition, prefs: Preferences) -> list[Find
                         severity="nudge",
                         location={"section": "", "kind": "headline", "ref": _trunc(title or url)},
                         issue="Same story appears twice (identical URL).",
-                        why="A story surfacing twice (e.g. HN and RSS) is the classic aggregator embarrassment.",
+                        why="A story surfacing twice from two source paths is the classic aggregator embarrassment.",
                         measured={"url": url},
                         threshold={"source": "default"},
                         hint="Keep the stronger placement; cut the duplicate.",

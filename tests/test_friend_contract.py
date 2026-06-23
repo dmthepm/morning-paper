@@ -85,7 +85,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
     readiness = _read("docs/product-readiness-0.8.md")
-    release_readiness = _read("docs/release-readiness-0.8.2.md")
+    version = _pyproject_field("version")
+    release_readiness = _read(f"docs/release-readiness-{version}.md")
     roadmap = _read("ROADMAP.md")
     skill_suite = _read("docs/newsroom-skill-suite.md")
     install_smoke = _read("scripts/install_smoke.py")
@@ -95,7 +96,6 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     codex_validator = _read("scripts/validate_codex_plugin.py")
 
     summary = _pyproject_field("description")
-    version = _pyproject_field("version")
     assert summary.startswith("Own your algorithm")
     assert "personal newsroom" in summary
     assert "sources and preferences you own as files" in summary

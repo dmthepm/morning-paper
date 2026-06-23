@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-06-23
+
 ### Added
 - `morning-paper edition final-editor` now writes `final-editor.json` and
   `final-editor.md`, giving agents a separate pre-delivery ship rule after
@@ -24,6 +26,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   user-shaped private newsroom path: work pulse, saved reading, local note,
   CSV/JSON exports, converter digest, render, review, final-editor, feedback
   routing, and private-term scan.
+
+### Fixed
+- Page-count worker subprocesses now preserve the source-checkout
+  `PYTHONPATH`, so local tests and source-tree renders do not accidentally lose
+  `morning_paper.page_count_worker` when called from helper subprocesses.
+- Development test instructions now use `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`,
+  avoiding unrelated globally installed pytest plugins during local release
+  verification.
 
 ## [0.8.2] - 2026-06-22
 

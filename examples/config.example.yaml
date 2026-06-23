@@ -10,8 +10,10 @@ profile: |
 article_extractor: local
 
 sources:
+  # Legacy built-in public feed sample. Leave this off unless you explicitly
+  # want it; most papers should start from the reader's own source stack.
   hacker_news:
-    enabled: true
+    enabled: false
     limit: 20
   rss:
     - name: Simon Willison

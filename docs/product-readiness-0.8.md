@@ -1,7 +1,6 @@
 # Morning Paper 0.8 Product Readiness
 
-Status: shipped source of truth for the 0.8 hardening pass. Current live
-release: 0.8.2.
+Status: shipped source of truth for the 0.8 hardening pass. Current release: 0.8.3.
 
 ## Mission
 
@@ -22,11 +21,11 @@ The product promise stays narrow:
 
 ## Current Truth
 
-- `morning-paper` 0.8.2 is live on PyPI and tagged as `v0.8.2`; the repo
+- `morning-paper` 0.8.3 is live on PyPI and tagged as `v0.8.3`; the repo
   carries one skill tree for Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
-  host manifests carry the same 0.8.2 semver.
+  host manifests carry the same 0.8.3 semver.
 - The public README now has the owned-algorithm mission and a copyable agent
   install prompt.
 - The setup skill writes a real newsroom scaffold instead of empty folders and

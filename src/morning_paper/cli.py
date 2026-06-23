@@ -60,7 +60,7 @@ Commands:
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)
   styles            List available styles and palettes
-  routine           Schedule the daily edition (install [--time HH:MM]
+  routine           Optional local fallback scheduler (install [--time HH:MM]
                     [--command CMD] [--workdir PATH] | status | uninstall) —
                     launchd/systemd/cron; the run starts in the directory you
                     install from (your newsroom)

@@ -555,7 +555,7 @@ def routine_status() -> dict:
             "installed": False,
             "scheduler": None,
             "log": str(log_path()),
-            "hint": "schedule the daily edition with `morning-paper routine install`",
+            "hint": "optional local fallback: `morning-paper routine install`; prefer your host's native recurrence when available",
         }
     workdir = None
     if scheduler == "launchd":

@@ -141,7 +141,7 @@ Stable public commands:
 - `morning-paper estimate <file.md>` — page count, nothing written
 - `morning-paper inbox` — poll the contributor inbox
 - `morning-paper review <edition>` — editorial QC on a finished edition
-- `morning-paper routine` — schedule the daily edition (install/status/uninstall)
+- `morning-paper routine` — local fallback scheduler (install/status/uninstall)
 - `morning-paper styles` — list styles + palettes
 - `morning-paper doctor`
 
@@ -283,7 +283,8 @@ Codex — from one source tree. The skill bodies live once, under
 self-contained:
 
 - `plugins/morning-paper/skills/setup/SKILL.md` — cold-start: install,
-  interview, scaffold the newsroom contracts, wire the routine
+  interview, scaffold the newsroom contracts, and offer host-native recurrence
+  or local fallback only on request
 - `plugins/morning-paper/skills/edition/SKILL.md` — the daily editor pass
 - `plugins/morning-paper/skills/writing/SKILL.md` — the prose revision
   discipline
@@ -306,7 +307,8 @@ plugin loader, and shadowed the real skills during local dev.
 
 Purpose:
 - make the CLI discoverable in Claude Code and Codex runtimes from one repo
-- provide a stable command contract for always-on agent runtimes
+- provide a stable command contract for host-native agent surfaces that can see
+  the newsroom
 - keep runtime integration thin: skills call the CLI, they do not reimplement the pipeline
 - hold the single-source invariant: one strict-semver version across both
   manifests per release; never fork a skill's prose between hosts
