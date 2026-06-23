@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-06-23
+
+### Changed
+- The edition skill now treats the edition folder itself as the resumable paper
+  trail, clarifies that pending JSON artifacts and interrupted temp files are
+  unfinished work, and tells agents to stop after a clean final-editor result
+  instead of drifting into tomorrow's edition.
+
 ## [0.8.4] - 2026-06-23
 
 ### Added
