@@ -9,8 +9,8 @@ Date: 2026-06-23
 - Package version: `0.8.3`
 - Public PyPI version verified on 2026-06-23: `0.8.3`
 - Published tag: `v0.8.3`
-- Publish workflow: GitHub Actions tag publish for `v0.8.3`.
-- CI workflow on `main`: required before release.
+- Publish workflow: GitHub Actions run `28039041269`, passed.
+- CI workflow on `main`: GitHub Actions run `28039036943`, passed.
 
 0.8.3 ships the final-editor/source-conversion/feedback/dogfood foundation on
 top of 0.8.2. The release proof is the same discipline as 0.8.2: clean local
