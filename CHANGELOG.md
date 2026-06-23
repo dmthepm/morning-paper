@@ -6,10 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-06-23
+
 ### Added
+- Edition workspaces now include `estimate-result.json` and `visual-qa.json`.
+  `final-editor` flags missing or stale estimates, large estimate/render
+  drift, stale render/review artifacts, unreadable PDFs, mismatched PDF page
+  proof, and missing visual QA before delivery.
 - `scripts/five_edition_loop_smoke.py` now runs one synthetic newsroom across
   five consecutive editions, applies durable feedback after each paper, proves
   later drafts carry prior feedback, and fails if old reads quietly reprint.
+- `scripts/source_shape_intake_smoke.py` now proves source intake as a
+  shape-aware ledger over public-safe synthetic fixtures for mbox/MIME email,
+  Main Branch-style repos, YouTube exports, generic CSV/JSON, and local
+  folders without adding source-specific engine integrations.
 
 ## [0.8.3] - 2026-06-23
 

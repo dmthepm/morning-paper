@@ -55,7 +55,7 @@ Commands:
                     staged pages, the sender gets a confirmation (--dry-run)
   queue             Show/list/read/remove staged material vs the page budget
   edition           Prepare/proof/apply durable edition files
-                    (prepare|final-editor|apply-feedback)
+                    (prepare|estimate|visual-qa|final-editor|apply-feedback)
   estimate <file>   Page count for a markdown file, nothing written
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)
@@ -1070,11 +1070,21 @@ def sources_command(args: list[str]) -> int:
 
 
 def edition_command(args: list[str]) -> int:
-    from .edition_workspace import apply_feedback, final_editor_pass, prepare_edition_workspace
+    from .edition_workspace import (
+        apply_feedback,
+        estimate_edition_workspace,
+        final_editor_pass,
+        prepare_edition_workspace,
+        visual_qa_edition_workspace,
+    )
 
     usage = (
         "usage: morning-paper edition prepare <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]\n"
+        "       morning-paper edition estimate <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH]\n"
+        "       morning-paper edition visual-qa <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition final-editor <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition apply-feedback <newsroom-path> --route ROUTE --note TEXT "
@@ -1131,7 +1141,7 @@ def edition_command(args: list[str]) -> int:
             continue
         rest.append(arg)
         index += 1
-    if len(rest) != 2 or rest[0] not in {"prepare", "final-editor", "apply-feedback"}:
+    if len(rest) != 2 or rest[0] not in {"prepare", "estimate", "visual-qa", "final-editor", "apply-feedback"}:
         print(usage, file=sys.stderr)
         return 2
     try:
@@ -1149,6 +1159,10 @@ def edition_command(args: list[str]) -> int:
                 check_sources=check_sources,
                 force=force,
             )
+        elif rest[0] == "estimate":
+            payload = estimate_edition_workspace(Path(rest[1]), config, date_str=date_str)
+        elif rest[0] == "visual-qa":
+            payload = visual_qa_edition_workspace(Path(rest[1]), date_str=date_str)
         elif rest[0] == "final-editor":
             payload = final_editor_pass(Path(rest[1]), config, date_str=date_str)
         else:

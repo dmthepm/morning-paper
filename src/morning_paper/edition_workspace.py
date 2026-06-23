@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import MorningPaperConfig
+from .proofs import estimate_markdown, pdf_basic_proof, visual_qa_from_render, write_json
 from .sources import source_inventory
 from .staging import queue_status
 
@@ -150,8 +151,10 @@ def final_editor_pass(
         edition_dir / "source-inventory.json",
         edition_dir / "collector-report.md",
         edition_dir / "queue-snapshot.json",
+        edition_dir / "estimate-result.json",
         edition_dir / "render-result.json",
         edition_dir / "review.json",
+        edition_dir / "visual-qa.json",
         edition_dir / "operator-answers.md",
         edition_dir / "feedback-plan.md",
     ]
@@ -173,8 +176,66 @@ def final_editor_pass(
 
     source_inventory = _load_json_object(edition_dir / "source-inventory.json")
     queue_snapshot = _load_json_object(edition_dir / "queue-snapshot.json")
+    estimate_result = _load_json_object(edition_dir / "estimate-result.json")
     render_result = _load_json_object(edition_dir / "render-result.json")
     review = _load_json_object(edition_dir / "review.json")
+    visual_qa = _load_json_object(edition_dir / "visual-qa.json")
+
+    draft_path = edition_dir / "draft.md"
+    if draft_path.is_file():
+        files_read.append(str(draft_path))
+
+    if not estimate_result:
+        _final_finding(
+            findings,
+            check="estimate-complete",
+            severity="flag",
+            issue="Page estimate artifact is missing or unreadable.",
+            why="The editor needs a pre-render budget expectation before judging the final page count.",
+            hint="Run `morning-paper edition estimate <newsroom> --date <date>` and save `estimate-result.json`.",
+        )
+    elif estimate_result.get("status") == "pending":
+        _final_finding(
+            findings,
+            check="estimate-complete",
+            severity="flag",
+            issue="Page estimate is still pending.",
+            why="The editor needs a pre-render budget expectation before judging the final page count.",
+            hint="Run `morning-paper edition estimate <newsroom> --date <date>` and save `estimate-result.json`.",
+        )
+    elif estimate_result.get("status") == "error":
+        _final_finding(
+            findings,
+            check="estimate-complete",
+            severity="flag",
+            issue="Page estimate failed.",
+            why="A failed estimate means the editor never got a useful pre-render budget signal.",
+            hint="Fix the draft or print stack, rerun the estimate, then render again.",
+            measured={"error": estimate_result.get("error", "")},
+        )
+    elif estimate_result:
+        estimate_file = Path(str(estimate_result.get("file", ""))).expanduser()
+        est_mtime = float(estimate_result.get("file_mtime") or 0)
+        current_mtime = estimate_file.stat().st_mtime if estimate_file.is_file() else 0
+        if not estimate_file.is_file() or estimate_file.resolve() != draft_path.resolve():
+            _final_finding(
+                findings,
+                check="artifact-freshness",
+                severity="flag",
+                issue="Estimate was not run against this edition's draft.",
+                why="A page estimate for another file cannot prove this paper's budget.",
+                hint="Run `morning-paper edition estimate` from this newsroom/date.",
+                measured={"estimate_file": str(estimate_file), "draft": str(draft_path)},
+            )
+        elif current_mtime > est_mtime + 0.001:
+            _final_finding(
+                findings,
+                check="artifact-freshness",
+                severity="flag",
+                issue="Draft changed after the page estimate.",
+                why="The estimate no longer describes the draft that was rendered.",
+                hint="Rerun the estimate, render, review, and final-editor.",
+            )
 
     if render_result.get("status") == "pending":
         _final_finding(
@@ -227,6 +288,65 @@ def final_editor_pass(
             why="Delivery starts with a real PDF, not a successful command transcript.",
             hint="Re-render the edition and verify the `outputs.pdf` path.",
         )
+    elif pdf_path.is_file():
+        pdf_proof = pdf_basic_proof(pdf_path)
+        if not pdf_proof.get("ok"):
+            _final_finding(
+                findings,
+                check="delivery-proof",
+                severity="flag",
+                issue="Rendered PDF exists but is not a readable positive-page PDF.",
+                why="A path on disk is not enough proof that the reader can receive a real paper.",
+                hint="Re-render the edition, then run visual QA again.",
+                measured={"pdf": pdf_proof},
+            )
+        else:
+            proven_pages = _int_or_zero(pdf_proof.get("pages"))
+            if pages > 0 and proven_pages > 0 and proven_pages != pages:
+                _final_finding(
+                    findings,
+                    check="delivery-proof",
+                    severity="flag",
+                    issue=f"Render result reports {pages} page(s), but the PDF proof found {proven_pages}.",
+                    why="The render artifact and the file on disk must describe the same paper.",
+                    hint="Re-render the edition and rerun review, visual QA, and final-editor.",
+                    measured={"render_pages": pages, "pdf_pages": proven_pages, "pdf": str(pdf_path)},
+                )
+
+    rendered_markdown = Path(str(outputs.get("markdown", ""))).expanduser() if outputs and outputs.get("markdown") else Path()
+    if rendered_markdown and not rendered_markdown.is_file():
+        _final_finding(
+            findings,
+            check="artifact-freshness",
+            severity="flag",
+            issue="Render result points to a missing rendered markdown artifact.",
+            why="Review and final-editor need to know exactly which composed artifact was delivered.",
+            hint="Re-render the edition and save the fresh render result.",
+            measured={"markdown": str(rendered_markdown)},
+        )
+    elif rendered_markdown.is_file() and draft_path.is_file() and rendered_markdown.stat().st_mtime + 0.001 < draft_path.stat().st_mtime:
+        _final_finding(
+            findings,
+            check="artifact-freshness",
+            severity="flag",
+            issue="Rendered markdown is older than draft.md.",
+            why="The delivered paper may not include the latest draft changes.",
+            hint="Re-render, re-review, then run final-editor again.",
+        )
+
+    if estimate_result.get("status") == "estimated" and pages > 0:
+        est_pages = _int_or_zero(estimate_result.get("est_pages"))
+        drift = abs(est_pages - pages)
+        if drift > 2:
+            _final_finding(
+                findings,
+                check="estimate-drift",
+                severity="flag",
+                issue=f"Estimate was {est_pages} page(s), render was {pages}.",
+                why="Large estimate/render drift means the page budget proof is not trustworthy.",
+                hint="Inspect custom CSS, images, or style choices, then rerun estimate/render.",
+                measured={"est_pages": est_pages, "render_pages": pages, "drift": drift},
+            )
 
     if review.get("status") == "pending":
         _final_finding(
@@ -257,6 +377,96 @@ def final_editor_pass(
             hint="Include a one-line review-note summary when delivering the PDF.",
             measured={"review_summary": review.get("summary", {})},
         )
+    review_artifacts = review.get("edition", {}).get("artifacts", {}) if isinstance(review.get("edition"), dict) else {}
+    reviewed_markdown: Path | None = None
+    if isinstance(review_artifacts, dict) and review_artifacts.get("markdown"):
+        reviewed_markdown = Path(str(review_artifacts.get("markdown", ""))).expanduser()
+    if rendered_markdown.is_file() and reviewed_markdown is None and review.get("status") not in {"pending", None}:
+        _final_finding(
+            findings,
+            check="artifact-freshness",
+            severity="flag",
+            issue="Review artifact does not name the rendered markdown it inspected.",
+            why="A review without an artifact path cannot prove it inspected the delivered paper.",
+            hint="Run `morning-paper review <render-output-dir> --json` and save `review.json`.",
+        )
+    elif (
+        rendered_markdown.is_file()
+        and reviewed_markdown is not None
+        and reviewed_markdown.expanduser().resolve() != rendered_markdown.expanduser().resolve()
+    ):
+        _final_finding(
+            findings,
+            check="artifact-freshness",
+            severity="flag",
+            issue="Review did not inspect the rendered markdown from render-result.json.",
+            why="A clean review only proves readiness if it reviewed the artifact being delivered.",
+            hint="Run `morning-paper review <render-output-dir> --json` and save `review.json`.",
+            measured={"rendered_markdown": str(rendered_markdown), "reviewed_markdown": str(reviewed_markdown)},
+        )
+    review_json_path = edition_dir / "review.json"
+    render_json_path = edition_dir / "render-result.json"
+    if review_json_path.is_file() and render_json_path.is_file() and review_json_path.stat().st_mtime + 0.001 < render_json_path.stat().st_mtime:
+        _final_finding(
+            findings,
+            check="artifact-freshness",
+            severity="flag",
+            issue="Review artifact is older than render-result.json.",
+            why="The review may not describe the latest render.",
+            hint="Rerun review after rendering, then run final-editor.",
+        )
+
+    if not visual_qa:
+        _final_finding(
+            findings,
+            check="visual-qa",
+            severity="flag",
+            issue="Visual QA artifact is missing or unreadable.",
+            why="The final editor should inspect the rendered PDF surface, not only markdown metadata.",
+            hint="Run `morning-paper edition visual-qa <newsroom> --date <date>` after render.",
+        )
+    elif visual_qa.get("status") == "pending":
+        _final_finding(
+            findings,
+            check="visual-qa",
+            severity="flag",
+            issue="Visual QA is still pending.",
+            why="The final editor should inspect the rendered PDF surface, not only markdown metadata.",
+            hint="Run `morning-paper edition visual-qa <newsroom> --date <date>` after render.",
+        )
+    elif visual_qa.get("status") == "fail":
+        _final_finding(
+            findings,
+            check="visual-qa",
+            severity="flag",
+            issue="Visual QA failed.",
+            why="A failed raster/PDF check means the paper on screen may be blank or broken.",
+            hint="Fix the render output, rerun visual QA, then run final-editor.",
+            measured={"visual_qa_summary": visual_qa.get("findings", [])},
+        )
+    elif visual_qa.get("status") == "notes":
+        _final_finding(
+            findings,
+            check="visual-qa",
+            severity="nudge",
+            issue="Visual QA completed with notes.",
+            why="The paper can ship, but the handoff should mention the visual proof limitation.",
+            hint="Name the visual QA note in the final handoff.",
+            measured={"visual_qa_summary": visual_qa.get("findings", [])},
+        )
+    elif visual_qa:
+        qa_pdf = visual_qa.get("pdf") if isinstance(visual_qa.get("pdf"), dict) else {}
+        qa_pdf_path = Path(str(qa_pdf.get("path", ""))).expanduser() if qa_pdf else Path()
+        if qa_pdf and qa_pdf_path.resolve() != pdf_path.resolve():
+            _final_finding(
+                findings,
+                check="artifact-freshness",
+                severity="flag",
+                issue="Visual QA inspected a different PDF than render-result.json.",
+                why="Visual QA only proves delivery if it inspected the PDF being handed to the reader.",
+                hint="Rerun visual QA against the current render result.",
+                measured={"visual_qa_pdf": qa_pdf.get("path", ""), "render_pdf": str(pdf_path)},
+            )
     visual_findings = [
         item
         for item in review.get("findings", [])
@@ -588,6 +798,13 @@ must be reported as "not configured"; never invent source data.
         "command": f"morning-paper render {edition_dir / 'draft.md'} --date {date_str} --slug edition",
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    estimate_pending = {
+        "status": "pending",
+        "date": date_str,
+        "command": f"morning-paper edition estimate {root} --date {date_str}",
+        "updated_at": _utc_stamp(),
+    }
+    record("estimate-result.json", _write_json(edition_dir / "estimate-result.json", estimate_pending, force=force))
     record("render-result.json", _write_json(edition_dir / "render-result.json", render_pending, force=force))
 
     review_pending = {
@@ -597,6 +814,14 @@ must be reported as "not configured"; never invent source data.
         "updated_at": _utc_stamp(),
     }
     record("review.json", _write_json(edition_dir / "review.json", review_pending, force=force))
+
+    visual_qa_pending = {
+        "status": "pending",
+        "date": date_str,
+        "command": f"morning-paper edition visual-qa {root} --date {date_str}",
+        "updated_at": _utc_stamp(),
+    }
+    record("visual-qa.json", _write_json(edition_dir / "visual-qa.json", visual_qa_pending, force=force))
 
     final_editor_pending = {
         "status": "pending",
@@ -629,13 +854,45 @@ morning-paper edition final-editor {root} --date {date_str}
             "source_inventory": str(edition_dir / "source-inventory.json"),
             "collector_report": str(edition_dir / "collector-report.md"),
             "queue_snapshot": str(edition_dir / "queue-snapshot.json"),
+            "estimate_result": str(edition_dir / "estimate-result.json"),
             "draft": str(edition_dir / "draft.md"),
             "render_result": str(edition_dir / "render-result.json"),
             "review": str(edition_dir / "review.json"),
+            "visual_qa": str(edition_dir / "visual-qa.json"),
             "final_editor": str(edition_dir / "final-editor.json"),
             "final_editor_markdown": str(edition_dir / "final-editor.md"),
             "operator_answers": str(edition_dir / "operator-answers.md"),
             "feedback_plan": str(edition_dir / "feedback-plan.md"),
         },
-        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render, review, final-editor, then ask for feedback and route it through feedback-plan.md",
+        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, estimate, render, review, visual-qa, final-editor, then ask for feedback and route it through feedback-plan.md",
     }
+
+
+def estimate_edition_workspace(
+    newsroom: Path,
+    config: MorningPaperConfig,
+    *,
+    date_str: str,
+) -> dict[str, object]:
+    root = newsroom.expanduser().resolve()
+    edition_dir = root / "editions" / date_str
+    if not edition_dir.is_dir():
+        raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    payload = estimate_markdown(edition_dir / "draft.md", config, date_str=date_str)
+    write_json(edition_dir / "estimate-result.json", payload)
+    return payload
+
+
+def visual_qa_edition_workspace(
+    newsroom: Path,
+    *,
+    date_str: str,
+) -> dict[str, object]:
+    root = newsroom.expanduser().resolve()
+    edition_dir = root / "editions" / date_str
+    if not edition_dir.is_dir():
+        raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    render_result = _load_json_object(edition_dir / "render-result.json")
+    payload = visual_qa_from_render(render_result=render_result, edition_dir=edition_dir)
+    write_json(edition_dir / "visual-qa.json", payload)
+    return payload

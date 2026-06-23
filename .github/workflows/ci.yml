@@ -69,6 +69,7 @@ jobs:
           python scripts/setup_scaffold_smoke.py
           python scripts/fresh_friend_smoke.py
           python scripts/five_edition_loop_smoke.py
+          python scripts/source_shape_intake_smoke.py
 
   plugins:
     name: Validate plugin surface (Claude Code + Codex)

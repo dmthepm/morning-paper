@@ -43,6 +43,7 @@ EXCLUDED_SUFFIXES = (".egg-info",)
 EXPECTED_MODULES = (
     "morning_paper/newsroom.py",
     "morning_paper/edition_workspace.py",
+    "morning_paper/proofs.py",
     "morning_paper/config.py",
     "morning_paper/article_print.py",
     "morning_paper/page_count_worker.py",
@@ -54,7 +55,15 @@ EXPECTED_SNIPPETS = {
         "Applied Feedback",
         "final_editor_pass",
         "final-editor.json",
+        "estimate-result.json",
+        "visual-qa.json",
         "def apply_feedback",
+    ),
+    "morning_paper/proofs.py": (
+        "def pdf_basic_proof",
+        "def estimate_markdown",
+        "def visual_qa_from_render",
+        "pdftoppm",
     ),
     "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md", "CONVERTERS.md"),
     "morning_paper/config.py": ("remote_extractor_fallback", "remote_extractor_fallback: false"),

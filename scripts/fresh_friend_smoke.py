@@ -259,6 +259,9 @@ def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dic
     draft_path = edition_dir / "draft.md"
     draft_path.write_text(compose_draft(persona, staged["title"]), encoding="utf-8")
 
+    estimate = run_cli(["edition", "estimate", str(newsroom), "--config", str(config_path), "--date", DATE], env=env)
+    require_ok(estimate, f"{persona['id']} estimate")
+
     render = run_cli(
         ["render", str(draft_path), "--config", str(config_path), "--date", DATE, "--slug", "edition"],
         env=env,
@@ -271,6 +274,9 @@ def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dic
     require_ok(review, f"{persona['id']} review")
     review_payload = json.loads(review.stdout)
     (edition_dir / "review.json").write_text(json.dumps(review_payload, indent=2), encoding="utf-8")
+
+    visual_qa = run_cli(["edition", "visual-qa", str(newsroom), "--config", str(config_path), "--date", DATE], env=env)
+    require_ok(visual_qa, f"{persona['id']} visual-qa")
 
     final_editor = run_cli(
         ["edition", "final-editor", str(newsroom), "--config", str(config_path), "--date", DATE],
@@ -290,9 +296,11 @@ def simulate(persona: dict[str, object], base: Path, env: dict[str, str]) -> dic
         "source-inventory.json",
         "collector-report.md",
         "queue-snapshot.json",
+        "estimate-result.json",
         "draft.md",
         "render-result.json",
         "review.json",
+        "visual-qa.json",
         "final-editor.json",
         "final-editor.md",
         "operator-answers.md",

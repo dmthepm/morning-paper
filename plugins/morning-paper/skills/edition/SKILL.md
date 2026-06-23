@@ -32,11 +32,16 @@ Required durable artifacts:
 - `queue-snapshot.json` — `morning-paper queue list --date <date>` after
   collectors and any pruning.
 - `draft.md` — current composed edition, written before estimating.
+- `estimate-result.json` — JSON output from
+  `morning-paper edition estimate . --date <date>` against the current draft.
 - `render-result.json` — JSON output from `morning-paper render`.
 - `review.json` — JSON output from `morning-paper review`.
+- `visual-qa.json` — JSON output from
+  `morning-paper edition visual-qa . --date <date>` against the rendered PDF.
 - `final-editor.json` / `final-editor.md` — independent pre-delivery proof
-  over newsroom contracts, source inventory, render result, review result,
-  visual/source warnings, page budget, and feedback route.
+  over newsroom contracts, source inventory, estimate result, render result,
+  review result, PDF proof, visual QA, source warnings, page budget, and
+  feedback route.
 - `operator-answers.md` — a short feedback sheet for the reader to mark up or
   answer in chat.
 - `feedback-plan.md` — the route from reader notes to durable newsroom files.
@@ -91,12 +96,18 @@ Required durable artifacts:
    voice preferences in `preferences/voice.md` override every default in
    that skill; honor them exactly.
 
-5. **Budget.** `morning-paper estimate draft.md` — fit `page_budget` ±2 by
-   cutting the weakest material, never by shrinking type.
+5. **Budget.** Run
+   `morning-paper edition estimate . --date <edition-date>` and keep its JSON
+   in `estimate-result.json`. Fit `page_budget` ±2 by cutting the weakest
+   material, never by shrinking type. If you edit `draft.md` after estimating,
+   rerun the estimate before rendering.
 6. **Render.** `morning-paper render draft.md --style <their style> --palette
    <their palette> --date <today> --slug edition`. Save the command's JSON as
    `render-result.json`.
-7. **QA.** Rasterize page 1 + one inner page (`pdftoppm -png -r 60`) and look:
+7. **Visual QA.** Run
+   `morning-paper edition visual-qa . --date <edition-date>` after render. It
+   proves the PDF exists, has pages, rasterizes selected pages when `pdftoppm`
+   is available, and writes `visual-qa.json`. Then look at the PDF yourself:
    no overflow, no missing glyphs (tofu), footers present. For every page that
    contains a chart, image, illustration, or diagram, verify it is either
    full-measure, part of a deliberate visual grid, or cut. It must not leave a
@@ -122,7 +133,9 @@ Required durable artifacts:
    manually; the command writes `final-editor.json` and `final-editor.md`.
    If the host supports a separate context/subagent, have that fresh editor
    read `final-editor.md`, `render-result.json`, `review.json`, and the PDF
-   path before delivery. The JSON `status` is the ship rule:
+   path before delivery. The final editor checks estimate freshness, render
+   freshness, review freshness, PDF readability/page count, visual QA, and the
+   feedback route. The JSON `status` is the ship rule:
    - `clean` → deliver.
    - `notes` → deliver, but include the short final-editor note in the handoff.
    - `review` → revise, re-render, re-review, and run final-editor again; or

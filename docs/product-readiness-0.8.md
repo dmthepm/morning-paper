@@ -1,6 +1,6 @@
 # Morning Paper 0.8 Product Readiness
 
-Status: shipped source of truth for the 0.8 hardening pass. Current release: 0.8.3.
+Status: shipped source of truth for the 0.8 hardening pass. Current release: 0.8.4.
 
 ## Mission
 
@@ -21,11 +21,11 @@ The product promise stays narrow:
 
 ## Current Truth
 
-- `morning-paper` 0.8.3 is live on PyPI and tagged as `v0.8.3`; the repo
+- `morning-paper` 0.8.4 is live on PyPI and tagged as `v0.8.4`; the repo
   carries one skill tree for Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
-  host manifests carry the same 0.8.3 semver.
+  host manifests carry the same 0.8.4 semver.
 - The public README now has the owned-algorithm mission and a copyable agent
   install prompt.
 - The setup skill writes a real newsroom scaffold instead of empty folders and
@@ -191,6 +191,26 @@ old reads quietly reprint. It records usefulness, generic risk, wasted pages,
 visual/layout issues, and source confusion for each edition so 0.8.4 work can
 move from "valid paper" toward "compelling personal newsroom."
 
+## 0.8.4 Proof Artifacts
+
+The edition workspace now treats proof as durable state, not chat memory:
+
+- `estimate-result.json` records the page-budget estimate against the exact
+  `draft.md` mtime before render.
+- `render-result.json` must point at a real markdown artifact and a readable,
+  non-empty PDF with a positive page count.
+- `review.json` must name the rendered markdown it inspected.
+- `visual-qa.json` proves the rendered PDF surface with a PDF header/page
+  check and selected-page raster checks when `pdftoppm` is available.
+- `final-editor.json` compares those artifacts for freshness before delivery.
+
+The source-intake smoke is intentionally shape-based. Synthetic fixtures model
+mbox/MIME email, a Main Branch-style repo, a YouTube export with transcript
+files, generic CSV/JSON exports, and a local folder with unsupported material.
+The expected output is a ledger: structure, useful lanes, privacy/sensitivity,
+conversion needs, and reader questions. Complex sources become private
+converter/collector guidance in the newsroom, not new engine integrations.
+
 ## Native Recurrence Policy
 
 The daily paper should lean into the recurring primitive of the host the reader
@@ -319,6 +339,11 @@ Before 0.8 is complete:
 - `scripts/fresh_friend_smoke.py` passes the five local persona simulations:
   creator/news reader, business owner/Main Branch, technical agent,
   nontechnical RSS/newsletter, and local-folder/source-dump;
+- `scripts/five_edition_loop_smoke.py` passes, proving feedback carries across
+  repeated editions without compaction-sensitive chat state;
+- `scripts/source_shape_intake_smoke.py` passes, proving shape-aware intake for
+  email, work repos, video history, generic exports, and local folders without
+  adding engine integrations;
 - a live Codex agent run uses the installed plugin path to produce a first PDF
   from a temp home/config and clean local source;
 - a live Claude Code agent run uses the installed plugin path to produce a

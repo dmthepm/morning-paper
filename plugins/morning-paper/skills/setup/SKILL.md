@@ -95,6 +95,14 @@ See
 [docs/collectors.md](https://github.com/dmthepm/morning-paper/blob/main/docs/collectors.md)
 for the contract.
 
+For any unfamiliar source, use this sequence before writing a collector:
+inspect the source shape, write a small source ledger, ask the reader what
+should influence the paper, then create the smallest private converter or
+collector. The ledger should name structure, useful lanes, sensitivity,
+conversion needs, and reader questions. Do not build a hosted scraper/OAuth
+registry or source-specific engine integration just because one reader has one
+tool.
+
 - **Social/export tools**: local Twitter/X exports, browser/API scrapes, or
   services the reader already trusts. Treat these as reader-owned source
   systems, not Morning Paper defaults.
@@ -159,6 +167,10 @@ Use `morning-paper sources list --newsroom .` after scaffolding, and
 `morning-paper sources check --newsroom .` when the reader is ready to verify
 source entries and collector syntax. Read its `source_model`, `newsroom.local_drop`, and
 `next_actions` before asking more source questions.
+For exports, archives, repos, vaults, or generated folders, create a brief
+ledger in `SOURCES.md` before making them recurring: what files exist, what
+fields/headers/folders matter, what is sensitive, what should be skipped, and
+which collector/converter will stage markdown.
 If your shell is already inside the scaffolded newsroom root, plain
 `morning-paper sources check` auto-detects the newsroom; use `--newsroom .`
 when you want the path to be unambiguous in logs.

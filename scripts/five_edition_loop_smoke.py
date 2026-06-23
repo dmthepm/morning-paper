@@ -226,6 +226,9 @@ def simulate(base: Path, env: dict[str, str]) -> dict[str, object]:
             if old_title in draft_text:
                 raise RuntimeError(f"{date_str} reprinted old read title: {old_title}")
 
+        estimate = run_cli(["edition", "estimate", str(newsroom), "--config", str(config_path), "--date", date_str], env=env)
+        require_ok(estimate, f"{date_str} estimate")
+
         render = run_cli(["render", str(draft), "--config", str(config_path), "--date", date_str, "--slug", "edition"], env=env)
         require_ok(render, f"{date_str} render")
         render_payload = json.loads(render.stdout)
@@ -235,6 +238,9 @@ def simulate(base: Path, env: dict[str, str]) -> dict[str, object]:
         require_ok(review, f"{date_str} review")
         review_payload = json.loads(review.stdout)
         (edition_dir / "review.json").write_text(json.dumps(review_payload, indent=2), encoding="utf-8")
+
+        visual_qa = run_cli(["edition", "visual-qa", str(newsroom), "--config", str(config_path), "--date", date_str], env=env)
+        require_ok(visual_qa, f"{date_str} visual-qa")
 
         final_editor = run_cli(["edition", "final-editor", str(newsroom), "--config", str(config_path), "--date", date_str], env=env)
         require_ok(final_editor, f"{date_str} final-editor")

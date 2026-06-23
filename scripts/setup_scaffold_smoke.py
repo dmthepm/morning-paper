@@ -238,6 +238,9 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     )
     draft = compose_first_draft(newsroom, staged_title)
 
+    estimate = run_cli(["edition", "estimate", str(newsroom), "--date", DATE], env=env)
+    require_ok(estimate, "estimate")
+
     render = run_cli(
         [
             "render",
@@ -265,6 +268,9 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     if review_payload.get("status") != "clean":
         raise RuntimeError(f"review was not clean: {json.dumps(review_payload, indent=2)}")
 
+    visual_qa = run_cli(["edition", "visual-qa", str(newsroom), "--date", DATE], env=env)
+    require_ok(visual_qa, "visual-qa")
+
     final_editor = run_cli(["edition", "final-editor", str(newsroom), "--date", DATE], env=env)
     require_ok(final_editor, "final-editor")
     final_editor_payload = json.loads(final_editor.stdout)
@@ -275,9 +281,11 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
         "source-inventory.json",
         "collector-report.md",
         "queue-snapshot.json",
+        "estimate-result.json",
         "draft.md",
         "render-result.json",
         "review.json",
+        "visual-qa.json",
         "final-editor.json",
         "final-editor.md",
         "operator-answers.md",

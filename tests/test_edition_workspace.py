@@ -24,6 +24,15 @@ class EditionWorkspaceTest(unittest.TestCase):
         config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
         return config_path
 
+    def _minimal_pdf(self, path: Path) -> None:
+        path.write_bytes(
+            b"%PDF-1.4\n"
+            b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+            b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+            b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >> endobj\n"
+            b"%%EOF\n"
+        )
+
     def test_edition_prepare_writes_all_resume_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -53,9 +62,11 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "source-inventory.json",
                 "collector-report.md",
                 "queue-snapshot.json",
+                "estimate-result.json",
                 "draft.md",
                 "render-result.json",
                 "review.json",
+                "visual-qa.json",
                 "final-editor.json",
                 "final-editor.md",
                 "operator-answers.md",
@@ -76,12 +87,18 @@ class EditionWorkspaceTest(unittest.TestCase):
             queue = json.loads((edition_dir / "queue-snapshot.json").read_text(encoding="utf-8"))
             self.assertEqual(queue["date"], "2026-06-22")
             self.assertEqual(queue["count"], 0)
+            estimate_result = json.loads((edition_dir / "estimate-result.json").read_text(encoding="utf-8"))
+            self.assertEqual(estimate_result["status"], "pending")
+            self.assertIn("morning-paper edition estimate", estimate_result["command"])
             render_result = json.loads((edition_dir / "render-result.json").read_text(encoding="utf-8"))
             self.assertEqual(render_result["status"], "pending")
             self.assertIn("morning-paper render", render_result["command"])
             review = json.loads((edition_dir / "review.json").read_text(encoding="utf-8"))
             self.assertEqual(review["status"], "pending")
             self.assertIn("morning-paper review", review["command"])
+            visual_qa = json.loads((edition_dir / "visual-qa.json").read_text(encoding="utf-8"))
+            self.assertEqual(visual_qa["status"], "pending")
+            self.assertIn("morning-paper edition visual-qa", visual_qa["command"])
             final_editor = json.loads((edition_dir / "final-editor.json").read_text(encoding="utf-8"))
             self.assertEqual(final_editor["status"], "pending")
             self.assertIn("morning-paper edition final-editor", final_editor["command"])
@@ -131,14 +148,30 @@ class EditionWorkspaceTest(unittest.TestCase):
             rendered = edition_dir / "edition"
             rendered.mkdir()
             pdf = rendered / "edition.pdf"
-            pdf.write_bytes(b"%PDF-1.4\n% fixture\n")
+            self._minimal_pdf(pdf)
             (rendered / "edition.md").write_text("# Done\n", encoding="utf-8")
+            draft = edition_dir / "draft.md"
+            estimate_file_mtime = draft.stat().st_mtime
+            (edition_dir / "estimate-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "estimated",
+                        "date": "2026-06-22",
+                        "file": str(draft.resolve()),
+                        "file_mtime": estimate_file_mtime,
+                        "est_pages": 1,
+                        "words": 2,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
             (edition_dir / "render-result.json").write_text(
                 json.dumps(
                     {
                         "status": "rendered",
                         "date": "2026-06-22",
-                        "pages": 2,
+                        "pages": 1,
                         "warnings": [],
                         "output_dir": str(rendered),
                         "outputs": {
@@ -154,7 +187,30 @@ class EditionWorkspaceTest(unittest.TestCase):
                 json.dumps(
                     {
                         "status": "clean",
+                        "edition": {
+                            "artifacts": {
+                                "markdown": str(rendered / "edition.md"),
+                                "json": str(rendered / "edition.json"),
+                            }
+                        },
                         "summary": {"flag": 0, "nudge": 0, "info": 0},
+                        "findings": [],
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "visual-qa.json").write_text(
+                json.dumps(
+                    {
+                        "status": "clean",
+                        "pdf": {
+                            "path": str(pdf),
+                            "ok": True,
+                            "pages": 1,
+                            "header_ok": True,
+                            "size_bytes": pdf.stat().st_size,
+                        },
                         "findings": [],
                     },
                     indent=2,
@@ -227,6 +283,100 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("render-complete", checks)
             self.assertIn("review-complete", checks)
             self.assertIn("delivery-proof", checks)
+            self.assertIn("estimate-complete", checks)
+            self.assertIn("visual-qa", checks)
+
+    def test_final_editor_flags_stale_estimate_and_review(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            draft = edition_dir / "draft.md"
+            (edition_dir / "estimate-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "estimated",
+                        "date": "2026-06-22",
+                        "file": str(draft.resolve()),
+                        "file_mtime": 0,
+                        "est_pages": 1,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            draft.write_text("# Changed After Estimate\n\nNew copy.\n", encoding="utf-8")
+            rendered = edition_dir / "edition"
+            rendered.mkdir()
+            pdf = rendered / "edition.pdf"
+            self._minimal_pdf(pdf)
+            rendered_md = rendered / "edition.md"
+            rendered_md.write_text("# Rendered\n", encoding="utf-8")
+            (edition_dir / "render-result.json").write_text(
+                json.dumps(
+                    {
+                        "date": "2026-06-22",
+                        "pages": 4,
+                        "outputs": {"pdf": str(pdf), "markdown": str(rendered_md)},
+                        "output_dir": str(rendered),
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "review.json").write_text(
+                json.dumps(
+                    {
+                        "status": "clean",
+                        "edition": {"artifacts": {"markdown": str(edition_dir / "other.md")}},
+                        "summary": {"flag": 0, "nudge": 0, "info": 0},
+                        "findings": [],
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "visual-qa.json").write_text(
+                json.dumps({"status": "pending", "pdf": {"path": str(pdf)}, "findings": []}, indent=2),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "final-editor",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["status"], "review")
+            checks = {item["check"] for item in payload["findings"]}
+            self.assertIn("artifact-freshness", checks)
+            self.assertIn("estimate-drift", checks)
+            self.assertIn("visual-qa", checks)
 
     def test_edition_prepare_preserves_draft_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

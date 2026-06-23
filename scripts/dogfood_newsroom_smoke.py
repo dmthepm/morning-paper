@@ -210,6 +210,9 @@ def main() -> int:
         draft = edition_dir / "draft.md"
         draft.write_text(compose_draft(staged_titles), encoding="utf-8")
 
+        estimate = run_cli(["edition", "estimate", str(newsroom), "--config", str(config_path), "--date", DATE], env=env)
+        require_ok(estimate, "estimate")
+
         render = run_cli(["render", str(draft), "--config", str(config_path), "--date", DATE, "--slug", "edition"], env=env)
         require_ok(render, "render")
         render_payload = json.loads(render.stdout)
@@ -219,6 +222,9 @@ def main() -> int:
         require_ok(review, "review")
         review_payload = json.loads(review.stdout)
         (edition_dir / "review.json").write_text(json.dumps(review_payload, indent=2), encoding="utf-8")
+
+        visual_qa = run_cli(["edition", "visual-qa", str(newsroom), "--config", str(config_path), "--date", DATE], env=env)
+        require_ok(visual_qa, "visual-qa")
 
         final_editor = run_cli(["edition", "final-editor", str(newsroom), "--config", str(config_path), "--date", DATE], env=env)
         require_ok(final_editor, "final-editor")

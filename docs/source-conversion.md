@@ -14,6 +14,27 @@ do not pretend partial extraction is complete. If the converter skips rows,
 uses a remote service, hits a paywall, or only sees metadata, say that in the
 staged markdown and/or queue warning.
 
+## Source Shape Ledger
+
+Before writing a converter for a new export, archive, repo, vault, or generated
+folder, inspect the shape and write a small ledger in the reader's private
+newsroom, usually in `SOURCES.md` or beside the collector. The ledger should
+answer:
+
+- What is the structure? File types, folders, headers, JSON keys, MIME parts,
+  attachments, dates, IDs, and links.
+- What useful lanes does it offer? Newsletters, open asks, decisions, saved
+  reads, changed repos, transcripts, repeated interests, or source candidates.
+- What is sensitive? Email addresses, private messages, client facts, viewing
+  history, health/legal/financial data, credentials, or raw attachments.
+- What conversion is needed? Digest, thread grouping, transcript extraction,
+  PDF text extraction, changed-file summary, dedupe, skip list, or source trace.
+- What should the reader decide before it becomes recurring?
+
+Then ask the reader which lanes should influence the paper. A source is not
+valuable because it is large; it is valuable when it helps the editor decide
+what deserves today's finite pages.
+
 ## Agent Prompt
 
 When `morning-paper sources check --newsroom .` reports unsupported local-drop
@@ -25,6 +46,15 @@ inbox/. Keep it local-first. Turn the source into markdown, stage it with
 morning-paper stage --date YYYY-MM-DD, and report exactly what was skipped,
 truncated, inferred, or unavailable. Do not move or mutate the originals. Read
 collectors/CONVERTERS.md and docs/source-conversion.md if present.
+```
+
+For a larger unknown source, start with the ledger first:
+
+```text
+Inspect this source shape for Morning Paper before writing a converter. Do not
+copy private content into the public engine. Produce a ledger with structure,
+useful lanes, sensitivity, conversion needs, and questions for me. Then suggest
+the smallest private collector that would stage useful markdown.
 ```
 
 ## CSV Exports
