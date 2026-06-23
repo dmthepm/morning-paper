@@ -459,6 +459,86 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("preferences/algorithm-prior.yaml", feedback_plan)
             self.assertIn("preferences/checks.yaml", feedback_plan)
 
+    def test_apply_feedback_examples_cover_every_durable_route(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            examples = [
+                ("editorial", "More judgment, less roundup.", "EDITORIAL.md", "accepted"),
+                ("sources", "GitHub/Main Branch pulses outrank casual reads when there are open asks.", "SOURCES.md", "accepted"),
+                ("delivery", "Email the article view after the PDF lands.", "DELIVERY.md", "accepted"),
+                ("front-page", "Front page headlines need a verb and a point of view.", "specs/front-page.md", "accepted"),
+                ("reading", "Do not reprint reads I already got.", "specs/reading.md", "accepted"),
+                ("taste", "Make the default edition forty pages.", "TASTELOG.md", "rejected"),
+            ]
+            for route, note, target, decision in examples:
+                stdout = io.StringIO()
+                with redirect_stdout(stdout):
+                    rc = cli.main(
+                        [
+                            "edition",
+                            "apply-feedback",
+                            str(newsroom),
+                            "--config",
+                            str(config_path),
+                            "--date",
+                            "2026-06-22",
+                            "--route",
+                            route,
+                            "--decision",
+                            decision,
+                            "--note",
+                            note,
+                            "--why",
+                            "feedback-loop eval",
+                        ]
+                    )
+                self.assertEqual(rc, 0, route)
+                payload = json.loads(stdout.getvalue())
+                self.assertEqual(payload["target_relative"], target)
+                self.assertEqual(payload["decision"], decision)
+
+            for target in (
+                "EDITORIAL.md",
+                "SOURCES.md",
+                "DELIVERY.md",
+                "specs/front-page.md",
+                "specs/reading.md",
+            ):
+                text = (newsroom / target).read_text(encoding="utf-8")
+                self.assertIn("## Feedback Notes", text, target)
+                self.assertIn("feedback-loop eval", text, target)
+
+            tastelog = (newsroom / "TASTELOG.md").read_text(encoding="utf-8")
+            self.assertIn("More judgment, less roundup.", tastelog)
+            self.assertIn("GitHub/Main Branch pulses", tastelog)
+            self.assertIn("rejected - Make the default edition forty pages.", tastelog)
+            self.assertNotIn("## Feedback Notes", tastelog)
+
+            feedback_plan = (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(
+                encoding="utf-8"
+            )
+            for route, _note, target, decision in examples:
+                self.assertIn(route, feedback_plan)
+                self.assertIn(target, feedback_plan)
+                self.assertIn(decision, feedback_plan)
+
     def test_apply_feedback_rejects_missing_route_or_note(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

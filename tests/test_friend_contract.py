@@ -157,6 +157,7 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "docs/architecture-decisions.md": _read("docs/architecture-decisions.md"),
         "docs/collectors.md": _read("docs/collectors.md"),
         "docs/composing.md": _read("docs/composing.md"),
+        "docs/feedback-loop.md": _read("docs/feedback-loop.md"),
         "docs/product-readiness-0.8.md": _read("docs/product-readiness-0.8.md"),
         "docs/source-conversion.md": _read("docs/source-conversion.md"),
         "plugins/morning-paper/skills/setup/SKILL.md": _read("plugins/morning-paper/skills/setup/SKILL.md"),
@@ -201,6 +202,11 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
     for phrase in ("CSV", "JSON", "PDFs", "Obsidian", "Main Branch", "Social", "morning-paper stage"):
         assert phrase in conversion
     assert "No hosted OAuth registry inside the engine" in conversion
+
+    feedback = current_docs["docs/feedback-loop.md"]
+    for phrase in ("Do Not Overfit", "Route To The Smallest File", "rejected", "YAML Preferences"):
+        assert phrase in feedback
+    assert "morning-paper edition apply-feedback" in feedback
 
 
 def test_recurrence_guidance_prefers_host_native_primitives() -> None:

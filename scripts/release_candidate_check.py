@@ -219,6 +219,7 @@ def _inspect_sdist(sdist: Path, version: str) -> dict[str, object]:
             f"{expected_prefix}pyproject.toml",
             f"{expected_prefix}README.md",
             f"{expected_prefix}LICENSE",
+            f"{expected_prefix}docs/feedback-loop.md",
             f"{expected_prefix}docs/source-conversion.md",
         ]
         for name in required:

@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   `collectors/CONVERTERS.md`, giving agents practical local-first recipes for
   CSV, JSON, PDF, Obsidian/folder, GitHub/Main Branch/work, and social/video
   exports without expanding the engine into a scraper registry.
+- `docs/feedback-loop.md` now documents how natural-language and desk-sheet
+  feedback should become the smallest durable newsroom change, including
+  rejected taste and YAML-safe preference updates.
 
 ## [0.8.2] - 2026-06-22
 

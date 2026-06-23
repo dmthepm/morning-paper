@@ -190,6 +190,7 @@ use `--newsroom <path>` when checking from somewhere else.
 
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown
+- [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
 - [docs/inbox.md](docs/inbox.md) — trusted contributor email intake
 - [docs/newsroom-skill-suite.md](docs/newsroom-skill-suite.md) — next skill architecture

@@ -164,6 +164,15 @@ stable: convert to markdown, stage with `morning-paper stage --date`, report
 skips/truncation/remote extraction honestly, and let the editor decide what
 earns ink.
 
+### Feedback Loop Quality
+
+The feedback loop is explicit rather than magical. Agents use
+`morning-paper edition apply-feedback` to route stable reader notes to the
+smallest durable file, append `TASTELOG.md`, and update that edition's
+`feedback-plan.md`. `docs/feedback-loop.md` gives route examples for editorial,
+voice, visuals, sources, delivery, `prior`, `checks`, section specs, and
+rejected taste. YAML targets receive comments first so they remain parseable.
+
 ## Native Recurrence Policy
 
 The daily paper should lean into the recurring primitive of the host the reader
