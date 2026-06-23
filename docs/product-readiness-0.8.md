@@ -182,6 +182,15 @@ and a private-term scan over temp markdown/JSON/YAML/text artifacts. A passing
 run may ship with `notes` when unsupported exports are visible; that is
 intentional source honesty, not a failure.
 
+## Five-Edition Loop
+
+`scripts/five_edition_loop_smoke.py` is the next quality-loop proof. It uses
+one synthetic newsroom across five consecutive editions, applies feedback after
+each paper, checks that later drafts carry prior durable feedback, and fails if
+old reads quietly reprint. It records usefulness, generic risk, wasted pages,
+visual/layout issues, and source confusion for each edition so 0.8.4 work can
+move from "valid paper" toward "compelling personal newsroom."
+
 ## Native Recurrence Policy
 
 The daily paper should lean into the recurring primitive of the host the reader

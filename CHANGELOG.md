@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- `scripts/five_edition_loop_smoke.py` now runs one synthetic newsroom across
+  five consecutive editions, applies durable feedback after each paper, proves
+  later drafts carry prior feedback, and fails if old reads quietly reprint.
+
 ## [0.8.3] - 2026-06-23
 
 ### Added

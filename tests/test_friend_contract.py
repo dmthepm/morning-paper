@@ -93,6 +93,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     host_smoke = _read("scripts/host_plugin_smoke.py")
     setup_smoke = _read("scripts/setup_scaffold_smoke.py")
     dogfood_smoke = _read("scripts/dogfood_newsroom_smoke.py")
+    five_loop_smoke = _read("scripts/five_edition_loop_smoke.py")
     codex_validator = _read("scripts/validate_codex_plugin.py")
 
     summary = _pyproject_field("description")
@@ -121,6 +122,9 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "private_scan" in dogfood_smoke
     assert "final_editor_status" in dogfood_smoke
     assert "converter_playbook" in dogfood_smoke
+    assert "feedback_rules_carried" in five_loop_smoke
+    assert "reprinted old read title" in five_loop_smoke
+    assert "quality_notes" in five_loop_smoke
     assert "setup_scaffold_smoke.py --isolated" in readiness
     assert "/tmp/morning-paper-rc-final-local" in release_readiness
     assert "Latest full local verification" in release_readiness
