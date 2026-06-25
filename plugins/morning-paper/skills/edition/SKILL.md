@@ -116,6 +116,10 @@ Required durable artifacts:
      specific posts, threads, releases, artifacts, and disagreements. Do not
      flatten them into generic "people are talking about" summaries unless the
      concrete evidence is visible on the page.
+   - Keep consumption and ideation separate. Do not weave agent advice, next
+     actions, post ideas, or reader-specific prompts into source cards unless
+     the newsroom explicitly asks for that shape. If ideation earns space, put
+     it in a separate labeled box or back-page section.
    - A visual decision. If the edition runs long, add at least one earned
      chart, figure, diagram, or deliberately visual page from `VISUALS.md` and
      the collected data. If no visual earns ink, say why in the handoff.
