@@ -116,6 +116,9 @@ Required durable artifacts:
      specific posts, threads, releases, artifacts, and disagreements. Do not
      flatten them into generic "people are talking about" summaries unless the
      concrete evidence is visible on the page.
+   - For X/social sections, show the actual pulled post or thread excerpt as
+     the card's main object. Do not replace every post with agent-written
+     Claim/Context boilerplate; selection is the editorial act.
    - Keep consumption and ideation separate. Do not weave agent advice, next
      actions, post ideas, or reader-specific prompts into source cards unless
      the newsroom explicitly asks for that shape. If ideation earns space, put
