@@ -169,6 +169,12 @@
 - social-source hydration contract: discovery scrapers find candidate
   URLs/IDs, then finalists hydrate into full text, metrics, media, thread/reply
   context, and long-native-post routes before print
+- social beat budgeting: let agents allocate pages across subtopics such as
+  frontier agents, coding workflows, commerce, creative tools, and reader-owned
+  projects, then use rendered proof pages to tune density
+- source media triage: CLI/review help for deciding whether social images,
+  screenshots, demos, and long native posts become small figures, mini-reads,
+  full reads, source-health notes, or cuts
 - optional LLM scoring via OpenRouter / Anthropic / OpenAI
 - named sections and better front-page composition
 - a genericized public return-path skill (modeled on the newsroom triage flow)

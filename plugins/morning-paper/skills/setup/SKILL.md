@@ -73,8 +73,9 @@ Ask in 2-3 messages, not twenty. Capture:
   RSS/full-text feeds are useful when available; paid feed URLs are credentials,
   so store them in `~/.config/morning-paper/env.sh`, never in a repo.
   Capture source *beats* as well as source locations: what should the paper
-  notice daily or weekly, and which tools/exports should be tested before that
-  source becomes recurring?
+  notice daily or weekly, how many pages each beat might deserve when it is
+  hot, and which tools/exports should be tested before that source becomes
+  recurring?
 - **Shape** — `page_budget` (suggest 12-20), how many full reads per edition,
   style (`morning-paper styles` lists the family of four — broadsheet,
   brief, field-card, zine; `broadsheet` is the default recommendation),
@@ -119,7 +120,11 @@ tool.
 
 - **Social/export tools**: local Twitter/X exports, browser/API scrapes, or
   services the reader already trusts. Treat these as reader-owned source
-  systems, not Morning Paper defaults.
+  systems, not Morning Paper defaults. Search and export tools can discover
+  candidates; an approved enrichment tool such as an Apify-style actor may
+  hydrate finalists with full text, metrics, media, and thread/article context.
+  Record remote tool use in collector notes and keep credentials out of the
+  repo.
 - **Research plugins**: a collector wrapping a tool such as last30days for a
   weekly trends page.
 - **gh CLI**: a collector that builds a "shipped while you slept" section from

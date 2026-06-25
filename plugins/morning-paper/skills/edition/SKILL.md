@@ -124,6 +124,16 @@ Required durable artifacts:
      when available, media/artifact links, thread/reply/quote/article context,
      and a clear route (`tweet card`, `thread`, `long read`, `source health`,
      or `cut`). Do not print ellipsis-truncated snippets as whole posts.
+   - Budget fast social sources by beat, not only by platform. A single X/social
+     source may have separate lanes for frontier agents, coding workflows,
+     commerce, creative models, or a reader-specific project. Spend pages on
+     the lanes that have real evidence today, and leave thin lanes as source
+     health notes.
+   - Inspect media and long-native social posts before print. Images,
+     screenshots, videos, demos, and X Articles may earn a small figure,
+     annotated crop, mini-read, or full-read route; they should not be ignored
+     just because the first card layout was text-only. Include media only when
+     it clarifies and remains printer-friendly.
    - Keep consumption and ideation separate. Do not weave agent advice, next
      actions, post ideas, or reader-specific prompts into source cards unless
      the newsroom explicitly asks for that shape. If ideation earns space, put
@@ -143,8 +153,10 @@ Required durable artifacts:
    `morning-paper edition estimate . --date <edition-date>` and keep its JSON
    in `estimate-result.json`. Fit `page_budget` ±2 by cutting the weakest
    material, never by shrinking type. Track page budget, source budget,
-   full-read budget, visual budget, and research budget. If you edit `draft.md`
-   after estimating, rerun the estimate before rendering.
+   beat/topic budget, full-read budget, visual budget, and research budget. For
+   new or changing source layouts, render a small proof page when useful so the
+   editor can see how many real items fit before locking the whole edition. If
+   you edit `draft.md` after estimating, rerun the estimate before rendering.
 6. **Render.** `morning-paper render draft.md --style <their style> --palette
    <their palette> --date <today> --slug edition`. Save the command's JSON as
    `render-result.json`.

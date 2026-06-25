@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-06-25
+
+### Added
+- Edition guidance now treats fast social sources as budgeted beats with
+  topic lanes, not one generic social section. Agents should assign pages to
+  the day's actual appetite, then use estimate/render feedback to tune the
+  section.
+- Social-source guidance now includes a media and long-native-post triage:
+  inspect images, demos, screenshots, threads, and X Articles before print,
+  route article-length items to mini-reads or full reads, and include images
+  only when they clarify without becoming ink-heavy.
+- Collector guidance now names reader-approved scraper/enrichment services
+  such as Apify-style actors as optional private newsroom collectors. The
+  engine remains local-first and source-agnostic; remote tool use must be
+  recorded in collector notes.
+
 ## [0.8.6] - 2026-06-25
 
 ### Added

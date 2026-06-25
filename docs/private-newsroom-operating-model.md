@@ -93,6 +93,11 @@ happening on X, YouTube, GitHub, a market, a community, or inside their own
 work systems. A beat is not a pile of links. It is a recurring source desk with
 purpose, trust, cadence, and page budget.
 
+A broad source can contain multiple desks. X/social, for example, may have one
+lane for frontier-agent workflows, one for commerce, one for creative tools,
+and one for a reader's own project. The paper should budget the lanes that have
+real evidence today instead of forcing every lane to appear every day.
+
 For social or fast-moving sources, setup should capture the distinction between
 standing taste and daily discovery. A reader may care about "AI agents" every
 day, but the actual item worth printing could be a product release, a long
@@ -106,6 +111,13 @@ prints, the source desk should hydrate finalists into records with full text,
 author/date, canonical URL, engagement metrics when available, media/artifact
 links, thread/reply/quote context, article body for long native posts, and a
 route: compact card, thread card, long read, source health, or cut.
+
+Media and long-native posts need an editorial pass. Images, screenshots, demo
+videos, and X Articles can be the actual source of value. A source desk should
+inspect them, decide whether they clarify the story, and then route them to a
+small figure, annotated crop, mini-read, full-read page, data artifact, or cut.
+Printer-friendly reading stays the default; visuals earn space by making the
+source easier to judge.
 
 ## Multi-Agent Edition Desk
 
@@ -139,6 +151,8 @@ The edition skill should reason in budgets:
 - full-read budget: how many articles are printed in full, if any;
 - visual budget: how often visuals appear and how much page real estate they
   consume;
+- beat/topic budget: how many pages each recurring lane gets today, and what
+  becomes only a source-health line;
 - research budget: how much time/tooling to spend before composing.
 
 `morning-paper edition estimate`, `morning-paper queue`, render output, review,

@@ -154,10 +154,15 @@ Pattern:
    conversation context, and a route into the paper.
 4. Long native posts or platform articles should become mini-reads/full reads,
    not cramped cards.
-5. Prefer "what this says about the reader's algorithm" over raw chronology
+5. Inspect images, screenshots, demos, and videos before deciding the layout.
+   Route them to a small figure, annotated crop, data artifact, source-health
+   note, or cut. Avoid ink-heavy visuals that do not improve judgment.
+6. If a reader-approved service such as an Apify-style actor hydrates the
+   source, record the service and extraction limits in the collector notes.
+7. Prefer "what this says about the reader's algorithm" over raw chronology
    when mining private history; prefer the actual post text when printing
    public social items.
-6. Mark private or sensitive analysis plainly before printing.
+8. Mark private or sensitive analysis plainly before printing.
 
 ## What Not To Build Yet
 

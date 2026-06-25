@@ -37,6 +37,9 @@ For social sources, split collection into two phases when possible:
 2. **Hydration:** finalists get full text, author/date, canonical URL,
    engagement metrics, media/artifact links, thread/reply/quote/article
    context, and a route into the paper.
+3. **Media/long-post triage:** images, screenshots, videos, demos, threads,
+   and native articles get inspected and routed to tweet card, visual figure,
+   mini-read, full read, source health, or cut.
 
 Do not stage an ellipsis-truncated social search result as if it were the full
 post. Mark it as `snippet_only`, hydrate it, or cut it.
@@ -54,6 +57,12 @@ skill scaffolds a `collectors/` directory for exactly this), never in the
 public engine. The engine gives you a stable place to drop their output and a
 budget-aware queue to read it back — nothing about your sources, credentials,
 or scraping logic ever touches the engine repo.
+
+Reader-approved remote services can be collectors too. An Apify actor, browser
+automation, hosted scraper, or API enrichment step is acceptable when the
+reader chooses it for their private newsroom, the collector records that a
+remote service was used, and credentials stay outside the repo. The engine does
+not make any one scraper a default dependency.
 
 ## Where a collector writes (the staging contract)
 
