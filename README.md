@@ -200,6 +200,8 @@ use `--newsroom <path>` when checking from somewhere else.
 
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
+- [docs/newsroom-metaphor.md](docs/newsroom-metaphor.md) — the newsroom/pressroom product model, roles, data structures, and prototype surfaces
+- [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes before canonical Impeccable `PRODUCT.md` / `DESIGN.md`
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown
 - [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
