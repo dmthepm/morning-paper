@@ -100,6 +100,13 @@ thread, a reply-chain backlash, a demo, a new model, or a small operator's
 specific workflow. The source desk should preserve specific evidence, not
 flatten it into generic summaries.
 
+Social discovery is not the same as social print. A search scraper may be good
+at finding candidates while still returning truncated snippets. Before a post
+prints, the source desk should hydrate finalists into records with full text,
+author/date, canonical URL, engagement metrics when available, media/artifact
+links, thread/reply/quote context, article body for long native posts, and a
+route: compact card, thread card, long read, source health, or cut.
+
 ## Multi-Agent Edition Desk
 
 A high-quality edition can use multiple context windows when the host supports

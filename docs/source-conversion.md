@@ -148,8 +148,16 @@ Pattern:
 
 1. Treat this as taste/source intelligence, not an excuse to re-create a feed.
 2. Group by story, topic, creator, channel, or repeated interest.
-3. Prefer "what this says about the reader's algorithm" over raw chronology.
-4. Mark private or sensitive analysis plainly before printing.
+3. Separate discovery from hydration. Search results, rankings, and snippets
+   can find candidates; print-ready public social records need full text,
+   author/date, canonical URL, metrics where available, media/artifact links,
+   conversation context, and a route into the paper.
+4. Long native posts or platform articles should become mini-reads/full reads,
+   not cramped cards.
+5. Prefer "what this says about the reader's algorithm" over raw chronology
+   when mining private history; prefer the actual post text when printing
+   public social items.
+6. Mark private or sensitive analysis plainly before printing.
 
 ## What Not To Build Yet
 

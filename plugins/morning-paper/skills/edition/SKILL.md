@@ -119,6 +119,11 @@ Required durable artifacts:
    - For X/social sections, show the actual pulled post or thread excerpt as
      the card's main object. Do not replace every post with agent-written
      Claim/Context boilerplate; selection is the editorial act.
+   - Treat social search results as discovery, not print-ready copy. If a
+     social item earns space, hydrate it first: full text, author/date, metrics
+     when available, media/artifact links, thread/reply/quote/article context,
+     and a clear route (`tweet card`, `thread`, `long read`, `source health`,
+     or `cut`). Do not print ellipsis-truncated snippets as whole posts.
    - Keep consumption and ideation separate. Do not weave agent advice, next
      actions, post ideas, or reader-specific prompts into source cards unless
      the newsroom explicitly asks for that shape. If ideation earns space, put

@@ -30,6 +30,17 @@ This is especially important for social platforms, browser/API scrape tools,
 chat exports, and local data dumps. Morning Paper wants beats with judgment,
 not a fragile pile of raw links.
 
+For social sources, split collection into two phases when possible:
+
+1. **Discovery:** broad searches, watchlists, exports, or rankings find
+   candidate URLs/IDs and rough metrics.
+2. **Hydration:** finalists get full text, author/date, canonical URL,
+   engagement metrics, media/artifact links, thread/reply/quote/article
+   context, and a route into the paper.
+
+Do not stage an ellipsis-truncated social search result as if it were the full
+post. Mark it as `snippet_only`, hydrate it, or cut it.
+
 ## What a collector is
 
 A collector is **any script or agent workflow you run before you compose**. It

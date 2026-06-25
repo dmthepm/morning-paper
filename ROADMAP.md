@@ -166,6 +166,9 @@
 - style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
 - source plugins for YouTube transcripts and X/Twitter thread workflows
+- social-source hydration contract: discovery scrapers find candidate
+  URLs/IDs, then finalists hydrate into full text, metrics, media, thread/reply
+  context, and long-native-post routes before print
 - optional LLM scoring via OpenRouter / Anthropic / OpenAI
 - named sections and better front-page composition
 - a genericized public return-path skill (modeled on the newsroom triage flow)
