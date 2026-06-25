@@ -18,6 +18,13 @@ morning-paper edition apply-feedback . \
 It updates the routed file, appends `TASTELOG.md`, and writes an Applied
 Feedback line into that edition's `feedback-plan.md`.
 
+Think of this as the taste desk. A reader's chat replies, dictated notes,
+desk-sheet marks, and delivery complaints should not stay trapped in the host
+conversation. The agent decides whether the note is durable, chooses the
+smallest route, and uses the CLI so tomorrow's editor can see exactly what
+changed. A future dedicated feedback skill should wrap this workflow, but the
+current edition skill already has the contract.
+
 ## Route To The Smallest File
 
 | Reader feedback | Route |

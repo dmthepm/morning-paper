@@ -4,6 +4,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import yaml
+
 from .config import MorningPaperConfig
 from .proofs import estimate_markdown, pdf_basic_proof, visual_qa_from_render, write_json
 from .sources import source_inventory
@@ -25,6 +27,16 @@ FEEDBACK_ROUTES = {
 }
 
 
+DEFAULT_DESK_SHEET_PREFS: dict[str, object] = {
+    "enabled": False,
+    "template": "no10",
+    "surface": "separate-sheet",
+    "notes_lines": 14,
+    "ask_count": 4,
+    "tomorrow_choices": 5,
+}
+
+
 def _utc_stamp() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -37,6 +49,30 @@ def _load_json_object(path: Path) -> dict[str, object]:
     except Exception:
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+def _load_desk_sheet_preferences(root: Path) -> dict[str, object]:
+    prefs = dict(DEFAULT_DESK_SHEET_PREFS)
+    path = root / "preferences" / "desk-sheet.yaml"
+    if not path.is_file():
+        return prefs
+    try:
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return prefs
+    if not isinstance(loaded, dict):
+        return prefs
+    prefs.update(loaded)
+    for key in ("notes_lines", "ask_count", "tomorrow_choices"):
+        try:
+            prefs[key] = int(prefs.get(key) or DEFAULT_DESK_SHEET_PREFS[key])
+        except (TypeError, ValueError):
+            prefs[key] = DEFAULT_DESK_SHEET_PREFS[key]
+    return prefs
+
+
+def _desk_sheet_enabled(root: Path) -> bool:
+    return bool(_load_desk_sheet_preferences(root).get("enabled"))
 
 
 def _int_or_zero(value: object) -> int:
@@ -158,6 +194,8 @@ def final_editor_pass(
         edition_dir / "operator-answers.md",
         edition_dir / "feedback-plan.md",
     ]
+    if _desk_sheet_enabled(root):
+        contract_files.append(edition_dir / "desk-sheet.md")
     findings: list[dict[str, object]] = []
     files_read: list[str] = []
     for path in contract_files:
@@ -590,6 +628,150 @@ Read the paper with a pen. Reply in chat or mark this file up.
 """
 
 
+def desk_sheet_template(date_str: str, paper_name: str, prefs: dict[str, object] | None = None) -> str:
+    prefs = prefs or dict(DEFAULT_DESK_SHEET_PREFS)
+    notes_lines = max(8, min(16, int(prefs.get("notes_lines") or 14)))
+    ask_count = max(1, min(4, int(prefs.get("ask_count") or 4)))
+    tomorrow_choices = max(1, min(8, int(prefs.get("tomorrow_choices") or 5)))
+    ask_rows = [
+        (
+            "Q1",
+            "What should the paper keep, cut, or make clearer tomorrow?",
+            ("keep", "change"),
+        ),
+        (
+            "Q2",
+            "Did the visual pass help you understand the day faster?",
+            ("yes", "tune"),
+        ),
+        (
+            "Q3",
+            "Which source, section, or thread should get more space next time?",
+            ("more", "less"),
+        ),
+        (
+            "Q4",
+            "Should any note become durable taste?",
+            ("save", "one-off"),
+        ),
+    ][:ask_count]
+    ask_html = "\n".join(
+        '<div class="old-ask"><div class="old-code">{code}</div><div class="old-q">{question}</div>'
+        '<div class="old-opts">{options}</div></div>'.format(
+            code=code,
+            question=question,
+            options="".join(f'<span><span class="old-box"></span>{option}</span>' for option in options),
+        )
+        for code, question, options in ask_rows
+    )
+    menu_html = "".join(
+        f'<span><span class="old-box"></span>M{number}</span>' for number in range(1, tomorrow_choices + 1)
+    )
+    return f"""---
+title: The Desk Sheet - {date_str}
+style: broadsheet
+palette: mono
+---
+
+<style>
+@page {{
+  size: Letter;
+  margin: 0.45in;
+  @top-left {{ content: none; }}
+  @top-right {{ content: none; }}
+  @bottom-left {{ content: none; }}
+  @bottom-center {{ content: none; }}
+  @bottom-right {{ content: none; }}
+}}
+@page :first {{
+  size: Letter;
+  margin: 0.45in;
+  @top-left {{ content: none; }}
+  @top-right {{ content: none; }}
+  @bottom-left {{ content: none; }}
+  @bottom-center {{ content: none; }}
+  @bottom-right {{ content: none; }}
+}}
+@page :left {{
+  size: Letter;
+  margin: 0.45in;
+  @top-left {{ content: none; }}
+  @top-right {{ content: none; }}
+  @bottom-left {{ content: none; }}
+  @bottom-center {{ content: none; }}
+  @bottom-right {{ content: none; }}
+}}
+@page :right {{
+  size: Letter;
+  margin: 0.45in;
+  @top-left {{ content: none; }}
+  @top-right {{ content: none; }}
+  @bottom-left {{ content: none; }}
+  @bottom-center {{ content: none; }}
+  @bottom-right {{ content: none; }}
+}}
+body {{ color: #1f1d1b; }}
+.old-desk {{ position: relative; width: 7.6in; height: 10.1in; margin: 0 auto; font-family: Georgia, serif; }}
+.old-corner {{ position: absolute; width: 0.18in; height: 0.18in; border-color: #1f1d1b; }}
+.old-tl {{ top: 0; left: 0; border-left: 2px solid; border-top: 2px solid; }}
+.old-tr {{ top: 0; right: 0; border-right: 2px solid; border-top: 2px solid; }}
+.old-bl {{ bottom: 0; left: 0; border-left: 2px solid; border-bottom: 2px solid; }}
+.old-br {{ bottom: 0; right: 0; width: 0.08in; height: 0.08in; background: #1f1d1b; }}
+.old-head {{ text-align: center; padding-top: 0.05in; }}
+.old-title {{ font-size: 20pt; line-height: 1; }}
+.old-meta {{ margin-top: 0.05in; font: 700 8.5pt/1.2 Arial, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }}
+.old-sub {{ margin-top: 0.03in; font: 700 7.2pt/1.2 Arial, sans-serif; color: #777; letter-spacing: 0.08em; text-transform: uppercase; }}
+.old-codes {{ margin-top: 0.08in; padding-bottom: 0.04in; border-bottom: 1px solid #777; font: 7.8pt/1.2 Arial, sans-serif; color: #666; letter-spacing: 0.06em; text-transform: uppercase; }}
+.old-band {{ display: flex; align-items: baseline; justify-content: space-between; margin-top: 0.09in; font: 700 9pt/1.2 Arial, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; }}
+.old-count {{ color: #666; letter-spacing: 0.03em; }}
+.old-lines {{ height: 4.9in; margin-top: 0.22in; border-bottom: 1px solid #777; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 0.34in, #e9dfd4 0.35in); }}
+.old-asks {{ padding-top: 0.08in; border-bottom: 1px solid #777; }}
+.old-ask {{ display: grid; grid-template-columns: 0.5in 1fr 2.25in; column-gap: 0.1in; align-items: center; min-height: 0.43in; border-bottom: 1px dotted #eadfd4; }}
+.old-ask:last-child {{ border-bottom: none; }}
+.old-code {{ font: 700 13pt/1 Georgia, serif; }}
+.old-q {{ font-size: 10.2pt; line-height: 1.18; }}
+.old-opts {{ display: flex; gap: 0.22in; justify-content: flex-end; align-items: center; font: 700 7pt/1 Arial, sans-serif; color: #666; text-transform: uppercase; }}
+.old-box {{ display: inline-block; width: 0.13in; height: 0.13in; border: 1.5px solid #222; vertical-align: -0.03in; margin-right: 0.04in; }}
+.old-tomorrow {{ margin-top: 0.08in; padding-top: 0.08in; }}
+.old-read-row {{ display: flex; align-items: center; gap: 0.14in; margin-top: 0.14in; font: 700 8pt/1 Arial, sans-serif; text-transform: uppercase; }}
+.old-menu {{ margin-left: 0.2in; display: flex; gap: 0.16in; font: 8pt/1 Arial, sans-serif; }}
+.old-hint {{ margin-left: auto; font-style: italic; font-size: 8.5pt; color: #777; text-transform: none; }}
+.old-url {{ margin-top: 0.15in; display: grid; grid-template-columns: 1.1in 1fr; column-gap: 0.1in; align-items: end; font: 700 7pt/1 Arial, sans-serif; color: #666; letter-spacing: 0.07em; text-transform: uppercase; }}
+.old-write {{ height: 0.32in; border-bottom: 1px dotted #eadfd4; }}
+.old-write.second {{ margin-left: 0.52in; margin-top: 0.12in; width: calc(100% - 1in); }}
+</style>
+
+<div class="old-desk">
+  <div class="old-corner old-tl"></div>
+  <div class="old-corner old-tr"></div>
+  <div class="old-corner old-bl"></div>
+  <div class="old-corner old-br"></div>
+
+  <div class="old-head">
+    <div class="old-title">The Desk Sheet</div>
+    <div class="old-meta">{date_str} - {paper_name}</div>
+    <div class="old-sub">Photograph or dictate when done</div>
+    <div class="old-codes">Codes in this paper: A analysis - Q queue - B bets - T telemetry - R reads - M menu - Z back page</div>
+  </div>
+
+  <div class="old-band"><div>Notes - add a code (Q1, A, R2, P7) when it helps</div><div class="old-count">Notes - {notes_lines}</div></div>
+  <div class="old-lines"></div>
+
+  <div class="old-band"><div>The paper asks - tick or scribble</div><div class="old-count">Asks - {ask_count}</div></div>
+  <div class="old-asks">
+    {ask_html}
+  </div>
+
+  <div class="old-band"><div>Tomorrow - pick, paste, or steer</div><div class="old-count">TMRW - {tomorrow_choices}</div></div>
+  <div class="old-tomorrow">
+    <div class="old-read-row"><div>Tomorrow's deep read</div><div class="old-menu">{menu_html}</div><div class="old-hint">menu's in the Reading section - or write your own below</div></div>
+    <div class="old-url"><div>A URL or a title</div><div class="old-write"></div></div>
+    <div class="old-write second"></div>
+  </div>
+</div>
+"""
+
+
 def feedback_plan_template(date_str: str) -> str:
     return f"""# Feedback Plan - {date_str}
 
@@ -843,9 +1025,13 @@ morning-paper edition final-editor {root} --date {date_str}
     record("final-editor.md", _write(edition_dir / "final-editor.md", final_editor_markdown, force=force))
 
     record("operator-answers.md", _write(edition_dir / "operator-answers.md", operator_answers_template(date_str), force=force))
+    desk_sheet_prefs = _load_desk_sheet_preferences(root)
+    desk_sheet_path = edition_dir / "desk-sheet.md"
+    if desk_sheet_prefs.get("enabled"):
+        record("desk-sheet.md", _write(desk_sheet_path, desk_sheet_template(date_str, config.name, desk_sheet_prefs), force=force))
     record("feedback-plan.md", _write(edition_dir / "feedback-plan.md", feedback_plan_template(date_str), force=force))
 
-    return {
+    payload = {
         "edition_dir": str(edition_dir),
         "date": date_str,
         "written": written,
@@ -864,8 +1050,11 @@ morning-paper edition final-editor {root} --date {date_str}
             "operator_answers": str(edition_dir / "operator-answers.md"),
             "feedback_plan": str(edition_dir / "feedback-plan.md"),
         },
-        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, estimate, render, review, visual-qa, final-editor, then ask for feedback and route it through feedback-plan.md",
+        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render desk-sheet.md if enabled, estimate, render, review, visual-qa, final-editor, then ask for feedback and route it through feedback-plan.md",
     }
+    if desk_sheet_prefs.get("enabled"):
+        payload["artifacts"]["desk_sheet"] = str(desk_sheet_path)
+    return payload
 
 
 def estimate_edition_workspace(

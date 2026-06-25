@@ -10,6 +10,12 @@ Morning Paper skills are newsroom desks. Each skill should help an agent decide
 what to do, read the right durable files, call the CLI for deterministic work,
 and write the smallest durable update back to the private newsroom.
 
+The full product operating model lives in
+[`docs/private-newsroom-operating-model.md`](private-newsroom-operating-model.md).
+Keep this skill suite aligned with that vision: a reader owns their algorithm
+in a private newsroom; agents collect, report, edit, proof, deliver, and evolve
+taste through files; the CLI supplies the repeatable tools.
+
 The split stays fixed:
 
 - the agent composes and edits;
@@ -67,12 +73,17 @@ work. Internally, grow toward narrow desks:
 | --- | --- | --- |
 | `morning-paper-setup` | Front desk. Install, interview, create private newsroom, open demo/first PDF. | `SETUP.md`, `setup-state.json`, all initial contracts |
 | `morning-paper-status` | Triage. Inspect install, plugin state, newsroom state, host recurrence/local fallback, source health, latest edition. | reads state; writes no taste by default |
-| `morning-paper-sources` | Assignment desk. Discover, inventory, connect, and debug local/RSS/inbox/collector sources. | `SOURCES.md`, collectors, source inventory |
+| `morning-paper-sources` | Assignment desk. Discover, inventory, connect, and debug local/RSS/inbox/collector sources; test reader-owned scrape/export tools before a source becomes recurring. | `SOURCES.md`, collectors, source inventory |
 | `morning-paper-edition` | Editor-in-chief. Compose, render, review, deliver, ask for feedback. | edition workspace, all taste files |
 | `morning-paper-visuals` | Art/layout desk. Choose charts/images/illustrations, enforce visual fit, update style taste. | `VISUALS.md`, edition draft, render/review outputs |
 | `morning-paper-feedback` | Taste desk. Turn natural-language notes or desk-sheet photos into durable rules. | `TASTELOG.md`, smallest matching taste file |
 | `morning-paper-doctor` | Pressroom ops. Repair engine/plugin/install/native print stack/local fallback problems. | setup state, install logs; avoids editorial changes |
 | `morning-paper-writing` | Copy desk. Revise prose for clarity, honesty, and reader fit. | `EDITORIAL.md`, voice/preferences, draft |
+
+The `edition` skill may orchestrate those desks with subagents before they
+ship as first-class skills. Subagents should write source-backed markdown,
+status, or review notes into the edition workspace; the editor-in-chief still
+owns the final paper.
 
 The existing `setup`, `edition`, and `writing` skills can either stay as aliases
 or migrate to these explicit names in a compatibility release. Do not break the
@@ -122,6 +133,10 @@ It should meet existing systems where they are:
 
 It should record source purpose and trust before volume. A source is not
 "configured" just because it can be scraped; it earns a role in the paper.
+
+For social systems such as X/Twitter, the default target should be a beat, not
+a raw link dump: recurring source shape, trust, cadence, and a clear answer to
+what the reader expects the beat to notice.
 
 ## Evaluation Before Expansion
 

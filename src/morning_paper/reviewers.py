@@ -173,6 +173,17 @@ _VISUAL_GRID_RE = re.compile(
     r'<div[^>]*class="[^"]*\bmp-visual-grid\b[^"]*"[^>]*>(.*?)</div>',
     re.IGNORECASE | re.DOTALL,
 )
+_CHART_RE = re.compile(r"```mp-(?:bars|spark)\b|class=[\"'][^\"']*\bmp-chart\b", re.IGNORECASE)
+_STATS_RE = re.compile(r"```mp-stats\b", re.IGNORECASE)
+_URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+_STACKED_MARKDOWN_HEAD_RE = re.compile(r"^(#{3,4})\s+(.+?)\s*\n\s*\n(#{3,4})\s+(.+?)\s*$", re.MULTILINE)
+_UNSUPPORTED_GLYPH_RE = re.compile(
+    "["
+    "\U0001f300-\U0001faff"  # emoji + pictographs
+    "\U00002600-\U000027bf"  # misc symbols/dingbats
+    "\ufe0e\ufe0f"           # variation selectors that often produce tofu
+    "]"
+)
 _WIDTH_STYLE_RE = re.compile(r'width\s*:\s*(\d+(?:\.\d+)?)\s*%', re.IGNORECASE)
 _WIDTH_ATTR_RE = re.compile(r'\bwidth=["\']?(\d+(?:\.\d+)?)(?:%|px)?["\']?', re.IGNORECASE)
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -193,6 +204,10 @@ def _strip_tags(value: str) -> str:
     text = _TAG_RE.sub(" ", no_ref)
     text = html.unescape(text)
     return " ".join(text.split())
+
+
+def _body_word_count(body: str) -> int:
+    return len(re.findall(r"\b[\w'-]+\b", _strip_tags(body)))
 
 
 def _split_frontmatter(document: str) -> tuple[dict[str, object], str]:
@@ -1058,6 +1073,118 @@ def check_visual_provenance(ed: ParsedEdition, prefs: Preferences) -> list[Findi
     return out
 
 
+def check_deck_source_urls(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
+    """Catch article decks that carry raw source URLs instead of readable source notes."""
+    max_chars, src = prefs.threshold("deck-source-url", "max_url_deck_chars", 120, pack=ed.style)
+    max_url_chars, url_src = prefs.threshold("deck-source-url", "max_raw_url_chars", 32, pack=ed.style)
+    max_chars = int(max_chars)
+    max_url_chars = int(max_url_chars)
+    out: list[Finding] = []
+    for h in ed.headlines:
+        text = h.deck if h.deck else (h.text if h.role == "deck" else "")
+        urls = _URL_RE.findall(text)
+        if not text or not urls:
+            continue
+        if len(text) <= max_chars and all(len(url) <= max_url_chars for url in urls):
+            continue
+        out.append(
+            Finding(
+                check="deck-source-url",
+                severity="nudge",
+                location={"section": h.section, "kind": "deck", "ref": _trunc(text)},
+                issue="Deck carries a long raw URL.",
+                why="Long source URLs turn decks into multi-line metadata blocks instead of readable editorial furniture.",
+                measured={"chars": len(text), "urls": len(urls), "longest_url_chars": max(len(url) for url in urls)},
+                threshold={
+                    "max_url_deck_chars": max_chars,
+                    "max_raw_url_chars": max_url_chars,
+                    "source": src if src != "default" else url_src,
+                },
+                hint="Move the URL to a source note, shorten it to the publication name, or use a markdown link.",
+            )
+        )
+    return out
+
+
+def check_stacked_subheads(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
+    """Imported article HTML often becomes h3/h3 ladders; make the editor reshape it."""
+    del prefs
+    out: list[Finding] = []
+    for match in _STACKED_MARKDOWN_HEAD_RE.finditer(ed.body):
+        first = match.group(2).strip()
+        second = match.group(4).strip()
+        out.append(
+            Finding(
+                check="stacked-subheads",
+                severity="nudge",
+                location={"section": "", "kind": "heading", "ref": _trunc(first + " / " + second)},
+                issue="Two imported subheads are stacked with no prose between them.",
+                why="Newsletter section labels and article subheads need different furniture; identical h-tags make the page feel mechanically imported.",
+                measured={"first": first, "second": second},
+                threshold={"source": "default"},
+                hint="Demote the label to a kicker, promote the real subhead, or rewrite the pair as one headed block.",
+            )
+        )
+    return out
+
+
+def check_unsupported_glyphs(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
+    """Flag characters likely to render as tofu in the offline print fonts."""
+    del prefs
+    matches: list[str] = []
+    for match in _UNSUPPORTED_GLYPH_RE.finditer(ed.body):
+        ch = match.group(0)
+        if ch not in matches:
+            matches.append(ch)
+        if len(matches) >= 8:
+            break
+    if not matches:
+        return []
+    return [
+        Finding(
+            check="unsupported-glyphs",
+            severity="flag",
+            location={"section": "", "kind": "text", "ref": "".join(matches)},
+            issue="Draft contains characters likely to render as missing-glyph boxes.",
+            why="The print font stack is intentionally deterministic; emoji and pictographs often render as tofu in the PDF.",
+            measured={"characters": matches},
+            threshold={"source": "default"},
+            hint="Replace emoji/symbol glyphs with words or CSS-drawn furniture before rendering.",
+        )
+    ]
+
+
+def check_visual_density(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
+    """Long editions need at least one real visual move; stats alone do not count."""
+    min_words, src = prefs.threshold("visual-density", "min_words_for_visual", 3500, pack=ed.style)
+    min_words = int(min_words)
+    words = _body_word_count(ed.body)
+    if words < min_words:
+        return []
+    major_visuals = (
+        len(_FIGURE_RE.findall(ed.body))
+        + len(_IMG_RE.findall(ed.body))
+        + len(_MD_IMAGE_RE.findall(ed.body))
+        + len(_VISUAL_GRID_RE.findall(ed.body))
+        + len(_CHART_RE.findall(ed.body))
+    )
+    if major_visuals > 0:
+        return []
+    stats = len(_STATS_RE.findall(ed.body))
+    return [
+        Finding(
+            check="visual-density",
+            severity="nudge",
+            location={"section": "", "kind": "visual", "ref": "edition"},
+            issue="Long edition has no major visual.",
+            why="A long print edition needs at least one chart, figure, diagram, image, or deliberately visual page; a stats strip alone is not the magazine pass.",
+            measured={"words": words, "major_visuals": major_visuals, "stats_blocks": stats},
+            threshold={"min_words_for_visual": min_words, "source": src},
+            hint="Add a sourced chart/figure/diagram or cut the edition down to a text-first brief.",
+        )
+    ]
+
+
 # ---------------------------------------------------------------------------
 # The registry (§4.3). Adding a builtin = adding one entry; the runner never
 # changes. tier is 'text' for deterministic markdown/artifact checks.
@@ -1079,6 +1206,10 @@ REGISTRY: list[Check] = [
     Check("duplicate-headline", "text", check_duplicate_headline),
     Check("stale-dateline", "text", check_stale_dateline),
     Check("visual-provenance", "text", check_visual_provenance),
+    Check("deck-source-url", "text", check_deck_source_urls),
+    Check("stacked-subheads", "text", check_stacked_subheads),
+    Check("unsupported-glyphs", "text", check_unsupported_glyphs),
+    Check("visual-density", "text", check_visual_density),
 ]
 
 

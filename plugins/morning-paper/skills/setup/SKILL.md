@@ -19,10 +19,15 @@ honestly at every step — a paper with two sources beats a broken setup with te
 The keystone of this skill is §5: setup must **write** the newsroom's
 contracts. A friend who finishes setup has a `CLAUDE.md`, section specs led by
 The Read, newsroom-native taste files (`EDITORIAL.md`, `VISUALS.md`,
-`SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`), an empty reads-ledger, a voice
-template, an editions dir, and a collector contract with worked examples —
-everything the `edition` skill reads. A scaffold of empty folders is a failed
-setup.
+`SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`), an empty reads-ledger, voice and
+desk-sheet preferences, an editions dir, and a collector contract with worked
+examples — everything the `edition` skill reads. A scaffold of empty folders
+is a failed setup.
+
+The product vision is the private newsroom operating model in
+`docs/private-newsroom-operating-model.md`: the reader owns their algorithm in
+files; agents collect, report, edit, proof, deliver, and evolve taste; the CLI
+supplies deterministic tools. Keep setup pointed at that model.
 
 Resumability rule: as soon as the newsroom path exists, create and keep current
 `setup-state.json` and `SETUP.md`. After every major step, update them before
@@ -67,10 +72,19 @@ Ask in 2-3 messages, not twenty. Capture:
   or other social feeds, YouTube/podcast history, and agent-produced files.
   RSS/full-text feeds are useful when available; paid feed URLs are credentials,
   so store them in `~/.config/morning-paper/env.sh`, never in a repo.
+  Capture source *beats* as well as source locations: what should the paper
+  notice daily or weekly, and which tools/exports should be tested before that
+  source becomes recurring?
 - **Shape** — `page_budget` (suggest 12-20), how many full reads per edition,
   style (`morning-paper styles` lists the family of four — broadsheet,
   brief, field-card, zine; `broadsheet` is the default recommendation),
-  palette (`color` for inkjets, `mono` for laser).
+  palette (`color` for inkjets, `mono` for laser), and whether they want a
+  printed desk sheet for feedback. Default to enabled for a first newsroom,
+  because learning taste is part of the paper; write the preference to
+  `preferences/desk-sheet.yaml` so they can turn it off.
+- **Delivery and archive** — PDF, print, email/article, Telegram or other
+  messaging, GitHub artifact links, mobile reading, and where archives should
+  live. Save only the preference here; credentials stay outside the repo.
 - **Voice** — how should the paper talk? Offer three registers and write
   the answer to `preferences/voice.md` in the newsroom: *dense operator*
   (every word earns its ink; Strunk defluff pass each edition; maximum
@@ -194,6 +208,7 @@ newsroom/
     voice.md                 # the three-register voice template (from §2)
     algorithm-prior.yaml     # the owned-algorithm artifact (commented stub)
     checks.yaml              # review thresholds/mutes (commented stub)
+    desk-sheet.yaml          # optional printed feedback sheet settings
   collectors/
     CONVERTERS.md            # converter recipes for CSV, JSON, PDF, vault/work/social exports
     _lib.sh                  # the collector contract helpers (stage-based)
@@ -306,11 +321,12 @@ here, in files I own.
 5. `DELIVERY.md` — PDF, print, email/article, archive preferences.
 6. `preferences/voice.md` — how the paper talks. Overrides any engine default.
 7. `preferences/algorithm-prior.yaml` — my standing interests (absent = ignore).
-8. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
-9. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
-10. `TASTELOG.md` — accepted and rejected taste changes over time.
-11. `memory/MEMORY.md` + `memory/threads/` — running threads (load on slug match).
-12. `collectors/` — my sources. What they don't return prints "not configured".
+8. `preferences/desk-sheet.yaml` — whether to print the No. 10-style feedback sheet and its small knobs.
+9. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
+10. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
+11. `TASTELOG.md` — accepted and rejected taste changes over time.
+12. `memory/MEMORY.md` + `memory/threads/` — running threads (load on slug match).
+13. `collectors/` — my sources. What they don't return prints "not configured".
 
 ## The honesty rule
 
@@ -466,6 +482,26 @@ applies defaults when absent:
 #     when: { section: "Field Notes" }   # this section runs long on purpose
 #   - check: stale-dateline
 #     scope: global                       # I read evergreens; age is fine
+```
+
+**`preferences/desk-sheet.yaml`** — reader-owned feedback sheet settings. This
+is a preference, not a hardcoded product decision. New newsrooms should enable
+it so the first paper has a beautiful feedback loop: mostly writable space, a
+small band of concrete asks, and a tomorrow picker. Readers who prefer chat or
+no feedback page turn it off here:
+
+```yaml
+# desk-sheet.yaml — optional print feedback sheet.
+# The edition runner reads this during `morning-paper edition prepare`.
+
+enabled: true
+template: no10
+surface: separate-sheet
+
+# Keep the sheet sparse and printable.
+notes_lines: 14
+ask_count: 4
+tomorrow_choices: 5
 ```
 
 **`memory/reads-ledger.md`** — ship EMPTY with one header line:

@@ -126,6 +126,46 @@ def _select_pages(page_count: int, *, has_visuals: bool) -> list[int]:
     return sorted({1, page_count})
 
 
+def _pdf_text_glyph_findings(pdf_path: Path) -> list[dict[str, object]]:
+    """Detect obvious replacement/tofu glyphs when `pdftotext` is available."""
+    pdftotext = shutil.which("pdftotext")
+    if not pdftotext:
+        return []
+    try:
+        result = subprocess.run(
+            [pdftotext, str(pdf_path), "-"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=20,
+            check=False,
+        )
+    except Exception as exc:  # noqa: BLE001 - visual QA should report tool limits.
+        return [{"severity": "nudge", "issue": "pdftotext glyph scan could not run", "detail": str(exc)}]
+    if result.returncode != 0:
+        return [
+            {
+                "severity": "nudge",
+                "issue": "pdftotext glyph scan failed",
+                "detail": (result.stderr or result.stdout or "").strip(),
+            }
+        ]
+    text = result.stdout
+    tofu_chars = ["\ufffd", "\u25a1", "\u25a0", "\u25fb", "\u25fc", "\u25fd", "\u25fe"]
+    found = {ch: text.count(ch) for ch in tofu_chars if text.count(ch)}
+    if not found:
+        return []
+    return [
+        {
+            "severity": "flag",
+            "issue": "PDF text contains replacement/tofu glyphs.",
+            "why": "Missing glyph boxes make the printed paper look broken even when pages rasterize.",
+            "measured": {"glyph_counts": found},
+            "hint": "Replace unsupported symbols in the draft with words or CSS-drawn marks, then rerender.",
+        }
+    ]
+
+
 def _rasterize_page(pdf_path: Path, page: int, output_prefix: Path) -> Path | None:
     pdftoppm = shutil.which("pdftoppm")
     if not pdftoppm:
@@ -177,6 +217,12 @@ def visual_qa_from_render(
         findings.append({"severity": "nudge", "issue": "pdftoppm not found; raster QA skipped"})
         status = "notes"
     else:
+        glyph_findings = _pdf_text_glyph_findings(pdf_path)
+        findings.extend(glyph_findings)
+        if any(item.get("severity") == "flag" for item in glyph_findings):
+            status = "fail"
+        elif glyph_findings:
+            status = "notes"
         for page in selected:
             prefix = qa_dir / f"page-{page}"
             try:

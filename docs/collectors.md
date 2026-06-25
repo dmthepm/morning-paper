@@ -13,6 +13,23 @@ whatever else earns a place on your desk. This page is the contract a collector
 has to honor. Write to it and your source flows into the same edition queue,
 through the same renderer, under the same page budget.
 
+## Start With A Source Experiment
+
+Do not make an untested scrape, export, or tool call part of the daily routine
+just because it worked once in chat. Start with a source experiment:
+
+1. Name the source and the beat it should support.
+2. Inspect the source shape: files, API responses, browser output, rate limits,
+   credentials, freshness, and privacy.
+3. Write a short ledger entry in `SOURCES.md`: what exists, what is useful,
+   what is sensitive, what should be skipped, and which tool was tested.
+4. Run the smallest collector or converter once and stage markdown.
+5. Decide whether it becomes recurring, stays ad hoc, or gets rejected.
+
+This is especially important for social platforms, browser/API scrape tools,
+chat exports, and local data dumps. Morning Paper wants beats with judgment,
+not a fragile pile of raw links.
+
 ## What a collector is
 
 A collector is **any script or agent workflow you run before you compose**. It

@@ -314,6 +314,22 @@ explain as well. If it only decorates, cut it.
   a legend or caption.
 - Every visual carries a source note or says why it is synthetic.
 
+## Reading Furniture
+
+- Full-read metadata should be one readable line whenever possible: publication,
+  date, word count, and the reason it earned ink.
+- Preference tags should render as small labels or pills, not bracketed debug
+  codes in the prose.
+- Community and reading menus are coded choices with a reason to care. Keep raw
+  URLs in source artifacts unless the URL itself is the story.
+
+## Desk Sheet
+
+The default feedback page is a No. 10-style writing sheet: mostly blank note
+space, a small band of concrete asks, and a tomorrow picker. It is not a second
+table of contents or a URL dump. Margins and page geometry are part of the
+template; the edition runner should render it as a separate one-page sheet.
+
 ## Print Rules
 
 - Color may support meaning but may not be the only way to read the visual.
@@ -347,11 +363,15 @@ place, how often it should be checked, and what to do when it fails.
 
 - Start from what the reader already has. Do not force sources to move.
 - Prefer local files, exports, folders, feeds, and tools the reader controls.
+- Treat source setup as experiments first: inspect shape, write the ledger,
+  test the smallest collector, then decide whether it becomes recurring.
 - A source is not trusted just because it is loud.
 - A source with no data prints "not configured" or "nothing today".
 - Credentials live in local env files, never in this repo.
 - The local drop folder is `inbox/`: put `.md`, `.txt`, or `.url` files there
   and let `collectors/local-drop.sh` stage them for the edition.
+- Social platforms, communities, and markets should become beats, not raw link
+  dumps: define what the paper should notice, how often, and why it matters.
 
 ## Registry
 
@@ -368,6 +388,8 @@ place, how often it should be checked, and what to do when it fails.
 - Slack, Discord, GitHub, Linear, Notion, project repos, or Main Branch.
 - YouTube, podcast, Substack/RSS, Twitter/X, Instagram, TikTok, or local social exports.
 - Obsidian vaults, synced folders, PDFs, CSVs, JSON dumps, screenshots, and agent reports.
+- Host/browser/API scrape tools the reader already trusts, tested locally
+  before they become routine dependencies.
 
 ## Source Health
 
@@ -421,6 +443,17 @@ as one calm edition:
 5. feedback prompt
 
 Email must not become a feed. One edition, one landing, clear end.
+
+## Optional Delivery Surfaces
+
+Record preferences here before wiring scripts:
+
+- Telegram or another messaging channel for the PDF.
+- GitHub artifact links or committed edition archives.
+- A mobile-friendly article view.
+- "Read later" staging for links or files that should enter a future edition.
+
+Credentials, bot tokens, and deploy secrets stay outside the repo.
 
 ## Feedback
 
@@ -558,6 +591,21 @@ If a section is thin, say so instead of padding.
 # mute:
 #   - check: headline-length
 #     when: { section: "Field Notes" }
+""",
+        "preferences/desk-sheet.yaml": """# desk-sheet.yaml - reader-owned feedback sheet preferences.
+# The engine reads this during `morning-paper edition prepare`.
+# Turn it off if you prefer chat-only feedback or `operator-answers.md`.
+
+enabled: true
+template: no10
+surface: separate-sheet
+
+# No. 10-style writing sheet: mostly notes, a compact asks band, and a
+# tomorrow picker. The edition can ask different questions in prose, but the
+# page should stay printable and sparse.
+notes_lines: 14
+ask_count: 4
+tomorrow_choices: 5
 """,
         "collectors/CONVERTERS.md": """# Converter Playbook
 

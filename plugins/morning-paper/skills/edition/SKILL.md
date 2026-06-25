@@ -14,6 +14,11 @@ yours. The binding lesson from this project's history: the agent composes
 against a good stylesheet; code renders it faithfully; code never writes the
 paper.
 
+The operating model is in `docs/private-newsroom-operating-model.md`: a
+reader-owned newsroom, a host-native routine, CLI-backed proofs, and enough
+context windows to report, edit, proof, deliver, and learn taste without relying
+on chat memory.
+
 Resumability rule: before substantive work, run:
 
 ```bash
@@ -49,6 +54,8 @@ Required durable artifacts:
   feedback route.
 - `operator-answers.md` — a short feedback sheet for the reader to mark up or
   answer in chat.
+- `desk-sheet.md` — optional print feedback sheet, created only when
+  `preferences/desk-sheet.yaml` enables it.
 - `feedback-plan.md` — the route from reader notes to durable newsroom files.
 
 ## The pass
@@ -69,18 +76,23 @@ Required durable artifacts:
    Refresh `source-inventory.json` with `morning-paper sources check --newsroom .`
    when useful, then write `collector-report.md` and
    `queue-snapshot.json` before composing.
+   If the host supports subagents and the source surface is broad, split this
+   pass: an assignment desk inventories source health, and beat reporters test
+   one source family each. They write staged markdown, source ledgers, or
+   collector notes into the edition workspace. They do not write the final
+   paper.
 2. **Read the newsroom.** `specs/*` (section contracts), `EDITORIAL.md`
    (what earns ink), `VISUALS.md` (charts/images/layout), `SOURCES.md`
    (source purpose and cadence), `DELIVERY.md` (how the paper lands), and
-   `preferences/*` (voice, reading weights, review tuning). These outrank your
-   taste. Also read, when present: `memory/reads-ledger.md` — the cumulative
-   record of everything already printed; repeating a read the owner already
-   got is a hard fail, and when today's paper ships, append today's reads to
-   it. Read the most recent `editions/<date>/operator-answers.md` — triaged
-   owner ink (deep-read picks, queue answers, steers); honor it exactly. Skim
-   `TASTELOG.md` for recent accepted/rejected taste changes. If the newsroom
-   keeps an `inbox/scans/` directory, check it for untriaged captures before
-   composing.
+   `preferences/*` (voice, reading weights, review tuning, desk-sheet
+   preference). These outrank your taste. Also read, when present:
+   `memory/reads-ledger.md` — the cumulative record of everything already
+   printed; repeating a read the owner already got is a hard fail, and when
+   today's paper ships, append today's reads to it. Read the most recent
+   `editions/<date>/operator-answers.md` — triaged owner ink (deep-read picks,
+   queue answers, steers); honor it exactly. Skim `TASTELOG.md` for recent
+   accepted/rejected taste changes. If the newsroom keeps an `inbox/scans/`
+   directory, check it for untriaged captures before composing.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
    docs/composing.md for the class vocabulary, visual/figure primitives, and
    `mp-bars`/`mp-spark`/`mp-stats` chart directives). The newsroom's
@@ -93,6 +105,13 @@ Required durable artifacts:
      typeset; not summaries.
    - Every claim traceable to collected data. A missing source prints
      "not configured". NEVER fabricate a number.
+   - Reading furniture from `VISUALS.md`: full-read metadata should usually be
+     one readable line; preference tags should feel like labels/pills, not
+     bracketed debug codes; reading/community menus should be coded choices
+     with reasons, not giant URL lists.
+   - A visual decision. If the edition runs long, add at least one earned
+     chart, figure, diagram, or deliberately visual page from `VISUALS.md` and
+     the collected data. If no visual earns ink, say why in the handoff.
 4. **The revision pass (mandatory when `preferences/voice.md` exists, recommended always).**
    Load `skills/writing` and run its discipline over the draft: the Strunk
    per-sentence checks, the AI-tells kill list, the craft that makes a page
@@ -104,8 +123,9 @@ Required durable artifacts:
 5. **Budget.** Run
    `morning-paper edition estimate . --date <edition-date>` and keep its JSON
    in `estimate-result.json`. Fit `page_budget` ±2 by cutting the weakest
-   material, never by shrinking type. If you edit `draft.md` after estimating,
-   rerun the estimate before rendering.
+   material, never by shrinking type. Track page budget, source budget,
+   full-read budget, visual budget, and research budget. If you edit `draft.md`
+   after estimating, rerun the estimate before rendering.
 6. **Render.** `morning-paper render draft.md --style <their style> --palette
    <their palette> --date <today> --slug edition`. Save the command's JSON as
    `render-result.json`.
@@ -118,6 +138,9 @@ Required durable artifacts:
    full-measure, part of a deliberate visual grid, or cut. It must not leave a
    narrow orphan line beside/under it, collide with labels, or lack a caption
    or source/synthetic note when provenance matters.
+   When the host supports subagents, this is an art-desk pass: ask a fresh
+   visual reviewer to inspect the draft/render/review output and propose only
+   visuals that improve comprehension inside the page budget.
 8. **Editorial review.** Run the copy desk over the finished edition before it
    ships: `morning-paper review <edition-dir> --json`. Save the output as
    `review.json`. It reads the composed artifacts and returns editorial
@@ -146,12 +169,16 @@ Required durable artifacts:
    - `review` → revise, re-render, re-review, and run final-editor again; or
      record the explicit editorial rationale for shipping despite the flag.
 10. **Deliver.** Their saved print command (duplex flag and all), or just hand
-   back the PDF path. Archive markdown + html into `editions/<date>/`. End by
-   pointing at `operator-answers.md` and `feedback-plan.md`, then asking for
-   natural-language feedback: what to keep, cut, expand, change visually, add
-   as a source, change about delivery, save as taste, or print tomorrow. Then
-   stop. Do not run `morning-paper edition prepare` for tomorrow or start
-   tomorrow's edition unless the reader explicitly asks.
+   back the PDF path. If `preferences/desk-sheet.yaml` enables the separate
+   desk sheet, render or hand back `desk-sheet.md` with the edition; the
+   default is a No. 10-style writing sheet with generous note space, a small
+   concrete asks band, and a tomorrow picker. Archive markdown + html into
+   `editions/<date>/`. End by pointing at
+   `operator-answers.md`, optional `desk-sheet.md`, and `feedback-plan.md`,
+   then asking for natural-language feedback: what to keep, cut, expand,
+   change visually, add as a source, change about delivery, save as taste, or
+   print tomorrow. Then stop. Do not run `morning-paper edition prepare` for
+   tomorrow or start tomorrow's edition unless the reader explicitly asks.
 
 Write `operator-answers.md` like this:
 

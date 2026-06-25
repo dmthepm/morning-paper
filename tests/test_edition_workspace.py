@@ -70,6 +70,7 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "final-editor.json",
                 "final-editor.md",
                 "operator-answers.md",
+                "desk-sheet.md",
                 "feedback-plan.md",
             }
             self.assertEqual(set(payload["written"]), expected)
@@ -109,6 +110,11 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("Taste To Save", operator_answers)
             self.assertIn("VISUALS.md", operator_answers)
             self.assertIn("Print Tomorrow", operator_answers)
+            desk_sheet = (edition_dir / "desk-sheet.md").read_text(encoding="utf-8")
+            self.assertIn("old-desk", desk_sheet)
+            self.assertIn("The Desk Sheet", desk_sheet)
+            self.assertIn("Tomorrow's deep read", desk_sheet)
+            self.assertIn("Notes - 14", desk_sheet)
             feedback_plan = (edition_dir / "feedback-plan.md").read_text(encoding="utf-8")
             self.assertIn("Feedback Plan", feedback_plan)
             self.assertIn("operator-answers.md", feedback_plan)
@@ -121,8 +127,76 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("Do not overfit", feedback_plan)
             self.assertIn("YAML targets", feedback_plan)
             self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
+            self.assertEqual(payload["artifacts"]["desk_sheet"], str((edition_dir / "desk-sheet.md").resolve()))
             self.assertEqual(payload["artifacts"]["final_editor"], str((edition_dir / "final-editor.json").resolve()))
             self.assertIn("final-editor", payload["next_action"])
+
+    def test_edition_prepare_respects_disabled_desk_sheet_preference(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            (newsroom / "preferences" / "desk-sheet.yaml").write_text(
+                "enabled: false\ntemplate: no10\n",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            self.assertFalse((edition_dir / "desk-sheet.md").exists())
+            self.assertNotIn("desk-sheet.md", payload["written"])
+            self.assertNotIn("desk_sheet", payload["artifacts"])
+
+    def test_edition_prepare_applies_desk_sheet_knobs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            (newsroom / "preferences" / "desk-sheet.yaml").write_text(
+                "enabled: true\nnotes_lines: 11\nask_count: 2\ntomorrow_choices: 3\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+
+            desk_sheet = (newsroom / "editions" / "2026-06-22" / "desk-sheet.md").read_text(encoding="utf-8")
+            self.assertIn("Notes - 11", desk_sheet)
+            self.assertIn("Asks - 2", desk_sheet)
+            self.assertIn("TMRW - 3", desk_sheet)
+            self.assertIn("Q2", desk_sheet)
+            self.assertNotIn("Q3", desk_sheet)
+            self.assertIn("M3", desk_sheet)
+            self.assertNotIn("M4", desk_sheet)
 
     def test_final_editor_passes_clean_rendered_reviewed_edition(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

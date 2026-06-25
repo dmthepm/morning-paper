@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morning-paper"
-version = "0.8.5"
+version = "0.8.6"
 description = "Own your algorithm: a personal newsroom whose agent composes a print-ready paper from sources and preferences you own as files."
 readme = "README.md"
 requires-python = ">=3.10"

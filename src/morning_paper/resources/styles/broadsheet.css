@@ -113,7 +113,10 @@ li { line-height: 1.5; margin-bottom: 0.03in; }
 .mg-kicker .ref-code, .dept-kicker .ref-code { font-weight: 400; color: var(--mp-muted); margin-left: 0.07in; }
 .mg-title { font-family: var(--ed-serif); font-size: 23pt; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; margin-bottom: 0.12in; }
 .dept-title { font-family: var(--ed-serif); font-size: 15pt; font-weight: 700; line-height: 1.2; margin-bottom: 0.08in; }
-.mg-dek { font-family: var(--ed-serif); font-style: italic; font-size: 12pt; line-height: 1.4; color: var(--mp-muted); margin-bottom: 0.14in; }
+.mg-dek {
+  font-family: var(--ed-serif); font-style: italic; font-size: 12pt; line-height: 1.4;
+  color: var(--mp-muted); margin-bottom: 0.14in; overflow-wrap: anywhere;
+}
 .mg-byline {
   font-family: var(--ed-sans); font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--mp-muted); padding: 0.06in 0; border-top: 1px solid var(--mp-rule);
@@ -122,6 +125,15 @@ li { line-height: 1.5; margin-bottom: 0.03in; }
 .mg-byline strong { color: var(--mp-ink); font-weight: 700; }
 .mg-lede::first-letter { font-size: 15pt; font-weight: 700; }
 h1, h2 { font-family: var(--ed-sans); font-size: 11pt; font-weight: 700; letter-spacing: 0.02em; margin: 0.2in 0 0.08in 0; }
+h3 {
+  font-family: var(--ed-sans); font-size: 8.2pt; font-weight: 700;
+  letter-spacing: 0.11em; text-transform: uppercase; color: var(--mp-muted);
+  margin: 0.18in 0 0.055in 0;
+}
+h4 {
+  font-family: var(--ed-serif); font-size: 12.5pt; font-weight: 700;
+  line-height: 1.25; margin: 0.12in 0 0.055in 0;
+}
 
 /* ---- separators: flow, never force pages ---- */
 .sep {
@@ -168,10 +180,14 @@ td .overdue, .overdue { color: var(--mp-alert); font-weight: 700; }
 .mp-stat-label { font-family: var(--ed-sans); font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mp-muted); margin-top: 0.02in; }
 
 /* ---- tables: one definition ---- */
-table.data { width: 100%; border-collapse: collapse; margin: 0.08in 0; font-family: var(--ed-sans); font-size: 8.5pt; }
-table.data th { text-align: left; font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); border-bottom: 0.5pt solid var(--mp-rule); padding: 0.02in 0.08in 0.02in 0; }
-table.data td { padding: 0.03in 0.08in 0.03in 0; border-bottom: 0.5pt solid var(--mp-track); vertical-align: top; line-height: 1.4; }
-table.data tr { break-inside: avoid; }
+table.data,
+table:not([class]) { width: 100%; border-collapse: collapse; margin: 0.08in 0; font-family: var(--ed-sans); font-size: 8.5pt; }
+table.data th,
+table:not([class]) th { text-align: left; font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mp-muted); border-bottom: 0.5pt solid var(--mp-rule); padding: 0.02in 0.08in 0.02in 0; }
+table.data td,
+table:not([class]) td { padding: 0.03in 0.08in 0.03in 0; border-bottom: 0.5pt solid var(--mp-track); vertical-align: top; line-height: 1.4; }
+table.data tr,
+table:not([class]) tr { break-inside: avoid; }
 table.data td.num { text-align: right; }
 table.data td.lead { font-family: var(--ed-serif); font-weight: 700; }
 

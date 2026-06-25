@@ -189,6 +189,7 @@ use `--newsroom <path>` when checking from somewhere else.
 ## Docs
 
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
+- [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown
 - [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary

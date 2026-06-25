@@ -107,7 +107,7 @@ def _package_template_text(name: str) -> str:
     return resources.files("morning_paper").joinpath("resources", name).read_text(encoding="utf-8")
 
 
-_MARKDOWN = MarkdownIt("commonmark", {"html": True, "linkify": True})
+_MARKDOWN = MarkdownIt("commonmark", {"html": True, "linkify": True}).enable("table")
 
 
 def _split_frontmatter(document: str) -> tuple[dict[str, object], str]:

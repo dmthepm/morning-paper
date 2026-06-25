@@ -14,7 +14,7 @@ from pathlib import Path
 
 from morning_paper import styles
 from morning_paper.config import ConfigError, load_config
-from morning_paper.renderers import _load_weasyprint, count_pages
+from morning_paper.renderers import _load_weasyprint, _render_html_from_markdown, count_pages
 from morning_paper.styles import (
     PALETTES,
     STYLE_ALIASES,
@@ -181,6 +181,24 @@ class BaseTasteLayerTest(unittest.TestCase):
         ):
             self.assertIn(rule, css)
         self.assertIn("width: 100%", css)
+
+    def test_commonmark_pipe_tables_render_as_tables(self) -> None:
+        html = _render_html_from_markdown(
+            "| Source | Today |\n|---|---|\n| GitHub | ok |\n",
+            style="broadsheet",
+            palette="mono",
+        )
+
+        self.assertIn("<table>", html)
+        self.assertIn("<th>Source</th>", html)
+        self.assertNotIn("<p>| Source | Today |", html)
+
+    def test_broadsheet_styles_plain_tables_and_imported_subheads(self) -> None:
+        css = compose_css("broadsheet", "mono")
+        self.assertIn("table:not([class])", css)
+        self.assertIn("h3 {", css)
+        self.assertIn("h4 {", css)
+        self.assertIn("overflow-wrap: anywhere", css)
 
     @unittest.skipUnless(_pretty_stack_ready(), "render requires the pretty print stack (weasyprint)")
     def test_broadsheet_default_look_unchanged_by_base(self) -> None:

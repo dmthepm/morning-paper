@@ -334,6 +334,44 @@ class DeterministicChecksTest(unittest.TestCase):
         self.assertIn("narrow width", issues)
         self.assertIn("Markdown image", issues)
 
+    def test_11_visual_density_nudges_long_text_only_editions(self) -> None:
+        report = _review(
+            "## Reading\n\n" + ("This is a long text-only edition with no chart or figure. " * 420)
+        )
+        found = self._checks(report, "visual-density")
+        self.assertTrue(found)
+        self.assertIn("no major visual", found[0]["issue"])
+
+    def test_12_deck_source_url_nudges_raw_long_urls(self) -> None:
+        report = _review(
+            '<div class="article-head"><div class="mg-title">A read earns the page today</div>'
+            '<div class="mg-dek">1804 words. Published today. Source: '
+            'https://every.to/context-window/can-ai-learn-good-judgment</div></div>\n\n'
+            "Real body prose so this article has something useful to review today.\n"
+        )
+        found = self._checks(report, "deck-source-url")
+        self.assertTrue(found)
+        self.assertIn("raw URL", found[0]["issue"])
+
+    def test_13_stacked_subheads_nudge_imported_heading_ladders(self) -> None:
+        report = _review(
+            "## Reading\n\n"
+            "### Inside Every\n\n"
+            "### Dan is cloning Kate, but not in a weird way\n\n"
+            "Real body prose follows the imported heading ladder today.\n"
+        )
+        found = self._checks(report, "stacked-subheads")
+        self.assertTrue(found)
+
+    def test_14_unsupported_glyphs_flag_emoji_before_tofu(self) -> None:
+        report = _review(
+            "## Reading\n\n"
+            "🎙️ How I AI should be rewritten without emoji before print.\n"
+        )
+        found = self._checks(report, "unsupported-glyphs")
+        self.assertTrue(found)
+        self.assertEqual(found[0]["severity"], "flag")
+
 
 class PreferencesTest(unittest.TestCase):
     def test_threshold_override_changes_the_number_and_provenance(self) -> None:

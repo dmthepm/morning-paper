@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-06-25
+
+### Added
+- New scaffolded newsrooms include `preferences/desk-sheet.yaml`, so readers
+  can own whether a separate feedback sheet prints and tune its small knobs.
+  `edition prepare` now writes a No. 10-style `desk-sheet.md` only when that
+  reader-owned preference enables it.
+- New scaffolded `VISUALS.md` files teach the first-run editor richer default
+  reading furniture: one-line full-read metadata, pill-style tags, coded
+  reading menus, and raw URLs kept out of the printed page unless they matter.
+- `docs/private-newsroom-operating-model.md` captures the broader owned
+  algorithm vision: host-native routines, source experiments, multi-agent
+  newsroom desks, budgeted editions, memory, feedback, and delivery surfaces.
+- Setup and scaffolded source/delivery files now ask agents to treat sources as
+  beat experiments first, and to record optional delivery surfaces such as
+  Telegram, GitHub artifacts, mobile reading, and read-later staging.
+- Editorial review now nudges long text-only editions with no major visual,
+  long raw source URLs in decks, stacked imported subheads, and unsupported
+  glyphs likely to render as tofu.
+
+### Fixed
+- Markdown pipe tables now render as real tables, avoiding literal `| Source |
+  Today |` output in source-health sections.
+- Broadsheet styling now gives plain tables, imported h3/h4 subheads, and long
+  decks safer default print furniture.
+- Visual QA now scans extracted PDF text for missing-glyph box characters and
+  fails the proof when tofu reaches the rendered paper.
+
 ## [0.8.5] - 2026-06-23
 
 ### Changed

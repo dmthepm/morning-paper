@@ -105,6 +105,15 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Visual Desk", visuals)
             self.assertIn("major_visuals_per_edition", visuals)
             self.assertIn("Do not leave a visual floating narrower", visuals)
+            self.assertIn("Reading Furniture", visuals)
+            self.assertIn("Desk Sheet", visuals)
+            self.assertIn("coded choices", visuals)
+            self.assertIn("pill", visuals)
+
+            desk_prefs = (root / "preferences" / "desk-sheet.yaml").read_text(encoding="utf-8")
+            self.assertIn("template: no10", desk_prefs)
+            self.assertIn("notes_lines: 14", desk_prefs)
+            self.assertNotIn("zones:", desk_prefs)
 
             sources = (root / "SOURCES.md").read_text(encoding="utf-8")
             self.assertIn("Source Desk", sources)
@@ -115,6 +124,8 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Local knowledge", sources)
             self.assertIn("Slack", sources)
             self.assertIn("YouTube", sources)
+            self.assertIn("experiments first", sources)
+            self.assertIn("beats, not raw link", sources)
             self.assertNotIn("Hacker News", sources)
 
             inbox = (root / "inbox" / "README.md").read_text(encoding="utf-8")
@@ -136,6 +147,9 @@ class NewsroomScaffoldTest(unittest.TestCase):
 
             delivery = (root / "DELIVERY.md").read_text(encoding="utf-8")
             self.assertIn("Email / Article View", delivery)
+            self.assertIn("Telegram", delivery)
+            self.assertIn("GitHub artifact", delivery)
+            self.assertIn("mobile-friendly", delivery)
 
             tastelog = (root / "TASTELOG.md").read_text(encoding="utf-8")
             self.assertIn("durable taste decision", tastelog)
