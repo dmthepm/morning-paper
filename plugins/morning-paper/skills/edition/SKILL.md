@@ -88,7 +88,10 @@ Required durable artifacts:
    preference). These outrank your taste. Also read, when present:
    `memory/reads-ledger.md` — the cumulative record of everything already
    printed; repeating a read the owner already got is a hard fail, and when
-   today's paper ships, append today's reads to it. Read the most recent
+   today's paper ships, append today's reads to it. Read source-specific
+   ledgers such as `memory/social-ledger.md` when present; repeating the same
+   post, release, thread, or story angle is a hard fail unless it advanced, and
+   then say what changed. Read the most recent
    `editions/<date>/operator-answers.md` — triaged owner ink (deep-read picks,
    queue answers, steers); honor it exactly. Skim `TASTELOG.md` for recent
    accepted/rejected taste changes. If the newsroom keeps an `inbox/scans/`
@@ -109,6 +112,10 @@ Required durable artifacts:
      one readable line; preference tags should feel like labels/pills, not
      bracketed debug codes; reading/community menus should be coded choices
      with reasons, not giant URL lists.
+   - Social or fast-moving beat furniture from the newsroom specs: print
+     specific posts, threads, releases, artifacts, and disagreements. Do not
+     flatten them into generic "people are talking about" summaries unless the
+     concrete evidence is visible on the page.
    - A visual decision. If the edition runs long, add at least one earned
      chart, figure, diagram, or deliberately visual page from `VISUALS.md` and
      the collected data. If no visual earns ink, say why in the handoff.

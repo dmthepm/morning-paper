@@ -15,6 +15,11 @@ An agent composes a newspaper from sources and preferences you own as files.
 The `morning-paper` CLI renders it to a print-ready PDF. The product is the
 paper on the desk: calm, finite, source-backed, and easy to mark up.
 
+It is not a summarizer for a fixed feed. It is a private newsroom loop:
+collect candidates from many places, remember what you have already seen,
+filter repeats and low-signal noise, score what deserves attention against
+your taste, then print a finite edition you can correct.
+
 It gets better the way an editor gets better. You read the paper, give notes in
 natural language, and the agent turns stable feedback into durable newsroom
 files such as `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
@@ -97,6 +102,11 @@ feeds you chose, the repos and tickets that changed, and the exports or folders
 your tools already produce. The source layer is intentionally plural: files,
 URLs, folders, inboxes, APIs, local scrapes, and agent-generated reports all
 become staged markdown before the editor decides what deserves ink.
+
+Because sources are infinite, the open-source project does not try to ship a
+universal adapter for every platform. It ships the newsroom contract: source
+ledgers, collector scripts, staging, memory, review, and feedback routing. A
+reader's private repo decides which collectors matter.
 
 Examples:
 

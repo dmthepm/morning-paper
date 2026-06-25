@@ -28,6 +28,32 @@ lands in the surface the reader will actually use.
 The public project ships the engine and skills. The private newsroom owns the
 reader's taste and data.
 
+## The Algorithm Loop
+
+Morning Paper is inspired by feed algorithms, but it stays inspectable. Instead
+of hiding ranking in a service, it names the loop in files:
+
+1. **Candidate sourcing** - collectors, inboxes, staged URLs/files, exports,
+   work systems, social scrapes, and agent research produce possible items.
+2. **Hydration** - collectors add enough context to judge an item: source,
+   date, author, body text, thread/reply context, artifact links, sensitivity,
+   and extraction limits.
+3. **Memory filters** - ledgers and prior editions remove repeats, already-read
+   articles, stale story angles, muted topics, and low-trust sources.
+4. **Scoring** - the editor weighs candidates against `EDITORIAL.md`,
+   `SOURCES.md`, `preferences/algorithm-prior.yaml`, section specs, the current
+   day, and the reader's recent feedback.
+5. **Diversity and budget** - the edition balances source mix, novelty, page
+   budget, visual budget, full-read budget, and business/world/personal lanes.
+6. **Selection and print** - the agent composes the finite paper; the CLI
+   estimates, renders, reviews, and records artifacts.
+7. **Feedback** - desk-sheet marks, chat notes, and delivery reactions update
+   the smallest durable file and append `TASTELOG.md`.
+
+The implementation can be simple: markdown files, YAML, JSON artifacts, shell
+collectors, and a host agent. The important product standard is that a fresh
+agent can inspect the loop and understand why the paper chose what it chose.
+
 ## One-Line Routine
 
 A mature reader should be able to ask their host to run one routine:
@@ -66,6 +92,13 @@ Some readers want one or two articles every day. Others want a beat: what is
 happening on X, YouTube, GitHub, a market, a community, or inside their own
 work systems. A beat is not a pile of links. It is a recurring source desk with
 purpose, trust, cadence, and page budget.
+
+For social or fast-moving sources, setup should capture the distinction between
+standing taste and daily discovery. A reader may care about "AI agents" every
+day, but the actual item worth printing could be a product release, a long
+thread, a reply-chain backlash, a demo, a new model, or a small operator's
+specific workflow. The source desk should preserve specific evidence, not
+flatten it into generic summaries.
 
 ## Multi-Agent Edition Desk
 
@@ -110,6 +143,8 @@ visual/page-budget feedback easier for agents to use before the final render.
 The newsroom should remember what matters:
 
 - `memory/reads-ledger.md` prevents repeated reads.
+- Source-specific ledgers, such as a social/story ledger, prevent repeated
+  posts, releases, threads, and story angles.
 - `memory/MEMORY.md` and `memory/threads/` hold running storylines.
 - `editions/<date>/` is the run state. Pending JSON means unfinished work.
 - `operator-answers.md`, desk-sheet notes, chat replies, and dictated feedback
