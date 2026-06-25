@@ -199,6 +199,8 @@ use `--newsroom <path>` when checking from somewhere else.
 ## Docs
 
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
+- [PRODUCT.md](PRODUCT.md) — canonical Impeccable product context for brand, users, principles, and anti-references
+- [DESIGN.md](DESIGN.md) — canonical Impeccable design context for colors, type, components, and guardrails
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
 - [docs/newsroom-metaphor.md](docs/newsroom-metaphor.md) — the newsroom/pressroom product model, roles, data structures, and prototype surfaces
 - [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes before canonical Impeccable `PRODUCT.md` / `DESIGN.md`

@@ -33,6 +33,26 @@ The strongest first impression is probably one of:
 Those are related but not identical. The brand should choose one as the lead
 promise before final design work begins.
 
+## Current Confirmed Direction
+
+The first canonical brand context now starts with:
+
+- brand feel: tactile, intelligent, independent;
+- references: Monologue by Every, Every's broader AI/editorial sensibility,
+  Sublime, Cosmos, Are.na, old Mac software, serious publications, print
+  rooms, and Ground News as a conceptual trust reference;
+- anti-references: Vercel-style developer polish as the default lane, Factory
+  AI-style agent branding, cutesy roleplay, generic AI dashboards, fake
+  newspaper nostalgia, productivity-maximalist software, and beige
+  productivity apps;
+- framing remains open: "Own your algorithm", "private newsroom", and "real
+  paper every morning" are all useful, but Morning Paper is the anchor.
+
+The slow creative technology references matter: Sublime, Cosmos, and Are.na
+suggest collecting, taste, reflection, and cultural texture without becoming an
+infinite stream. Morning Paper should feel adjacent to that world, but more
+pressroom and edition-oriented.
+
 ## Brand Lanes To Explore
 
 ### 1. Pressroom Proof
