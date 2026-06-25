@@ -38,8 +38,8 @@ The brand should feel like AI meets editorial judgment: thoughtful, source-aware
 and alive to the romance of a morning reading ritual. It can carry nostalgia,
 especially old Mac software, print tools, proof sheets, local files, and the
 feeling of a serious personal machine. It should also feel current: agents,
-source graphs, private data, and adaptive preferences are part of the product,
-not retro decoration.
+sources, private data, and adaptive preferences are part of the product, not
+retro decoration.
 
 The tone is concise and grounded. Use newsroom language when it helps the user
 understand the system: newsroom, desk, beat, editor, art desk, copy desk, final
@@ -88,9 +88,13 @@ force one final tagline yet. Morning Paper itself is the anchor.
    and adaptive preferences into one readable paper, not another stream.
 3. **Use metaphor as structure.** Newsroom language should clarify roles,
    files, source health, and proofing. It should not become theatrical.
-4. **Show the work without making work.** Source graphs, desks, ledgers, and
-   proof views should make the system more trustworthy and easier to steer.
-5. **Nostalgia earns its place through utility.** Old software and print
+4. **Treat internal language as product language.** CLI nouns, file names, docs,
+   and skills become the words agents use with readers. Prefer plain newsroom
+   words: sources, desks, beats, candidates, assignment board, edition, proof.
+5. **Show the work without making work.** Sources, desks, ledgers, assignment
+   boards, and proof views should make the system more trustworthy and easier
+   to steer.
+6. **Nostalgia earns its place through utility.** Old software and print
    references should make the product feel personal and tangible, never merely
    decorative.
 

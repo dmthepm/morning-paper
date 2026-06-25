@@ -188,8 +188,7 @@ Typography:
 
 Imagery:
 
-- source graph;
-- signal traces;
+- source desks;
 - assignment lanes;
 - freshness bands;
 - route stamps;
@@ -204,10 +203,11 @@ Anti-references:
 
 ## Prototype Surfaces
 
-### Newsroom Source Graph
+### Assignment Board
 
-Show desks, beats, collectors, source trust, cadence, freshness, and which
-printed sections each source feeds. This makes the owned algorithm inspectable.
+Show desks, beats, collectors, source trust, cadence, freshness, page budgets,
+and which candidates may earn space in today's paper. This makes the owned
+algorithm inspectable without making the reader learn technical language.
 
 Existing inputs:
 
@@ -219,9 +219,8 @@ Existing inputs:
 
 Potential future CLI:
 
-- `morning-paper newsroom graph --json`
 - `morning-paper sources health --json`
-- `source-map.json` from `edition prepare`
+- `assignment-board.json` from `edition prepare`
 
 ### Skepticism Desk
 
@@ -245,7 +244,7 @@ Potential future CLI:
 - `claim-ledger.json`
 - `source-diversity.json`
 
-### Edition Board / Press Proof
+### Assignment Board / Proof Pages
 
 The daily work surface. Lanes: collected, hydrated, selected, cut, printed,
 proofed, delivered. Cards carry page estimate, source, route, freshness, reason,
@@ -265,7 +264,7 @@ Existing inputs:
 
 Potential future CLI:
 
-- `morning-paper edition board --json`
+- `morning-paper edition assignment-board --json`
 - `cut-list.json`
 - `selection-rationale.json`
 - `section-budget.json`

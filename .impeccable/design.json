@@ -97,12 +97,12 @@
   ],
   "narrative": {
     "northStar": "The Private Pressroom",
-    "overview": "Morning Paper should feel like a serious personal machine for reading: tactile, intelligent, independent. The system sits between algorithmic and analog. It uses agents and source graphs to build a reader-owned algorithm, then lands the result as a finite edition that can be read, marked up, and improved tomorrow.",
+    "overview": "Morning Paper should feel like a serious personal machine for reading: tactile, intelligent, independent. The system sits between algorithmic and analog. It uses agents and source files to build a reader-owned algorithm, then lands the result as a finite edition that can be read, marked up, and improved tomorrow.",
     "keyCharacteristics": [
       "Print-first, with the PDF as the proof.",
       "Source-aware, finite, and skeptical of single-source truth.",
       "Nostalgic through utility, not decoration.",
-      "Visual metaphors backed by data structures.",
+      "Visual metaphors backed by durable newsroom files.",
       "Calm enough to read, distinct enough to remember."
     ],
     "rules": [

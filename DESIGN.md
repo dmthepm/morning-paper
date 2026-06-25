@@ -88,10 +88,10 @@ components:
 
 Morning Paper should feel like a serious personal machine for reading: tactile,
 intelligent, independent. The system sits between algorithmic and analog. It
-uses agents and source graphs to build a reader-owned algorithm, then lands the
+uses agents and source files to build a reader-owned algorithm, then lands the
 result as a finite edition that can be read, marked up, and improved tomorrow.
 
-The visual world borrows from press proofs, old Mac software, small-run zines,
+The visual world borrows from proof sheets, old Mac software, small-run zines,
 local files, editorial tools, and slow creative technology. Monologue by Every,
 Sublime, Cosmos, Are.na, print rooms, and serious publications are useful
 references. Vercel-style developer polish, Factory AI-style agent branding,
@@ -108,7 +108,7 @@ gets in the way.
 - Print-first, with the PDF as the proof.
 - Source-aware, finite, and skeptical of single-source truth.
 - Nostalgic through utility, not decoration.
-- Visual metaphors backed by data structures.
+- Visual metaphors backed by durable newsroom files.
 - Calm enough to read, distinct enough to remember.
 
 ## 2. Colors
@@ -125,7 +125,7 @@ supports editorial state; it does not decorate the paper.
 
 ### Secondary
 
-- **Signal Blue** (`#2b5d8c`): links, charts, source graph signals, and
+- **Signal Blue** (`#2b5d8c`): links, charts, source signals, and
   trust/skepticism surfaces where blue means evidence, not brand decoration.
 - **Passed Green** (`#1e6b40`): reserved for genuinely positive state,
   completed proof, or successful delivery.
@@ -239,9 +239,9 @@ notes, and status, not floating cards.
 - **Rule:** do not translate every post into agent-written claim/context copy.
   Selection is the editorial act.
 
-### Edition Board Cards
+### Assignment Board Cards
 
-- **Style:** compact assignment cards for a future digital or CLI-rich surface.
+- **Style:** compact candidate cards for a future digital or CLI-rich surface.
 - **Content:** source, freshness, estimated pages, route, reason, and proof
   status.
 - **Rule:** cards must change the editorial decision. If they only decorate the
@@ -260,8 +260,8 @@ notes, and status, not floating cards.
   Are.na inform the atmosphere without copying their surfaces.
 - **Do** show source diversity, missing perspectives, prior mentions, and
   extraction limits when trust is the point.
-- **Do** use actual rendered pages, proof slips, ledgers, source graphs, and
-  edition boards as imagery before invented decoration.
+- **Do** use actual rendered pages, proof slips, ledgers, source desks, and
+  assignment boards as imagery before invented decoration.
 
 ### Don't:
 
