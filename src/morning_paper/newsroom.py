@@ -377,7 +377,7 @@ place, how often it should be checked, and what to do when it fails.
 - A source with no data prints "not configured" or "nothing today".
 - Credentials live in local env files, never in this repo.
 - The local drop folder is `inbox/`: put `.md`, `.txt`, or `.url` files there
-  and let `collectors/local-drop.sh` stage them for the edition.
+  and let `collectors/local-drop.sh` add them to the Assignment Board.
 - Social platforms, communities, and markets should become beats, not raw link
   dumps: define what the paper should notice, how often, and why it matters.
 
@@ -459,7 +459,7 @@ Record preferences here before wiring scripts:
 - Telegram or another messaging channel for the PDF.
 - GitHub artifact links or committed edition archives.
 - A mobile-friendly article view.
-- "Read later" staging for links or files that should enter a future edition.
+- "Read later" Assignment Board intake for links or files that should enter a future edition.
 
 Credentials, bot tokens, and deploy secrets stay outside the repo.
 
@@ -504,7 +504,7 @@ YYYY-MM-DD - accepted/rejected - feedback - file changed - why
         "specs/_template.md": """# Section: <name>
 
 - **Pages**: <target, e.g. 1-2; or "as earned">
-- **Source**: <which collector / feed / staged material feeds this>
+- **Source**: <which collector / feed / Assignment Board material feeds this>
 - **Content**: <what belongs here, what does not>
 - **Voice**: <register for this section; defaults to preferences/voice.md>
 - **Failure mode**: <what to print when the source is empty - always
@@ -551,7 +551,7 @@ for.
         "specs/reading.md": """# Section: Reading
 
 - **Pages**: as earned inside the page budget.
-- **Source**: staged queue and full-text feeds.
+- **Source**: Assignment Board and full-text feeds.
 - **Content**: full reads, not link blurbs. No repeated reads.
 - **Failure mode**: print "no full reads configured" and explain the next source to add.
 
@@ -634,7 +634,7 @@ tomorrow_choices: 5
 
 Use this when `morning-paper sources check --newsroom .` reports unsupported
 files in `inbox/`. A converter collector is a small private script that turns a
-source the reader already owns into staged markdown:
+source the reader already owns into source markdown:
 
 ```bash
 morning-paper stage /tmp/converted-source.md --title "Source name" --date YYYY-MM-DD
@@ -648,7 +648,7 @@ a partial digest, say so in the markdown.
 
 - Inspect headers and row count.
 - Group by date, project, person, topic, channel, or source.
-- Stage one digest, not every row.
+- Add one digest, not every row.
 - Good for analytics exports, watch history, calendar logs, tickets, and
   reading lists.
 
@@ -679,7 +679,7 @@ a partial digest, say so in the markdown.
 - Prefer an existing CLI or export (`gh`, local reports, Main Branch output).
 - Group by shipped work, blocked work, open asks, decisions, bets, pushes, and
   risks.
-- Stage one operational digest with source links.
+- Add one operational digest with source links.
 
 ## Social / Video / Browser Exports
 
@@ -692,7 +692,7 @@ a partial digest, say so in the markdown.
 
 ```text
 Write a Morning Paper converter collector for the unsupported files in inbox/.
-Keep it local-first. Turn the source into markdown, stage it with
+Keep it local-first. Turn the source into markdown, add it with
 morning-paper stage --date YYYY-MM-DD, and report exactly what was skipped,
 truncated, inferred, or unavailable. Do not move or mutate the originals.
 ```
@@ -700,8 +700,8 @@ truncated, inferred, or unavailable. Do not move or mutate the originals.
         "collectors/_lib.sh": """#!/usr/bin/env bash
 # _lib.sh - shared helpers for collectors. Source this from each collector.
 #
-# Contract: a collector turns a source into staged markdown by calling
-# `morning-paper stage`. The engine owns file layout, slug collisions, page
+# Contract: a collector turns a source into Assignment Board material by calling
+# `morning-paper stage`. The engine owns file layout, item-id collisions, page
 # estimates, and honesty flags. Collectors never write engine files by hand.
 set -euo pipefail
 
@@ -724,7 +724,7 @@ ok() { echo "ok: $1"; }
 unavailable() { echo "unavailable: $1 - ${2:-not configured}"; }
 """,
         "collectors/run_all.sh": """#!/usr/bin/env bash
-# run_all.sh - run every collector for the edition date, then print the queue.
+# run_all.sh - run every collector for the edition date, then print the Assignment Board.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -735,12 +735,12 @@ for c in *.sh; do
   echo "--- $c"
   bash "$c" "$EDITION_DATE" || echo "unavailable: $c - exited nonzero"
 done
-echo "queue:"
+echo "Assignment Board:"
 morning-paper queue list --date "$EDITION_DATE"
 """,
         "collectors/shipped.sh": """#!/usr/bin/env bash
 # shipped.sh - "shipped while you slept" from your own merged PRs.
-# Needs the `gh` CLI authenticated; stages nothing if you shipped nothing.
+# Needs the `gh` CLI authenticated; adds nothing if you shipped nothing.
 set -euo pipefail
 source "$(dirname "$0")/_lib.sh" "${1:-}"
 
@@ -762,7 +762,7 @@ fi
 rm -f "$tmp"
 """,
         "collectors/read.sh": """#!/usr/bin/env bash
-# read.sh - stage one URL as a full read for the current edition date.
+# read.sh - add one URL as a full read for the current edition date.
 set -euo pipefail
 source "$(dirname "$0")/_lib.sh" "${1:-}"
 
@@ -773,7 +773,7 @@ esac
 stage_url "Today's read" "$URL" && ok "Read"
 """,
         "collectors/local-drop.sh": """#!/usr/bin/env bash
-# local-drop.sh - stage files from inbox/ for the current edition.
+# local-drop.sh - add files from inbox/ to the current edition's Assignment Board.
 set -euo pipefail
 source "$(dirname "$0")/_lib.sh" "${1:-}"
 
@@ -826,15 +826,15 @@ fi
 """,
         "memory/MEMORY.md": """# Memory index
 
-<!-- Running threads load on slug match: when today's news matches a thread
-     slug below, the editor loads that thread and advances it instead of
+<!-- Running threads load on item-id/title match: when today's news matches a
+     thread below, the editor loads that thread and advances it instead of
      re-reporting the story cold. One line per thread. -->
 """,
         "memory/threads/README.md": """# Threads
 
 A thread is a story you are following across editions. One file per thread.
-Each morning, advance or kill: a thread either earns a second-day lead because
-something moved, or it gets killed because it is over.
+Each morning, advance or close: a thread either earns a second-day lead because
+something moved, or it gets closed because it is over.
 """,
         "editions/.gitignore": "*.pdf\n",
         "editions/operator-answers.template.md": """# Operator Answers - <date>
@@ -853,8 +853,8 @@ Read the paper with a pen. Reply in chat or mark this file up.
 ## Sources To Add
 - Feeds, folders, newsletters, repos, people, searches, exports, or tools.
 
-## Print Tomorrow
-- URLs or files to stage for tomorrow's paper.
+## Tomorrow's Assignment Board
+- URLs or files to add to tomorrow's Assignment Board.
 """,
         "examples/edition-skeleton.md": f"""---
 title: {name} - Edition Skeleton
@@ -872,7 +872,7 @@ palette: color
 
 <div class="strip">
 <div class="strip-item"><div class="strip-label">The Read</div><div class="strip-value">Replace with the single judgment that matters today.</div></div>
-<div class="strip-item"><div class="strip-label">Queue</div><div class="strip-value">Replace with staged reads, or print "not configured".</div></div>
+<div class="strip-item"><div class="strip-label">Board</div><div class="strip-value">Replace with assigned reads, or print "not configured".</div></div>
 <div class="strip-item"><div class="strip-label">Move</div><div class="strip-value alert">Replace with the one next action worth taking.</div></div>
 </div>
 
@@ -890,26 +890,26 @@ what changed in the world, why it matters to this reader, and what to do next.</
 
 ```mp-stats
 Sources checked | 0 | update after collectors
-Full reads queued | 0 | update from queue
+Full reads assigned | 0 | update from Assignment Board
 Open loops | 0 | update from memory
 ```
 
 ## Reading
 
-Queued reads and full-text feeds go here. If there is nothing worth printing,
+Assigned reads and full-text feeds go here. If there is nothing worth printing,
 say "not configured" or "reading pile is empty" instead of padding.
 """,
         "inbox/README.md": """# Local Drop Inbox
 
 Put reader-owned source files here when you want the next edition to consider
-them. The scaffolded `collectors/local-drop.sh` stages copies for the edition
+them. The scaffolded `collectors/local-drop.sh` adds copies for the edition
 date; it does not move or mutate the originals.
 
 Accepted starter formats:
 
-- `.md` / `.markdown` - staged as written.
-- `.txt` - wrapped in a markdown heading, then staged.
-- `.url` - the first URL in the file is staged.
+- `.md` / `.markdown` - added as written.
+- `.txt` - wrapped in a markdown heading, then added.
+- `.url` - the first URL in the file is added.
 
 Run:
 

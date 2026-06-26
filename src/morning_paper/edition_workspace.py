@@ -124,6 +124,272 @@ def _final_summary(findings: list[dict[str, object]]) -> dict[str, int]:
     }
 
 
+def _assignment_board(
+    source_inventory_payload: dict[str, object],
+    queue_snapshot: dict[str, object],
+    *,
+    date_str: str,
+    edition_dir: Path,
+) -> dict[str, object]:
+    """Project current source material into a simple newsroom board.
+
+    The staging queue remains the compatibility storage layer. The Assignment
+    Board is the agent-facing editorial view over that storage.
+    """
+    lanes: dict[str, list[dict[str, object]]] = {
+        "ready_to_edit": [],
+        "needs_source_proof": [],
+        "source_health": [],
+        "selected": [],
+        "cut": [],
+        "held": [],
+        "printed": [],
+    }
+    items = queue_snapshot.get("items") if isinstance(queue_snapshot.get("items"), list) else []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("slug") or item.get("title") or "item")
+        board_item = {
+            "id": item_id,
+            "title": item.get("title") or item_id,
+            "kind": item.get("kind") or "item",
+            "source": item.get("source") or "",
+            "est_pages": _int_or_zero(item.get("est_pages")),
+            "words": _int_or_zero(item.get("words")),
+            "route": "source material",
+            "reason": "added through `morning-paper stage`",
+            "compatibility": {"queue_slug": item.get("slug") or item_id},
+        }
+        proof_notes = [
+            str(item.get(key) or "")
+            for key in ("warning", "extractor_note")
+            if str(item.get(key) or "").strip()
+        ]
+        if item.get("truncated") or proof_notes:
+            board_item["route"] = "needs source proof"
+            board_item["reason"] = "; ".join(proof_notes) or "source copy is incomplete"
+            lanes["needs_source_proof"].append(board_item)
+        else:
+            lanes["ready_to_edit"].append(board_item)
+
+    newsroom = source_inventory_payload.get("newsroom") if isinstance(source_inventory_payload.get("newsroom"), dict) else {}
+    local_drop = newsroom.get("local_drop") if isinstance(newsroom.get("local_drop"), dict) else {}
+    unsupported = _int_or_zero(local_drop.get("unsupported_count")) if isinstance(local_drop, dict) else 0
+    if unsupported:
+        lanes["source_health"].append(
+            {
+                "id": "local-drop-unsupported",
+                "title": "Local drop has unsupported files",
+                "kind": "source_health",
+                "source": local_drop.get("path") or "",
+                "est_pages": 0,
+                "route": "source health",
+                "reason": f"{unsupported} file(s) need a converter collector",
+            }
+        )
+    sources = source_inventory_payload.get("sources") if isinstance(source_inventory_payload.get("sources"), list) else []
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        if source.get("status") == "error":
+            lanes["source_health"].append(
+                {
+                    "id": source.get("id") or source.get("name") or "source-error",
+                    "title": source.get("name") or source.get("id") or "Source error",
+                    "kind": "source_health",
+                    "source": source.get("url") or source.get("type") or "",
+                    "est_pages": 0,
+                    "route": "source health",
+                    "reason": source.get("error") or "source check failed",
+                }
+            )
+
+    summary = {lane: len(values) for lane, values in lanes.items()}
+    return {
+        "status": "ready" if any(summary.values()) else "empty",
+        "date": date_str,
+        "edition_dir": str(edition_dir),
+        "summary": summary,
+        "page_budget": queue_snapshot.get("page_budget"),
+        "est_pages_total": queue_snapshot.get("est_pages_total", 0),
+        "budget_remaining": queue_snapshot.get("budget_remaining"),
+        "lanes": lanes,
+        "source": {
+            "queue_snapshot": str(edition_dir / "queue-snapshot.json"),
+            "source_inventory": str(edition_dir / "source-inventory.json"),
+        },
+        "updated_at": _utc_stamp(),
+    }
+
+
+def _render_assignment_board_markdown(board: dict[str, object]) -> str:
+    lines = [
+        f"# Assignment Board - {board.get('date', '')}",
+        "",
+        f"Status: {board.get('status', '')}",
+        f"Estimated pages: {board.get('est_pages_total', 0)} / budget {board.get('page_budget', '')}",
+        "",
+    ]
+    lanes = board.get("lanes") if isinstance(board.get("lanes"), dict) else {}
+    for lane in ("ready_to_edit", "needs_source_proof", "source_health", "selected", "cut", "held", "printed"):
+        items = lanes.get(lane) if isinstance(lanes.get(lane), list) else []
+        title = lane.replace("_", " ").title()
+        lines.extend([f"## {title}", ""])
+        if not items:
+            lines.append("- None.")
+        else:
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                bits = [str(item.get("title") or item.get("id") or "Untitled")]
+                if item.get("est_pages"):
+                    bits.append(f"{item.get('est_pages')} page(s)")
+                if item.get("reason"):
+                    bits.append(str(item.get("reason")))
+                lines.append("- " + " - ".join(bits))
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _pending_run_ticket(root: Path, *, date_str: str) -> dict[str, object]:
+    return {
+        "status": "pending",
+        "date": date_str,
+        "command": f"morning-paper edition status {root} --date {date_str}",
+        "updated_at": _utc_stamp(),
+    }
+
+
+def _render_run_ticket_markdown(ticket: dict[str, object]) -> str:
+    lines = [
+        f"# Morning Run Ticket - {ticket.get('date', '')}",
+        "",
+        f"Status: {ticket.get('status', '')}",
+        f"Next action: {ticket.get('next_action', '')}",
+        "",
+        "## Checks",
+    ]
+    checks = ticket.get("checks") if isinstance(ticket.get("checks"), list) else []
+    if not checks:
+        lines.append("- None.")
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        state = str(check.get("state", "")).upper()
+        lines.append(f"- {state} `{check.get('name', '')}` - {check.get('detail', '')}")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _run_ticket_status(checks: list[dict[str, object]]) -> str:
+    states = {str(check.get("state", "")) for check in checks}
+    if "block" in states:
+        return "blocked"
+    if "note" in states:
+        return "complete_with_notes"
+    return "complete"
+
+
+def _add_ticket_check(checks: list[dict[str, object]], *, name: str, state: str, detail: str) -> None:
+    checks.append({"name": name, "state": state, "detail": detail})
+
+
+def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) -> dict[str, object]:
+    edition_dir = root / "editions" / date_str
+    if not edition_dir.is_dir():
+        raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    checks: list[dict[str, object]] = []
+
+    def require_file(name: str, label: str, *, block: bool = True) -> bool:
+        path = edition_dir / name
+        if path.is_file():
+            _add_ticket_check(checks, name=label, state="pass", detail=f"`{name}` exists")
+            return True
+        _add_ticket_check(checks, name=label, state="block" if block else "note", detail=f"`{name}` is missing")
+        return False
+
+    require_file("source-inventory.json", "sources")
+    require_file("collector-report.md", "collector report", block=False)
+    require_file("assignment-board.json", "assignment board", block=False)
+    require_file("draft.md", "draft")
+    require_file("feedback-plan.md", "feedback route")
+    require_file("operator-answers.md", "reader feedback sheet", block=False)
+    if _desk_sheet_enabled(root):
+        require_file("desk-sheet.md", "Desk Sheet", block=False)
+
+    estimate = _load_json_object(edition_dir / "estimate-result.json")
+    if estimate.get("status") == "estimated":
+        _add_ticket_check(checks, name="estimate", state="pass", detail=f"{estimate.get('est_pages')} estimated page(s)")
+    else:
+        _add_ticket_check(checks, name="estimate", state="block", detail=f"estimate status is `{estimate.get('status') or 'missing'}`")
+
+    render = _load_json_object(edition_dir / "render-result.json")
+    outputs = render.get("outputs") if isinstance(render.get("outputs"), dict) else {}
+    pdf_path = Path(str(outputs.get("pdf", ""))).expanduser() if outputs else Path()
+    if render.get("status") == "rendered" and pdf_path.is_file():
+        proof = pdf_basic_proof(pdf_path)
+        if proof.get("ok"):
+            _add_ticket_check(checks, name="rendered PDF", state="pass", detail=f"{proof.get('pages')} page PDF")
+        else:
+            _add_ticket_check(checks, name="rendered PDF", state="block", detail="PDF exists but is not readable")
+    else:
+        _add_ticket_check(checks, name="rendered PDF", state="block", detail=f"render status is `{render.get('status') or 'missing'}`")
+
+    review = _load_json_object(edition_dir / "review.json")
+    review_status = str(review.get("status") or "missing")
+    if review_status == "clean":
+        _add_ticket_check(checks, name="review", state="pass", detail="clean")
+    elif review_status == "notes":
+        _add_ticket_check(checks, name="review", state="note", detail="review has notes")
+    elif review_status == "review":
+        _add_ticket_check(checks, name="review", state="block", detail="review requested revision")
+    else:
+        _add_ticket_check(checks, name="review", state="block", detail=f"review status is `{review_status}`")
+
+    visual_qa = _load_json_object(edition_dir / "visual-qa.json")
+    visual_status = str(visual_qa.get("status") or "missing")
+    if visual_status == "clean":
+        _add_ticket_check(checks, name="visual QA", state="pass", detail="clean")
+    elif visual_status == "notes":
+        _add_ticket_check(checks, name="visual QA", state="note", detail="visual QA has notes")
+    else:
+        _add_ticket_check(checks, name="visual QA", state="block", detail=f"visual QA status is `{visual_status}`")
+
+    final_editor = _load_json_object(edition_dir / "final-editor.json")
+    final_status = str(final_editor.get("status") or "missing")
+    if final_status == "clean":
+        _add_ticket_check(checks, name="final editor", state="pass", detail="clean")
+    elif final_status == "notes":
+        _add_ticket_check(checks, name="final editor", state="note", detail="deliver with note")
+    else:
+        _add_ticket_check(checks, name="final editor", state="block", detail=f"final-editor status is `{final_status}`")
+
+    status = _run_ticket_status(checks)
+    next_action = {
+        "complete": "deliver or archive according to DELIVERY.md",
+        "complete_with_notes": "deliver with the notes named in the handoff",
+        "blocked": "repair blocked checks before delivery",
+    }[status]
+    return {
+        "status": status,
+        "date": date_str,
+        "edition_dir": str(edition_dir),
+        "checks": checks,
+        "summary": {
+            "pass": sum(1 for check in checks if check.get("state") == "pass"),
+            "note": sum(1 for check in checks if check.get("state") == "note"),
+            "block": sum(1 for check in checks if check.get("state") == "block"),
+        },
+        "page_budget": config.page_budget,
+        "next_action": next_action,
+        "artifacts": {
+            "json": str(edition_dir / "run-ticket.json"),
+            "markdown": str(edition_dir / "run-ticket.md"),
+        },
+        "updated_at": _utc_stamp(),
+    }
+
+
 def _render_final_editor_markdown(report: dict[str, object]) -> str:
     findings = report.get("findings") if isinstance(report.get("findings"), list) else []
     lines = [
@@ -187,6 +453,8 @@ def final_editor_pass(
         edition_dir / "source-inventory.json",
         edition_dir / "collector-report.md",
         edition_dir / "queue-snapshot.json",
+        edition_dir / "assignment-board.json",
+        edition_dir / "assignment-board.md",
         edition_dir / "estimate-result.json",
         edition_dir / "render-result.json",
         edition_dir / "review.json",
@@ -525,15 +793,15 @@ def final_editor_pass(
     local_drop = newsroom_info.get("local_drop") if isinstance(newsroom_info.get("local_drop"), dict) else {}
     unsupported = _int_or_zero(local_drop.get("unsupported_count")) if isinstance(local_drop, dict) else 0
     if unsupported > 0:
-        _final_finding(
-            findings,
-            check="source-honesty",
-            severity="nudge",
-            issue=f"{unsupported} local-drop file(s) need a converter collector.",
-            why="The paper can ship, but the reader should know some owned sources were visible and not staged.",
-            hint="Name the skipped files and propose a converter collector for tomorrow.",
-            measured={"unsupported_local_drop": unsupported},
-        )
+            _final_finding(
+                findings,
+                check="source-honesty",
+                severity="nudge",
+                issue=f"{unsupported} local-drop file(s) need a converter collector.",
+                why="The paper can ship, but the reader should know some owned sources were visible and not assigned to the edition.",
+                hint="Name the skipped files and propose a converter collector for tomorrow.",
+                measured={"unsupported_local_drop": unsupported},
+            )
     if isinstance(queue_snapshot.get("items"), list):
         flagged_items = [
             item for item in queue_snapshot["items"]
@@ -544,7 +812,7 @@ def final_editor_pass(
                 findings,
                 check="source-honesty",
                 severity="nudge",
-                issue=f"{len(flagged_items)} staged item(s) carry truncation or remote-extraction notes.",
+                issue=f"{len(flagged_items)} Assignment Board item(s) carry truncation or remote-extraction notes.",
                 why="The final handoff should not let clipped or remote-fetched material masquerade as complete/local.",
                 hint="Surface the warning in the paper or cut the item.",
                 measured={"flagged_staged_items": len(flagged_items)},
@@ -623,8 +891,8 @@ Read the paper with a pen. Reply in chat or mark this file up.
 - Which note should become a durable rule in EDITORIAL.md, VISUALS.md,
   SOURCES.md, DELIVERY.md, specs/, preferences/, or TASTELOG.md?
 
-## Print Tomorrow
-- URLs or files to stage for tomorrow's paper.
+## Tomorrow's Assignment Board
+- URLs or files to add to tomorrow's Assignment Board.
 """
 
 
@@ -751,7 +1019,7 @@ body {{ color: #1f1d1b; }}
     <div class="old-title">The Desk Sheet</div>
     <div class="old-meta">{date_str} - {paper_name}</div>
     <div class="old-sub">Photograph or dictate when done</div>
-    <div class="old-codes">Codes in this paper: A analysis - Q queue - B bets - T telemetry - R reads - M menu - Z back page</div>
+    <div class="old-codes">Codes in this paper: A analysis - S sources - B bets - T telemetry - R reads - M menu - Z back page</div>
   </div>
 
   <div class="old-band"><div>Notes - add a code (Q1, A, R2, P7) when it helps</div><div class="old-count">Notes - {notes_lines}</div></div>
@@ -786,7 +1054,7 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
 3. Update the smallest durable file that can carry the rule.
 4. Append one line to `TASTELOG.md` for every accepted or rejected durable
    taste change.
-5. Stage anything under "Print Tomorrow" with `morning-paper stage <url-or-file>`.
+5. Add anything under "Tomorrow's Assignment Board" with `morning-paper stage <url-or-file>`.
 6. Leave a short "Applied Feedback" note in this file with paths changed.
 
 ## Routes
@@ -801,7 +1069,7 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
 | Standing interests, source weighting, dampeners | `preferences/algorithm-prior.yaml` (`--route prior`) |
 | Review thresholds or muted copy-desk findings | `preferences/checks.yaml` (`--route checks`) |
 | PDF, print, email/article view, archive, routine/automation behavior | `DELIVERY.md` |
-| One-off URL or file to read tomorrow | `morning-paper stage <url-or-file>` |
+| One-off URL or file to read tomorrow | `morning-paper stage <url-or-file>` adds it to the Assignment Board |
 | Stable accepted/rejected taste decision | `TASTELOG.md` |
 
 ## Guardrails
@@ -828,7 +1096,7 @@ def draft_template(date_str: str, paper_name: str) -> str:
 
 <!-- Draft starts here. Compose against EDITORIAL.md, VISUALS.md, SOURCES.md,
 DELIVERY.md, specs/, preferences/, source-inventory.json, collector-report.md,
-and queue-snapshot.json. Replace this placeholder before rendering. -->
+and assignment-board.json. Replace this placeholder before rendering. -->
 
 ## The Read
 
@@ -935,6 +1203,44 @@ def apply_feedback(
     }
 
 
+def assignment_board_edition_workspace(
+    newsroom: Path,
+    config: MorningPaperConfig,
+    *,
+    date_str: str,
+) -> dict[str, object]:
+    root = newsroom.expanduser().resolve()
+    edition_dir = root / "editions" / date_str
+    if not edition_dir.is_dir():
+        raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    source_payload = _load_json_object(edition_dir / "source-inventory.json")
+    if not source_payload:
+        source_payload = source_inventory(config, check=False, newsroom=root)
+        write_json(edition_dir / "source-inventory.json", source_payload)
+    queue_snapshot = _load_json_object(edition_dir / "queue-snapshot.json")
+    if not queue_snapshot:
+        queue_snapshot = queue_status(config, date_str)
+        write_json(edition_dir / "queue-snapshot.json", queue_snapshot)
+    board = _assignment_board(source_payload, queue_snapshot, date_str=date_str, edition_dir=edition_dir)
+    write_json(edition_dir / "assignment-board.json", board)
+    (edition_dir / "assignment-board.md").write_text(_render_assignment_board_markdown(board), encoding="utf-8")
+    return board
+
+
+def run_ticket_edition_workspace(
+    newsroom: Path,
+    config: MorningPaperConfig,
+    *,
+    date_str: str,
+) -> dict[str, object]:
+    root = newsroom.expanduser().resolve()
+    ticket = _build_run_ticket(root, config, date_str=date_str)
+    edition_dir = root / "editions" / date_str
+    write_json(edition_dir / "run-ticket.json", ticket)
+    (edition_dir / "run-ticket.md").write_text(_render_run_ticket_markdown(ticket), encoding="utf-8")
+    return ticket
+
+
 def prepare_edition_workspace(
     newsroom: Path,
     config: MorningPaperConfig,
@@ -971,7 +1277,11 @@ must be reported as "not configured"; never invent source data.
 """
     record("collector-report.md", _write(edition_dir / "collector-report.md", collector_report, force=force))
 
-    record("queue-snapshot.json", _write_json(edition_dir / "queue-snapshot.json", queue_status(config, date_str), force=force))
+    queue_payload = queue_status(config, date_str)
+    record("queue-snapshot.json", _write_json(edition_dir / "queue-snapshot.json", queue_payload, force=force))
+    board = _assignment_board(source_payload, queue_payload, date_str=date_str, edition_dir=edition_dir)
+    record("assignment-board.json", _write_json(edition_dir / "assignment-board.json", board, force=force))
+    record("assignment-board.md", _write(edition_dir / "assignment-board.md", _render_assignment_board_markdown(board), force=force))
     record("draft.md", _write(edition_dir / "draft.md", draft_template(date_str, config.name), force=force))
 
     render_pending = {
@@ -1023,6 +1333,9 @@ morning-paper edition final-editor {root} --date {date_str}
 ```
 """
     record("final-editor.md", _write(edition_dir / "final-editor.md", final_editor_markdown, force=force))
+    run_ticket_pending = _pending_run_ticket(root, date_str=date_str)
+    record("run-ticket.json", _write_json(edition_dir / "run-ticket.json", run_ticket_pending, force=force))
+    record("run-ticket.md", _write(edition_dir / "run-ticket.md", _render_run_ticket_markdown(run_ticket_pending), force=force))
 
     record("operator-answers.md", _write(edition_dir / "operator-answers.md", operator_answers_template(date_str), force=force))
     desk_sheet_prefs = _load_desk_sheet_preferences(root)
@@ -1040,6 +1353,8 @@ morning-paper edition final-editor {root} --date {date_str}
             "source_inventory": str(edition_dir / "source-inventory.json"),
             "collector_report": str(edition_dir / "collector-report.md"),
             "queue_snapshot": str(edition_dir / "queue-snapshot.json"),
+            "assignment_board": str(edition_dir / "assignment-board.json"),
+            "assignment_board_markdown": str(edition_dir / "assignment-board.md"),
             "estimate_result": str(edition_dir / "estimate-result.json"),
             "draft": str(edition_dir / "draft.md"),
             "render_result": str(edition_dir / "render-result.json"),
@@ -1047,10 +1362,12 @@ morning-paper edition final-editor {root} --date {date_str}
             "visual_qa": str(edition_dir / "visual-qa.json"),
             "final_editor": str(edition_dir / "final-editor.json"),
             "final_editor_markdown": str(edition_dir / "final-editor.md"),
+            "run_ticket": str(edition_dir / "run-ticket.json"),
+            "run_ticket_markdown": str(edition_dir / "run-ticket.md"),
             "operator_answers": str(edition_dir / "operator-answers.md"),
             "feedback_plan": str(edition_dir / "feedback-plan.md"),
         },
-        "next_action": "run collectors, refresh queue-snapshot.json, compose draft.md, render desk-sheet.md if enabled, estimate, render, review, visual-qa, final-editor, then ask for feedback and route it through feedback-plan.md",
+        "next_action": "run collectors, refresh queue-snapshot.json and assignment-board.json, compose draft.md, render desk-sheet.md if enabled, estimate, render, review, visual-qa, final-editor, run edition status, then ask for feedback and route it through feedback-plan.md",
     }
     if desk_sheet_prefs.get("enabled"):
         payload["artifacts"]["desk_sheet"] = str(desk_sheet_path)

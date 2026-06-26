@@ -60,10 +60,10 @@ The vote is scheduled for tonight, after the matter of the pier lamps. The keepe
 
 <div class="move">
 <span class="move-label">The Move</span>
-This page is the demo. Make it yours: install with <code>uv tool install --python 3.13 "morning-paper[pretty]"</code>, run <code>morning-paper init</code> and <code>morning-paper newsroom init ~/Newsroom</code>, connect the sources you already use, and queue tomorrow's reading with <code>morning-paper stage</code> — the edition prints itself each morning.
+This page is the demo. Make it yours: install with <code>uv tool install --python 3.13 "morning-paper[pretty]"</code>, run <code>morning-paper init</code> and <code>morning-paper newsroom init ~/Newsroom</code>, connect the sources you already use, and add tomorrow's reading to the Assignment Board with <code>morning-paper stage</code> — the edition prints itself each morning.
 </div>
 
-<div class="edition-divider"><div class="oxford"></div><div class="edition-divider-label">Today's Queue</div></div>
+<div class="edition-divider"><div class="oxford"></div><div class="edition-divider-label">Today's Assignment Board</div></div>
 
 <div class="q-row"><span class="cb"></span><div class="q-body"><div class="q-t">Walk the breakwater before the vote</div><div class="q-d">Count the working pier lamps yourself; the agenda says eleven, the keeper says nine.</div><div class="q-u">Fictional task · <strong>demo data</strong></div></div><div class="q-min">20 min</div></div>
 <div class="q-row"><span class="cb"></span><div class="q-body"><div class="q-t">Read the ferry's spring schedule</div><div class="q-d">The <em>Maribel</em> adds a 06:10 crossing Monday; decide whether the early boat changes your morning.</div><div class="q-u">Fictional task · <strong>demo data</strong></div></div><div class="q-min">5 min</div></div>

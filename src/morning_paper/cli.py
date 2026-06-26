@@ -50,12 +50,14 @@ Commands:
   sources           List or check configured sources and collector contract
   print <url>       Print a single article right now
   render <file.md>  Typeset any markdown file through a style pack
-  stage <url|file>  Queue material for tomorrow's paper (returns a page estimate)
+  stage <url|file>  Add source material to tomorrow's Assignment Board
+                    (returns a page estimate)
   inbox             Poll the contributor inbox: mail from your masthead becomes
-                    staged pages, the sender gets a confirmation (--dry-run)
-  queue             Show/list/read/remove staged material vs the page budget
+                    source material for tomorrow's edition (--dry-run)
+  queue             Show/list/read/remove Assignment Board items vs the page budget
   edition           Prepare/proof/apply durable edition files
-                    (prepare|estimate|visual-qa|final-editor|apply-feedback)
+                    (prepare|assignment-board|estimate|visual-qa|final-editor|
+                    status|apply-feedback)
   estimate <file>   Page count for a markdown file, nothing written
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)
@@ -72,7 +74,7 @@ the bare version). `newsroom init` creates the private file contract; `edition
 prepare` creates compaction-safe edition files; `edition final-editor` proves
 the paper is ready to ship; `edition apply-feedback` records reader notes into
 durable taste; `sources` inventories the source stack; `stage` and `queue` are
-the seam for "add this to tomorrow's brief" workflows.
+compatibility commands for adding source material to tomorrow's Assignment Board.
 See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
@@ -762,7 +764,7 @@ def render_command(args: list[str]) -> int:
     output_arg: str | None = None
     source: Path | None = None
     index = 0
-    usage = "usage: morning-paper render <file.md> [--style NAME] [--palette NAME] [--output PATH] [--date YYYY-MM-DD] [--slug NAME] [--config PATH]"
+    usage = "usage: morning-paper render <file.md> [--style NAME] [--palette NAME] [--output PATH] [--date YYYY-MM-DD] [--id NAME] [--config PATH]"
     while index < len(args):
         arg = args[index]
         if arg in {"-h", "--help"}:
@@ -776,7 +778,7 @@ def render_command(args: list[str]) -> int:
             date = args[index + 1]
             index += 2
             continue
-        if arg == "--slug" and index + 1 < len(args):
+        if arg in {"--id", "--slug"} and index + 1 < len(args):
             slug = args[index + 1]
             index += 2
             continue
@@ -987,7 +989,7 @@ def queue_command(args: list[str]) -> int:
     from .staging import default_edition_date, queue_item, queue_status, remove_queue_item
 
     usage = (
-        "usage: morning-paper queue [status|list|show SLUG|remove SLUG] "
+        "usage: morning-paper queue [status|list|show ITEM_ID|remove ITEM_ID] "
         "[--date YYYY-MM-DD] [--config PATH] [--content]"
     )
     include_content = False
@@ -1071,21 +1073,27 @@ def sources_command(args: list[str]) -> int:
 
 def edition_command(args: list[str]) -> int:
     from .edition_workspace import (
+        assignment_board_edition_workspace,
         apply_feedback,
         estimate_edition_workspace,
         final_editor_pass,
         prepare_edition_workspace,
+        run_ticket_edition_workspace,
         visual_qa_edition_workspace,
     )
 
     usage = (
         "usage: morning-paper edition prepare <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH] [--check-sources] [--force]\n"
+        "       morning-paper edition assignment-board <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition estimate <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition visual-qa <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition final-editor <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH]\n"
+        "       morning-paper edition status <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition apply-feedback <newsroom-path> --route ROUTE --note TEXT "
         "[--decision accepted|rejected] [--why TEXT] [--date YYYY-MM-DD]\n"
@@ -1141,7 +1149,17 @@ def edition_command(args: list[str]) -> int:
             continue
         rest.append(arg)
         index += 1
-    if len(rest) != 2 or rest[0] not in {"prepare", "estimate", "visual-qa", "final-editor", "apply-feedback"}:
+    verbs = {
+        "prepare",
+        "assignment-board",
+        "estimate",
+        "visual-qa",
+        "final-editor",
+        "status",
+        "run-ticket",
+        "apply-feedback",
+    }
+    if len(rest) != 2 or rest[0] not in verbs:
         print(usage, file=sys.stderr)
         return 2
     try:
@@ -1159,12 +1177,16 @@ def edition_command(args: list[str]) -> int:
                 check_sources=check_sources,
                 force=force,
             )
+        elif rest[0] == "assignment-board":
+            payload = assignment_board_edition_workspace(Path(rest[1]), config, date_str=date_str)
         elif rest[0] == "estimate":
             payload = estimate_edition_workspace(Path(rest[1]), config, date_str=date_str)
         elif rest[0] == "visual-qa":
             payload = visual_qa_edition_workspace(Path(rest[1]), date_str=date_str)
         elif rest[0] == "final-editor":
             payload = final_editor_pass(Path(rest[1]), config, date_str=date_str)
+        elif rest[0] in {"status", "run-ticket"}:
+            payload = run_ticket_edition_workspace(Path(rest[1]), config, date_str=date_str)
         else:
             payload = apply_feedback(
                 Path(rest[1]),

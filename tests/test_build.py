@@ -541,7 +541,7 @@ class StagedInclusionTest(unittest.TestCase):
             staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
         )
         self.assertEqual(payload["staged_included"], ["staged-note"])
-        self.assertIn("Staged for Today", markdown)
+        self.assertIn("Assignment Board", markdown)
         self.assertIn("A Staged Note", markdown)
         self.assertIn("the staging seam works", markdown)
 
@@ -552,7 +552,7 @@ class StagedInclusionTest(unittest.TestCase):
             staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
         )
         self.assertEqual(payload["staged_included"], ["staged-note"])
-        self.assertIn("Staged for Today", markdown)
+        self.assertIn("Assignment Board", markdown)
         self.assertIn("the staging seam works", markdown)
 
     def test_truncated_staged_item_carries_on_page_notice(self) -> None:
@@ -572,9 +572,9 @@ class StagedInclusionTest(unittest.TestCase):
             staging={"queue": [self._QUEUE_ITEM], "files": {}},
         )
         self.assertEqual(payload["staged_included"], [])
-        self.assertNotIn("Staged for Today", markdown)
-        self.assertIn("STAGED ITEM NOT INCLUDED", stderr)
-        self.assertTrue(any("STAGED ITEM NOT INCLUDED" in w for w in payload["warnings"]))
+        self.assertNotIn('edition-divider-label">Assignment Board', markdown)
+        self.assertIn("ASSIGNMENT BOARD ITEM NOT INCLUDED", stderr)
+        self.assertTrue(any("ASSIGNMENT BOARD ITEM NOT INCLUDED" in w for w in payload["warnings"]))
 
     def test_portable_renderer_warns_staged_items_not_included(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -601,7 +601,7 @@ class StagedInclusionTest(unittest.TestCase):
             self.assertEqual(rc, 0)
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["staged_included"], [])
-            self.assertIn("STAGED ITEMS NOT INCLUDED", stderr.getvalue())
+            self.assertIn("ASSIGNMENT BOARD ITEMS NOT INCLUDED", stderr.getvalue())
             self.assertIn("outputs.renderer: typewriter", stderr.getvalue())
 
 

@@ -105,10 +105,10 @@ Write their answers into `~/.config/morning-paper/config.yaml`.
 
 ## 3. Optional unlocks (collector recipes they write, not engine features)
 
-The engine ships the generic stage/inbox contract any script or agent workflow
-can write to. Everything below is a **collector**: a small source bridge the
-operator authors and runs at compose time, dropping markdown into the staging
-queue. A collector might summarize a work system, stage saved reading, digest a
+The engine ships the generic Assignment Board intake contract any script or
+agent workflow can write to. Everything below is a **collector**: a small source
+bridge the operator authors and runs at compose time, adding markdown to the
+Assignment Board. A collector might summarize a work system, add saved reading, digest a
 local folder, or turn a personal export into something the editor can judge.
 None of these ship in the engine; they are recipes to build in the newsroom's
 `collectors/` (which §5 scaffolds with the contract and three worked examples).
@@ -128,14 +128,14 @@ tool.
   services the reader already trusts. Treat these as reader-owned source
   systems, not Morning Paper defaults. Search and export tools can discover
   candidates; an approved enrichment tool such as an Apify-style actor may
-  hydrate finalists with full text, metrics, media, and thread/article context.
+  collect source proof for finalists with full text, metrics, media, and thread/article context.
   Record remote tool use in collector notes and keep credentials out of the
   repo.
 - **Research plugins**: a collector wrapping a tool such as last30days for a
   weekly trends page.
 - **gh CLI**: a collector that builds a "shipped while you slept" section from
   their repos (scaffolded as `collectors/shipped.sh` in §5).
-- **Local drop folder**: a collector that stages `.md`, `.txt`, and `.url`
+- **Local drop folder**: a collector that adds `.md`, `.txt`, and `.url`
   files from a folder the user already owns: Obsidian exports, synced folders,
   agent-produced files, or manual dumps. Unsupported files should lead to a
   small converter collector from `collectors/CONVERTERS.md`, not a new engine
@@ -230,7 +230,7 @@ newsroom/
   memory/
     reads-ledger.md          # empty; one line per printed read
     MEMORY.md                # empty thread index
-    threads/README.md        # the advance-or-kill convention
+    threads/README.md        # the advance-or-close convention
   editions/
     .gitignore               # *.pdf — the landing spot for each day's archive
   examples/
@@ -326,7 +326,7 @@ here, in files I own.
 ## The law (read in this precedence, top wins)
 
 1. `specs/*` — the section contracts. The Read leads.
-2. `EDITORIAL.md` — what earns ink, what gets killed, and what makes The Read.
+2. `EDITORIAL.md` — what earns ink, what gets cut, and what makes The Read.
 3. `VISUALS.md` — the visual desk: charts, images, illustrations, PDF/email.
 4. `SOURCES.md` — source purpose, trust, cadence, health, and backlog.
 5. `DELIVERY.md` — PDF, print, email/article, archive preferences.
@@ -336,7 +336,7 @@ here, in files I own.
 9. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
 10. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
 11. `TASTELOG.md` — accepted and rejected taste changes over time.
-12. `memory/MEMORY.md` + `memory/threads/` — running threads (load on slug match).
+12. `memory/MEMORY.md` + `memory/threads/` — running threads (load on item-id/title match).
 13. `collectors/` — my sources. What they don't return prints "not configured".
 
 ## The honesty rule
@@ -359,7 +359,7 @@ their own sections:
 # Section: <name>
 
 - **Pages**: <target, e.g. 1–2; or "as earned">
-- **Source**: <which collector / feed / staged material feeds this>
+- **Source**: <which collector / feed / Assignment Board material feeds this>
 - **Content**: <what belongs here, what does not>
 - **Voice**: <register for this section; defaults to preferences/voice.md>
 - **Failure mode**: <what to print when the source is empty —
@@ -428,13 +428,13 @@ Read measures the day against.
 ```markdown
 # Section: Reading
 
-- **Pages**: as earned by what's staged; the back half of the edition.
-- **Source**: full reads from the staging queue (`morning-paper queue`) and
+- **Pages**: as earned by what's on the Assignment Board; the back half of the edition.
+- **Source**: full reads from the Assignment Board (`morning-paper queue`) and
   full-text feeds, plus a short menu of lighter items.
 - **Content**: entire articles, typeset — not summaries. Then a menu: a few
   one-line "here's what else, and why" pointers.
 - **Voice**: let the reads breathe; the menu is terse.
-- **Failure mode**: nothing staged → print the menu only, or say the reading
+- **Failure mode**: nothing assigned → print the menu only, or say the reading
   pile is empty. Never pad.
 
 ## Two laws
@@ -529,8 +529,8 @@ tomorrow_choices: 5
 ```markdown
 # Memory index
 
-<!-- Running threads load on slug match: when today's news matches a thread
-     slug below, the editor loads that thread and advances it (second-day lede)
+<!-- Running threads load on item-id/title match: when today's news matches a
+     thread below, the editor loads that thread and advances it (second-day lede)
      instead of re-reporting the story cold. One line per thread. -->
 ```
 
@@ -540,9 +540,9 @@ tomorrow_choices: 5
 # Threads
 
 A thread is a story you're following across editions. One file per thread.
-The convention: each morning, **advance or kill**. A thread either earns a
-second-day lede (something moved) or it gets killed (it's over). A thread that
-neither advances nor dies for a week is probably dead — kill it.
+The convention: each morning, **advance or close**. A thread either earns a
+second-day lede (something moved) or it gets closed (it's over). A thread that
+neither advances nor closes for a week is probably dead — close it.
 ```
 
 **`collectors/_lib.sh`** — the collector contract, written to the **public
@@ -553,11 +553,11 @@ not what the engine reads):
 #!/usr/bin/env bash
 # _lib.sh — shared helpers for collectors. Source this from each collector.
 #
-# THE CONTRACT: a collector turns a source into staged markdown by calling
-# `morning-paper stage`. The engine owns the file layout, slug collisions, the
+# THE CONTRACT: a collector turns a source into Assignment Board material by calling
+# `morning-paper stage`. The engine owns the file layout, item-id collisions, the
 # page estimate, and the honesty flags. Collectors NEVER write engine files by
-# hand. Degrade, never fabricate: an empty source stages nothing (the section
-# prints "not configured"); it never stages a fake.
+# hand. Degrade, never fabricate: an empty source adds nothing (the section
+# prints "not configured"); it never adds a fake.
 
 set -euo pipefail
 
@@ -590,7 +590,7 @@ unavailable() { echo "unavailable: $1 — ${2:-not configured}"; }
 ```bash
 #!/usr/bin/env bash
 # run_all.sh — run every collector for the edition date, print a status line
-# each. The edition skill runs this in the Collect step, then reads the queue.
+# each. The edition skill runs this in the Collect step, then reads the Assignment Board.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -601,7 +601,7 @@ for c in *.sh; do
   echo "--- $c"
   bash "$c" "$EDITION_DATE" || echo "unavailable: $c — exited nonzero"
 done
-echo "queue:"
+echo "Assignment Board:"
 morning-paper queue list --date "$EDITION_DATE"
 ```
 
@@ -610,7 +610,7 @@ morning-paper queue list --date "$EDITION_DATE"
 ```bash
 #!/usr/bin/env bash
 # shipped.sh — a "shipped while you slept" section from your own merged PRs.
-# Needs the `gh` CLI authenticated; stages nothing if you shipped nothing.
+# Needs the `gh` CLI authenticated; adds nothing if you shipped nothing.
 set -euo pipefail
 source "$(dirname "$0")/_lib.sh" "${1:-}"
 
@@ -634,7 +634,7 @@ fi
 rm -f "$tmp"
 ```
 
-**`collectors/read.sh`** — the simplest collector: stage one URL as a read for
+**`collectors/read.sh`** — the simplest collector: add one URL as a read for
 the current edition date. Edit the URL, or wrap it to read a list from a file:
 
 ```bash
@@ -761,7 +761,7 @@ runs depend on that machine being available.
 
 Tell the reader where their reactions land: the `edition` skill reads the most
 recent `editions/<date>/operator-answers.md` and honors it. So if they reply
-"more like this", "kill section X", or "print `<url>` tomorrow", the editor
+"more like this", "cut section X", or "print `<url>` tomorrow", the editor
 chooses the smallest durable route and records stable notes with
 `morning-paper edition apply-feedback . --date <edition-date> --route
 editorial|voice|visuals|sources|prior|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why

@@ -62,6 +62,8 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "source-inventory.json",
                 "collector-report.md",
                 "queue-snapshot.json",
+                "assignment-board.json",
+                "assignment-board.md",
                 "estimate-result.json",
                 "draft.md",
                 "render-result.json",
@@ -69,6 +71,8 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "visual-qa.json",
                 "final-editor.json",
                 "final-editor.md",
+                "run-ticket.json",
+                "run-ticket.md",
                 "operator-answers.md",
                 "desk-sheet.md",
                 "feedback-plan.md",
@@ -88,6 +92,10 @@ class EditionWorkspaceTest(unittest.TestCase):
             queue = json.loads((edition_dir / "queue-snapshot.json").read_text(encoding="utf-8"))
             self.assertEqual(queue["date"], "2026-06-22")
             self.assertEqual(queue["count"], 0)
+            board = json.loads((edition_dir / "assignment-board.json").read_text(encoding="utf-8"))
+            self.assertEqual(board["date"], "2026-06-22")
+            self.assertEqual(board["status"], "empty")
+            self.assertIn("Ready To Edit", (edition_dir / "assignment-board.md").read_text(encoding="utf-8"))
             estimate_result = json.loads((edition_dir / "estimate-result.json").read_text(encoding="utf-8"))
             self.assertEqual(estimate_result["status"], "pending")
             self.assertIn("morning-paper edition estimate", estimate_result["command"])
@@ -104,12 +112,15 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertEqual(final_editor["status"], "pending")
             self.assertIn("morning-paper edition final-editor", final_editor["command"])
             self.assertIn("Status: pending", (edition_dir / "final-editor.md").read_text(encoding="utf-8"))
+            run_ticket = json.loads((edition_dir / "run-ticket.json").read_text(encoding="utf-8"))
+            self.assertEqual(run_ticket["status"], "pending")
+            self.assertIn("morning-paper edition status", run_ticket["command"])
             operator_answers = (edition_dir / "operator-answers.md").read_text(encoding="utf-8")
             self.assertIn("Visuals", operator_answers)
             self.assertIn("Delivery", operator_answers)
             self.assertIn("Taste To Save", operator_answers)
             self.assertIn("VISUALS.md", operator_answers)
-            self.assertIn("Print Tomorrow", operator_answers)
+            self.assertIn("Tomorrow's Assignment Board", operator_answers)
             desk_sheet = (edition_dir / "desk-sheet.md").read_text(encoding="utf-8")
             self.assertIn("old-desk", desk_sheet)
             self.assertIn("The Desk Sheet", desk_sheet)
@@ -129,7 +140,65 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
             self.assertEqual(payload["artifacts"]["desk_sheet"], str((edition_dir / "desk-sheet.md").resolve()))
             self.assertEqual(payload["artifacts"]["final_editor"], str((edition_dir / "final-editor.json").resolve()))
+            self.assertEqual(payload["artifacts"]["assignment_board"], str((edition_dir / "assignment-board.json").resolve()))
+            self.assertEqual(payload["artifacts"]["run_ticket"], str((edition_dir / "run-ticket.json").resolve()))
             self.assertIn("final-editor", payload["next_action"])
+
+    def test_assignment_board_projects_queue_items_into_lanes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            queue = {
+                "date": "2026-06-22",
+                "items": [
+                    {
+                        "slug": "clean-read",
+                        "kind": "file",
+                        "source": "/tmp/clean.md",
+                        "title": "Clean Read",
+                        "words": 500,
+                        "est_pages": 1,
+                        "truncated": False,
+                        "warning": "",
+                        "extractor_note": "",
+                    },
+                    {
+                        "slug": "thin-read",
+                        "kind": "url",
+                        "source": "https://example.com/thin",
+                        "title": "Thin Read",
+                        "words": 100,
+                        "est_pages": 1,
+                        "truncated": True,
+                        "warning": "truncated",
+                        "extractor_note": "",
+                    },
+                ],
+                "count": 2,
+                "est_pages_total": 2,
+                "page_budget": 18,
+                "budget_remaining": 16,
+            }
+            (edition_dir / "queue-snapshot.json").write_text(json.dumps(queue, indent=2), encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["edition", "assignment-board", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["summary"]["ready_to_edit"], 1)
+            self.assertEqual(payload["summary"]["needs_source_proof"], 1)
+            self.assertEqual(payload["lanes"]["ready_to_edit"][0]["title"], "Clean Read")
+            self.assertEqual(payload["lanes"]["needs_source_proof"][0]["title"], "Thin Read")
 
     def test_edition_prepare_respects_disabled_desk_sheet_preference(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -315,6 +384,26 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn(str((newsroom / "EDITORIAL.md").resolve()), payload["files_read"])
             self.assertIn("Ship rule: deliver", (edition_dir / "final-editor.md").read_text(encoding="utf-8"))
 
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "complete")
+            self.assertEqual(ticket["summary"]["block"], 0)
+            self.assertTrue((edition_dir / "run-ticket.json").is_file())
+            self.assertIn("Status: complete", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
     def test_final_editor_flags_unproven_delivery(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -359,6 +448,24 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("delivery-proof", checks)
             self.assertIn("estimate-complete", checks)
             self.assertIn("visual-qa", checks)
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "blocked")
+            self.assertGreater(ticket["summary"]["block"], 0)
 
     def test_final_editor_flags_stale_estimate_and_review(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -54,8 +54,8 @@ From *The Elements of Style* (1918), rules cited by number.
 **Punctuation floor (1–6):** serial comma; both commas around a parenthetic
 phrase or neither; semicolon, not comma, between independent clauses; never
 break a sentence in two for fake punch. And an opening modifier must name
-its subject next (7) — "Walking to the printer, the queue jammed" is about
-a walking queue.
+its subject next (7) — "Walking to the printer, the paper jammed" is about
+a walking paper.
 
 **Word patrol (Chapter V keepers).** Cut on sight: *very* and *certainly*
 (use words that carry their own emphasis); *interesting* as a label (show
@@ -64,7 +64,7 @@ lines*; *factor*, *aspect*, *nature*, *character*, *system* as abstraction
 filler; *one of the most* as an opener; *worth while* as vague approval;
 *literally* propping up an exaggeration.
 
-## The kill list — current AI tells (June 2026)
+## The cut list — current AI tells (June 2026)
 
 What readers now flag as machine prose, deadliest first. Vocabulary tells
 ("delve," "tapestry," "testament") have largely faded from current models;

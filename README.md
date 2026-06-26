@@ -81,8 +81,8 @@ morning-paper demo --open
 
 - Renders a demo paper with no config or network.
 - Scaffolds a private newsroom repo with durable preferences and setup state.
-- Stages URLs or local files into a dated queue with page estimates.
-- Builds daily editions from configured sources and staged material.
+- Adds URLs or local files to a dated Assignment Board with page estimates.
+- Builds daily editions from configured sources and Assignment Board material.
 - Lets local collector scripts bring in anything else: folders, exports,
   Obsidian vaults, GitHub activity, business systems, research reports, or
   agent-produced files.
@@ -101,11 +101,11 @@ needs your attention, the people trying to reach you, the tabs you saved, the
 feeds you chose, the repos and tickets that changed, and the exports or folders
 your tools already produce. The source layer is intentionally plural: files,
 URLs, folders, inboxes, APIs, local scrapes, and agent-generated reports all
-become staged markdown before the editor decides what deserves ink.
+become source markdown before the editor decides what deserves ink.
 
 Because sources are infinite, the open-source project does not try to ship a
 universal adapter for every platform. It ships the newsroom contract: source
-ledgers, collector scripts, staging, memory, review, and feedback routing. A
+ledgers, collector scripts, Assignment Board intake, memory, review, and feedback routing. A
 reader's private repo decides which collectors matter.
 
 Examples:
@@ -114,16 +114,16 @@ Examples:
 - GitHub activity, Linear tickets, Main Branch updates, or other work systems;
 - Twitter/X, YouTube, TikTok, Instagram, podcast, or browser-history exports;
 - folders, synced files, Obsidian vaults, saved articles, and local reports;
-- one-off URLs staged for tomorrow's paper.
+- one-off URLs added to tomorrow's Assignment Board.
 
 Article extraction is replaceable plumbing. The current engine has registered
 extractors, but the product promise is not "use this scraper." Local extraction
 keeps URL capture on your machine; remote readers or browser/API scrapes should
-be explicit choices recorded in the staged item. The promise is: stage
+be explicit choices recorded in the source item. The promise is: add
 source-backed material honestly, record when extraction was partial or remote,
 and let the editor decide what earns space.
 
-See [docs/collectors.md](docs/collectors.md) for the staging contract.
+See [docs/collectors.md](docs/collectors.md) for the Assignment Board intake contract.
 See [docs/source-conversion.md](docs/source-conversion.md) for small converter
 recipes when the local drop folder contains CSV, JSON, PDFs, vaults, work
 exports, or social/video history.
@@ -175,7 +175,7 @@ by default.
 | Style | What it is |
 | --- | --- |
 | `broadsheet` | The newspaper you read |
-| `brief` | A dense operator brief |
+| `brief` | A compact paper you work through with a pen |
 | `field-card` | A boxed reference card |
 | `zine` | A half-letter photocopier handout |
 
@@ -201,15 +201,13 @@ use `--newsroom <path>` when checking from somewhere else.
 ## Docs
 
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
-- [PRODUCT.md](PRODUCT.md) — canonical product context for brand, users, principles, and anti-references
-- [DESIGN.md](DESIGN.md) — canonical design context for colors, type, components, and guardrails
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
 - [docs/daily-run-contract.md](docs/daily-run-contract.md) — the unattended completion promise for routines and automations
 - [docs/public-visual-model.md](docs/public-visual-model.md) — the website/README visual contract for the paper, Desk Sheet, and private newsroom
 - [docs/product-gap-analysis.md](docs/product-gap-analysis.md) — current gaps between the working product and the paper-first newsroom vision
 - [docs/newsroom-metaphor.md](docs/newsroom-metaphor.md) — the newsroom/pressroom product model, roles, data structures, and prototype surfaces
-- [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes behind the canonical `PRODUCT.md` / `DESIGN.md`
-- [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown
+- [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes behind the public design direction
+- [docs/source-conversion.md](docs/source-conversion.md) — turn exports into Assignment Board material
 - [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
 - [docs/inbox.md](docs/inbox.md) — trusted contributor email intake

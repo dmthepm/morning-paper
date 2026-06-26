@@ -3,8 +3,8 @@ name: edition
 description: >
   Compose, render, and deliver today's Morning Paper edition. Use every
   morning (manual, Claude Code routine, Codex automation, ChatGPT scheduled
-  task, or local fallback), or when the user says "build my paper", "today's
-  edition", "morning brief". Requires setup to have run.
+  task, or local fallback), or when the user says "build my paper" or
+  "today's edition". Requires setup to have run.
 ---
 
 # Morning Paper — The Edition
@@ -39,7 +39,8 @@ and continue from the latest complete artifact instead of starting over. The
 edition folder is the run state; do not invent a separate `RUN_STATE` file or
 state machine. JSON artifacts with `"status": "pending"` are unfinished work.
 If `data/*.tmp` exists, treat collector work as interrupted scratch: rerun the
-collectors cleanly, refresh `collector-report.md` and `queue-snapshot.json`,
+collectors cleanly, refresh `collector-report.md`, `queue-snapshot.json`, and
+`assignment-board.json`,
 then compose.
 
 Required durable artifacts:
@@ -47,8 +48,10 @@ Required durable artifacts:
 - `source-inventory.json` — `morning-paper sources list/check --newsroom .`
   result, including built-in feeds and local collector scripts.
 - `collector-report.md` — commands run, status lines, failures, and skips.
-- `queue-snapshot.json` — `morning-paper queue list --date <date>` after
-  collectors and any pruning.
+- `queue-snapshot.json` — compatibility snapshot from
+  `morning-paper queue list --date <date>` after collectors and any pruning.
+- `assignment-board.json` / `assignment-board.md` — source material projected
+  into newsroom lanes.
 - `draft.md` — current composed edition, written before estimating.
 - `estimate-result.json` — JSON output from
   `morning-paper edition estimate . --date <date>` against the current draft.
@@ -69,24 +72,25 @@ Required durable artifacts:
 ## The pass
 
 1. **Collect.** If the contributor inbox is configured, poll it first:
-   `morning-paper inbox` — mail from the masthead becomes staged items and
+   `morning-paper inbox` — mail from the masthead becomes source material and
    the senders get their confirmations. Then run the user's collectors: the
    scaffolded newsroom has `collectors/run_all.sh` (it runs every collector
-   for the edition date, then prints `morning-paper queue list`); a bare-bones
-   newsroom may have only manually staged material or one simple source bridge.
-   Collectors stage via `morning-paper stage`, so check the staged queue:
+   for the edition date, then prints the Assignment Board); a bare-bones
+   newsroom may have only manually added material or one simple source bridge.
+   Collectors add material via `morning-paper stage`, so check the Assignment Board:
    `morning-paper queue list --date <edition-date>` and inspect uncertain
-   items with `morning-paper queue show <slug> --date <edition-date> --content`.
-   Anything staged via `stage` or the inbox belongs in today's paper unless you
+   items with `morning-paper queue show <item-id> --date <edition-date> --content`.
+   Anything added via `stage` or the inbox belongs in today's paper unless you
    intentionally remove it with `queue remove` (a human or another agent put it
-   there on purpose). Staged items with a `contributor` name render with a FROM
+   there on purpose). Contributor items render with a FROM
    <NAME> kicker — the paper says who sent it in.
    Refresh `source-inventory.json` with `morning-paper sources check --newsroom .`
    when useful, then write `collector-report.md` and
-   `queue-snapshot.json` before composing.
+   `queue-snapshot.json` before composing. Run `morning-paper edition
+   assignment-board . --date <edition-date>` when the board needs refreshing.
    If the host supports subagents and the source surface is broad, split this
    pass: an assignment desk inventories source health, and beat reporters test
-   one source family each. They write staged markdown, source ledgers, or
+   one source family each. They write source markdown, source ledgers, or
    collector notes into the edition workspace. They do not write the final
    paper.
 2. **Read the newsroom.** `specs/*` (section contracts), `EDITORIAL.md`
@@ -101,7 +105,7 @@ Required durable artifacts:
    post, release, thread, or story angle is a hard fail unless it advanced, and
    then say what changed. Read the most recent
    `editions/<date>/operator-answers.md` — triaged owner ink (deep-read picks,
-   queue answers, steers); honor it exactly. Skim `TASTELOG.md` for recent
+   board answers, steers); honor it exactly. Skim `TASTELOG.md` for recent
    accepted/rejected taste changes. If the newsroom keeps an `inbox/scans/`
    directory, check it for untriaged captures before composing.
 3. **Compose** one markdown document (raw HTML allowed; see the engine's
@@ -112,7 +116,7 @@ Required durable artifacts:
    lead with The Read:
    - A front synthesis: the single thing that matters today, as a judgment.
    - The operator/work sections their specs define.
-   - Full reads from the staged queue and configured sources — entire articles,
+   - Full reads from the Assignment Board and configured sources — entire articles,
      typeset; not summaries.
    - Every claim traceable to collected data. A missing source prints
      "not configured". NEVER fabricate a number.
@@ -128,7 +132,7 @@ Required durable artifacts:
      the card's main object. Do not replace every post with agent-written
      Claim/Context boilerplate; selection is the editorial act.
    - Treat social search results as discovery, not print-ready copy. If a
-     social item earns space, hydrate it first: full text, author/date, metrics
+   social item earns space, prove it first: full text, author/date, metrics
      when available, media/artifact links, thread/reply/quote/article context,
      and a clear route (`tweet card`, `thread`, `long read`, `source health`,
      or `cut`). Do not print ellipsis-truncated snippets as whole posts.
@@ -151,7 +155,7 @@ Required durable artifacts:
      the collected data. If no visual earns ink, say why in the handoff.
 4. **The revision pass (mandatory when `preferences/voice.md` exists, recommended always).**
    Load `skills/writing` and run its discipline over the draft: the Strunk
-   per-sentence checks, the AI-tells kill list, the craft that makes a page
+   per-sentence checks, the AI-tells cut list, the craft that makes a page
    worth reading. Aim: same information, markedly fewer words — then spend
    the reclaimed space on MORE useful context, not whitespace. The reader's
    voice preferences in `preferences/voice.md` override every default in
@@ -166,7 +170,7 @@ Required durable artifacts:
    editor can see how many real items fit before locking the whole edition. If
    you edit `draft.md` after estimating, rerun the estimate before rendering.
 6. **Render.** `morning-paper render draft.md --style <their style> --palette
-   <their palette> --date <today> --slug edition`. Save the command's JSON as
+   <their palette> --date <today> --id edition`. Save the command's JSON as
    `render-result.json`.
 7. **Visual QA.** Run
    `morning-paper edition visual-qa . --date <edition-date>` after render. It
@@ -207,7 +211,10 @@ Required durable artifacts:
    - `notes` → deliver, but include the short final-editor note in the handoff.
    - `review` → revise, re-render, re-review, and run final-editor again; or
      record the explicit editorial rationale for shipping despite the flag.
-10. **Deliver.** Their saved print command (duplex flag and all), or just hand
+10. **Run ticket.** Run `morning-paper edition status . --date <edition-date>`
+   and save its JSON/markdown. It maps the whole daily run to `complete`,
+   `complete_with_notes`, or `blocked`.
+11. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. If `preferences/desk-sheet.yaml` enables the separate
    desk sheet, render or hand back `desk-sheet.md` with the edition; the
    default is a No. 10-style writing sheet with generous note space, a small
@@ -257,8 +264,8 @@ Read the paper with a pen. Reply in chat or mark this file up.
 - Which note should become a durable rule in EDITORIAL.md, VISUALS.md,
   SOURCES.md, DELIVERY.md, specs/, preferences/, or TASTELOG.md?
 
-## Print Tomorrow
-- URLs or files to stage for tomorrow's paper.
+## Tomorrow's Assignment Board
+- URLs or files to add to tomorrow's Assignment Board.
 ```
 
 ## Voice
@@ -269,12 +276,13 @@ unanswered, say so once, plainly — the paper is allowed to notice.
 
 ## Return path
 
-If the user dictates or replies with reactions ("more like this", "kill
+If the user dictates or replies with reactions ("more like this", "cut
 section X", "that chart worked", "email this too", "print <url> tomorrow"):
 read `feedback-plan.md`, choose the smallest durable route, then use
 `morning-paper edition apply-feedback . --date <edition-date> --route
 editorial|voice|visuals|sources|prior|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
 "<why it should change tomorrow>"` for stable feedback. It updates the target
 durable file, appends `TASTELOG.md`, and writes the "Applied Feedback" note.
-Use `morning-paper stage <url>` for anything they asked to read tomorrow.
+Use `morning-paper stage <url>` for anything they asked to read tomorrow; it
+adds the item to tomorrow's Assignment Board.
 Tomorrow's editor reads what you wrote today.

@@ -74,6 +74,7 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(payload["count"], 4)
         self.assertEqual(payload["source_model"]["posture"], "reader_stack_first")
         self.assertIn("rss_or_feed_url", payload["source_model"]["entry_points"])
+        self.assertIn("assignment_board", payload["source_model"]["entry_points"])
         self.assertNotIn("starter_inputs", payload["source_model"])
         self.assertIn("local_drop", payload["source_model"]["reader_owned_inputs"])
         self.assertIn("work_systems", payload["source_model"]["reader_owned_inputs"])
@@ -85,6 +86,7 @@ class SourcesCliTest(unittest.TestCase):
         self.assertEqual(payload["sources"][1]["role"], "reader_owned")
         self.assertEqual(payload["sources"][1]["status"], "configured")
         self.assertIn("morning-paper stage", payload["collector_contract"]["command"])
+        self.assertIn("Assignment Board", payload["collector_contract"]["meaning"])
         self.assertIn("Pass --newsroom", " ".join(payload["next_actions"]))
 
     def test_sources_list_suggests_whole_source_stack_when_no_feeds(self) -> None:

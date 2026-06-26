@@ -266,7 +266,7 @@ def _source_next_actions(sources: list[dict[str, object]], newsroom_info: dict[s
         actions.append(str(local_drop.get("next_action") or "Put local files in the newsroom inbox."))
         if int(local_drop.get("unsupported_count") or 0) > 0:
             actions.append(
-                "Unsupported local-drop files need a converter collector before they will be staged; start from collectors/CONVERTERS.md."
+                "Unsupported local-drop files need a converter collector before they can reach the Assignment Board; start from collectors/CONVERTERS.md."
             )
     collectors = newsroom_info.get("collectors") if isinstance(newsroom_info.get("collectors"), list) else []
     if not collectors:
@@ -350,11 +350,11 @@ def source_inventory(
         "count": len(sources),
         "source_model": {
             "posture": "reader_stack_first",
-            "entry_points": ["local_drop", "stage", "rss_or_feed_url", "inbox"],
+            "entry_points": ["local_drop", "assignment_board", "rss_or_feed_url", "inbox"],
             "reader_owned_inputs": [
                 "local_drop",
                 "collectors",
-                "stage",
+                "assignment_board",
                 "inbox",
                 "exports",
                 "work_systems",
@@ -364,7 +364,7 @@ def source_inventory(
         },
         "collector_contract": {
             "command": "morning-paper stage <url|file> --date YYYY-MM-DD",
-            "meaning": "anything not built in should arrive as staged markdown for a specific edition date",
+            "meaning": "anything not built in should arrive as source material on the Assignment Board for a specific edition date",
             "converter_playbook": (
                 "collectors/CONVERTERS.md in a scaffolded private newsroom, plus "
                 "docs/source-conversion.md in the engine repo"

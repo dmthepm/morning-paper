@@ -39,7 +39,7 @@ STYLES: dict[str, StylePack] = {
     "brief": StylePack(
         name="brief",
         css_resource="styles/brief.css",
-        description="The operator brief you work through with a pen: dense Courier, queue rows, status cards, link-card grid, no forced page breaks.",
+        description="A compact paper you work through with a pen: dense Courier, Assignment Board rows, status cards, link-card grid, no forced page breaks.",
     ),
     "field-card": StylePack(
         name="field-card",

@@ -1,13 +1,13 @@
-"""Tomorrow's-brief staging: the queue any agent can feed.
+"""Assignment Board intake for tomorrow's paper.
 
-`morning-paper stage <url|file>` drops material into a date-keyed staging
-directory and answers with an honest page estimate, so an agent anywhere can
-reply "that adds ~5 pages; it's in the queue for the editor." The editor's
-composition pass reads the same queue. File-first, no database.
+`morning-paper stage <url|file>` drops source material into date-keyed storage
+and answers with an honest page estimate, so an agent anywhere can reply "that
+adds ~5 pages to tomorrow's Assignment Board." The editor's composition pass
+reads the same storage. File-first, no database.
 
 Layout:
     {outputs.directory}/staging/{date}/queue.json     — item metadata
-    {outputs.directory}/staging/{date}/{slug}.md      — staged markdown
+    {outputs.directory}/staging/{date}/{slug}.md      — internal item-id markdown
 """
 
 from __future__ import annotations
