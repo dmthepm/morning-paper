@@ -13,11 +13,11 @@ lands in the surface the reader will actually use.
 ## The Four Layers
 
 1. **Skills** tell agents how to work: set up the newsroom, build an edition,
-   revise the writing, and eventually split into source, visual, feedback, and
-   delivery desks.
-2. **The CLI** does repeatable work: install checks, source inventory, staging,
-   queue inspection, page estimates, rendering, review, visual QA, final proof,
-   feedback routing, and local scheduling fallback.
+   revise the writing, and assign newsroom roles when a run needs separate
+   context windows.
+2. **The CLI** does repeatable work: install checks, source inventory,
+   Assignment Board intake, page estimates, rendering, review, visual QA, final
+   proof, run-ticket status, feedback routing, and local scheduling fallback.
 3. **Dependencies** are local capabilities the reader or host agent can use:
    browser tools, scrape/export tools, `gh`, source CLIs, PDF/image tools,
    Telegram/GitHub delivery scripts, and any private collector dependencies.
@@ -130,7 +130,7 @@ A high-quality edition can use multiple context windows when the host supports
 them:
 
 - **Assignment desk:** inspect source inventory, collector output, local drops,
-  and data folders; report what is fresh, missing, stale, or worth staging.
+  and data folders; report what is fresh, missing, stale, or worth assigning.
 - **Beat reporters:** investigate one source family each, such as X/social,
   work systems, saved reads, or local notes. They write source-backed markdown
   or collector notes, not final prose.
@@ -144,8 +144,9 @@ them:
   catches layout, source, budget, and delivery failures before the reader sees
   them.
 
-Subagents should write into the edition folder or staging queue. The main
-editor remains responsible for the final paper.
+Subagents should write role handoffs and source notes into the edition folder;
+source material belongs on the Assignment Board. The main editor remains
+responsible for the final paper.
 
 ## Budget
 
@@ -160,9 +161,11 @@ The edition skill should reason in budgets:
   becomes only a source-health line;
 - research budget: how much time/tooling to spend before composing.
 
-`morning-paper edition estimate`, `morning-paper queue`, render output, review,
-and visual QA are the current tools. Future CLI work should make rendered
-visual/page-budget feedback easier for agents to use before the final render.
+`morning-paper edition estimate`, `morning-paper edition assignment-board`,
+`morning-paper edition status`, render output, review, and visual QA are the
+current tools. `morning-paper queue` remains the compatibility view of staged
+Assignment Board material. Future CLI work should make rendered visual and
+page-budget feedback easier for agents to use before the final render.
 
 ## Memory And Feedback
 

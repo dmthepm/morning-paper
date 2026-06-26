@@ -15,8 +15,9 @@ For the public project, a run is **complete** when all of these are true:
 
 1. Sources were checked or explicitly reported as not configured.
 2. Collectors ran, skipped honestly, or wrote source-health notes.
-3. Candidates were staged, cut, held, or recorded as absent.
-4. The edition was composed from the newsroom's files and current queue.
+3. Candidates were assigned, cut, held, or recorded as absent.
+4. The edition was composed from the newsroom's files and current Assignment
+   Board.
 5. The desk sheet was included when `preferences/desk-sheet.yaml` enables it.
 6. `morning-paper edition estimate` ran against the current draft.
 7. The PDF rendered successfully.
@@ -26,11 +27,12 @@ For the public project, a run is **complete** when all of these are true:
 10. `morning-paper edition final-editor` ran and returned `clean` or `notes`,
     or the agent recorded a clear rationale for shipping despite a review flag.
 11. Memory and ledgers were updated enough to prevent obvious repeats tomorrow.
-12. The edition folder contains the durable artifacts another agent needs to
-    resume: source inventory, collector report, queue snapshot, draft, estimate,
-    render result, review, visual QA, final-editor files, feedback plan, and
-    operator answers.
-13. Delivery was attempted only where configured, and the final handoff names
+12. `morning-paper edition status` wrote a current run ticket.
+13. The edition folder contains the durable artifacts another agent needs to
+    resume: source inventory, collector report, Assignment Board, draft,
+    estimate, render result, review, visual QA, final-editor files, run ticket,
+    feedback plan, and operator answers.
+14. Delivery was attempted only where configured, and the final handoff names
     the PDF path plus anything that needs attention.
 
 The default status words are:

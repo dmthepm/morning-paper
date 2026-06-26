@@ -3,22 +3,22 @@
 
   <h1>Morning Paper</h1>
 
-  <p><strong>Own your algorithm. Your personal newsroom.</strong></p>
+  <p><strong>A real paper every morning, from your private newsroom.</strong></p>
 </div>
 
 ---
 
-Your feeds already trained an algorithm you cannot see. Morning Paper helps you
-build one you can inspect, edit, and print.
+Morning Paper turns sources and preferences you own into a finite daily edition:
+calm, source-backed, print-ready, and easy to mark up.
 
-An agent composes a newspaper from sources and preferences you own as files.
-The `morning-paper` CLI renders it to a print-ready PDF. The product is the
-paper on the desk: calm, finite, source-backed, and easy to mark up.
+An agent composes the paper. The `morning-paper` CLI renders it to PDF. Your
+private newsroom is the folder where sources, taste, delivery rules, memory,
+and feedback live as files.
 
-It is not a summarizer for a fixed feed. It is a private newsroom loop:
-collect candidates from many places, remember what you have already seen,
-filter repeats and low-signal noise, score what deserves attention against
-your taste, then print a finite edition you can correct.
+It is not a summarizer for a fixed feed. It is an owned algorithm you can
+inspect: collect candidates from many places, remember what you have already
+seen, filter repeats and low-signal noise, judge what deserves attention
+against your taste, then print an edition you can correct.
 
 It gets better the way an editor gets better. You read the paper, give notes in
 natural language, and the agent turns stable feedback into durable newsroom
@@ -138,7 +138,7 @@ Copy one of these into the host:
 
 ```text
 Set up a Claude Code routine that builds my Morning Paper each weekday morning.
-Use the Morning Paper edition skill in my private newsroom and follow the Daily
+Use my private newsroom to make today's paper and follow the Daily
 Run Contract: check sources, compose, render the PDF, review, run final-editor,
 update memory, open or deliver it the way my DELIVERY.md says, and tell me only
 if the run failed or needs my attention. If you are in the Claude Code CLI, use
@@ -147,15 +147,15 @@ if the run failed or needs my attention. If you are in the Claude Code CLI, use
 
 ```text
 Set up a Codex automation that builds my Morning Paper each weekday morning.
-Use this project/newsroom, run the Morning Paper edition workflow through the
-Daily Run Contract, render the PDF, update memory, and report the PDF path plus
-anything that needs my attention.
+Use this project/newsroom to build today's edition through the Daily Run
+Contract, render the PDF, update memory, and report the PDF path plus anything
+that needs my attention.
 ```
 
 ```text
 Set up a scheduled task for my Morning Paper. Each weekday morning, check
-whether today's paper was produced or remind me to run the Morning Paper
-edition workflow in my newsroom. If you have an approved way to access the
+whether today's paper was produced or remind me to make today's paper in my
+newsroom. If you have an approved way to access the
 newsroom runner, use it; otherwise do not pretend you rendered the PDF.
 ```
 

@@ -4,9 +4,10 @@ description: >
   Orchestrate today's Morning Paper edition end to end. Use every morning
   (manual, Claude Code routine, Codex automation, ChatGPT scheduled task, or
   local fallback), or when the user says "build my paper", "make today's
-  paper", "run the paper", or "today's edition". Prepare the edition workspace,
-  assign newsroom roles when useful, collect sources, compose, render, review,
-  prove, deliver, and route feedback. Requires setup to have run.
+  paper", "produce today's Morning Paper", "print today's paper", or "today's
+  edition". Prepare the edition workspace, assign newsroom roles when useful,
+  collect sources, compose, render, review, prove, deliver, and route feedback.
+  Requires setup to have run.
 ---
 
 # Morning Paper — The Edition

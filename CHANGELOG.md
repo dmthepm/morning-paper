@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+- Reframed public copy around "a real paper every morning" and "make today's
+  paper" while keeping the public skill names `setup`, `edition`, and
+  `writing` stable.
+- Archived release-readiness notes, exploratory brand/visual notes, and the
+  pre-0.8.9 gap audit under `docs/archive/`.
+- Replaced the long friend-ready release notebook with a shorter current
+  newsroom contract.
+
 ## [0.8.9] - 2026-06-26
 
 ### Added

@@ -29,6 +29,10 @@ def _pyproject_field(key: str) -> str:
     return match.group(1)
 
 
+def _one_line(text: str) -> str:
+    return " ".join(text.split())
+
+
 def test_friend_install_path_uses_the_same_print_proof_everywhere() -> None:
     readme = _read("README.md")
     agents = _read("AGENTS.md")
@@ -100,7 +104,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     changelog = _read("CHANGELOG.md")
     readiness = _read("docs/friend-ready-newsroom.md")
     version = _pyproject_field("version")
-    release_readiness = _read(f"docs/release-readiness-{version}.md")
+    release_readiness = _read(f"docs/archive/releases/release-readiness-{version}.md")
     roadmap = _read("ROADMAP.md")
     skill_suite = _read("docs/newsroom-skill-suite.md")
     install_smoke = _read("scripts/install_smoke.py")
@@ -111,8 +115,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     codex_validator = _read("scripts/validate_codex_plugin.py")
 
     summary = _pyproject_field("description")
-    assert summary.startswith("Own your algorithm")
-    assert "personal newsroom" in summary
+    assert summary.startswith("A real paper every morning")
+    assert "private newsroom" in summary
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
     assert "Friend-ready personal newsroom setup" in changelog
@@ -124,11 +128,11 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert f"`v{version}`" in release_readiness
     assert "Status: published and verified." in release_readiness or "Status: candidate, ready to tag." in release_readiness
     assert "Clean Python 3.13 venv installed" in release_readiness
-    assert f"same {version} semver" in readiness
+    assert f"Current release: {version}." in readiness
     assert "live 0.7.1 demo" not in readiness
-    assert "historical live-host evidence" in readiness
+    assert "docs/archive/" in readiness
     assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
-    assert "skills as newsroom desks" in readiness
+    assert "public skill surface is intentionally small" in readiness
     assert "Morning Paper skills are newsroom desks" in skill_suite
     assert "0.8.x ships exactly three plugin skills" in skill_suite
     assert "This section is a design direction, not shipped surface" in skill_suite
@@ -142,7 +146,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "feedback_rules_carried" in five_loop_smoke
     assert "reprinted old read title" in five_loop_smoke
     assert "quality_notes" in five_loop_smoke
-    assert "setup_scaffold_smoke.py --isolated" in readiness
+    assert "morning-paper doctor --strict" in readiness
     assert "scripts/release_candidate_check.py --outdir" in release_readiness
     assert "--install-check" in release_readiness
     assert "Latest full local verification" in release_readiness
@@ -155,8 +159,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     for manifest in (claude_manifest, codex_manifest):
         description = manifest["description"]
         assert manifest["version"] == version
-        assert "personal newsroom" in description
-        assert "preferences you own as files" in description
+        assert "real paper every morning" in description
+        assert "private newsroom" in description
 
 
 def test_product_and_design_context_remain_active_design_contracts() -> None:
@@ -164,14 +168,13 @@ def test_product_and_design_context_remain_active_design_contracts() -> None:
     product = _read("PRODUCT.md")
     design = _read("DESIGN.md")
     skill_architecture = _read("docs/newsroom-skill-suite.md")
-    brand_scout = _read("docs/brand-scout.md")
 
     assert "[PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md)" in readme
     assert "PRODUCT.md and DESIGN.md are internal design/product context" in product
     assert "friend-ready newsroom contract and `ROLES.md`" in product
     assert "`PRODUCT.md` and `DESIGN.md` guide design surfaces and prototypes" in design
     assert "root `PRODUCT.md` and `DESIGN.md`" in skill_architecture
-    assert "stable\nproduct/design context belongs in `PRODUCT.md` and `DESIGN.md`" in brand_scout
+    assert "A real paper every morning" in readme
 
 
 def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
@@ -186,8 +189,8 @@ def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
     assert "mp-spark`" in composing and "90 values" in composing
     assert "`visual-provenance`" in composing
     assert "check_visual_provenance" in reviewers
-    assert "cap print" in spec
-    assert "overflow notes" in spec
+    assert "print-ready" in spec
+    assert "visual QA" in spec
 
 
 def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
@@ -270,7 +273,7 @@ def test_recurrence_guidance_prefers_host_native_primitives() -> None:
     assert "do not pretend you rendered the PDF" in readme
     assert "may not have access to project files" in readme
     assert "should not claim it rendered a local PDF" in composing
-    assert "Codex automation environment" in setup_skill
+    assert "Codex automation environment" in _one_line(setup_skill)
     assert "with a schedule trigger" in setup_skill
     assert "/schedule" in setup_skill
     assert "project files" in setup_skill
@@ -301,7 +304,7 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     assert '"feedparser"' in release_check
     assert "`doctor --json` reports every core source/parser/render dependency version" in architecture
     assert "Trafilatura is currently the" in readiness
-    assert "local article parser behind `article_extractor: local`" in readiness
+    assert "local article parser behind `article_extractor: local`" in _one_line(readiness)
     assert "`>=2.1,<3`" in readiness
     assert "no longer escalates" in changelog
     assert "Jina remote" in changelog

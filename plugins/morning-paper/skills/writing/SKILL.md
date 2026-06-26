@@ -4,7 +4,8 @@ description: >
   Morning Paper copy-desk pass for prose the reader will hold. Use while
   composing or revising an edition, Desk Sheet, launch copy, docs, or any
   source-backed paper text that needs to become tighter, clearer, more honest,
-  and less generic. Compose for substance first; then run this pass.
+  and less generic. Use when the user says "revise this like the paper."
+  Compose for substance first; then run this pass.
 ---
 
 # Morning Paper — The Writing Pass

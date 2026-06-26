@@ -1,6 +1,6 @@
 # The contributor inbox — "the masthead"
 
-People you trust email you articles; they land in tomorrow's staging queue;
+People you trust email you articles; they land on tomorrow's Assignment Board;
 the sender gets a warm confirmation back. Your spouse, your co-founder, your
 group chat's designated finder-of-things — they become contributors to your
 paper, and the paper says so in print: staged contributor items carry a
