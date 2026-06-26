@@ -1,13 +1,13 @@
 # Morning Paper 0.8.8 Release Readiness
 
-Status: published and verified.
+Status: local candidate verified; not published from this repository.
 
 Date: 2026-06-26
 
 ## Release Line
 
 - Package version: `0.8.8`
-- Published tag: `v0.8.8`
+- Candidate tag: `v0.8.8`
 
 0.8.8 is the current friend-ready baseline before the Assignment Board and
 run-ticket cleanup. It keeps the single-source skill contract and the
@@ -38,10 +38,7 @@ Latest full local verification on 2026-06-26 on current `main` HEAD:
 - `morning-paper doctor --strict --json` reported `status: ok`.
 - Render self-test passed and demo PDFs rendered from both artifacts.
 
-Published artifact verification:
+External publish verification was not completed for this candidate:
 
-- PyPI JSON reports `0.8.8`.
-- Clean Python 3.13 venv installed `morning-paper[pretty]==0.8.8` from PyPI.
-- Installed binary prints `0.8.8`.
-- `morning-paper doctor --strict --json` reports `status: ok`.
-- `morning-paper demo --output <tmp>/demo.pdf` renders a real PDF.
+- PyPI/tag verification is not claimed here.
+- Use the next release-readiness file for the published line.

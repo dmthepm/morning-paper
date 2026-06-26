@@ -117,9 +117,9 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert f"## [{version}]" in changelog
     assert "Friend-ready personal newsroom setup" in changelog
     assert f"release: {version}" in readiness
-    assert f"`morning-paper` {version} is live on PyPI" in readiness
-    assert f"Published tag: `v{version}`" in release_readiness
-    assert "Status: published and verified." in release_readiness
+    assert f"This tree is prepared as release: {version}" in readiness
+    assert f"`v{version}`" in release_readiness
+    assert "Status: published and verified." in release_readiness or "Status: candidate, ready to tag." in release_readiness
     assert "Clean Python 3.13 venv installed" in release_readiness
     assert f"same {version} semver" in readiness
     assert "live 0.7.1 demo" not in readiness
@@ -140,7 +140,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "reprinted old read title" in five_loop_smoke
     assert "quality_notes" in five_loop_smoke
     assert "setup_scaffold_smoke.py --isolated" in readiness
-    assert "/tmp/morning-paper-rc-final-local" in release_readiness
+    assert "scripts/release_candidate_check.py --outdir" in release_readiness
+    assert "--install-check" in release_readiness
     assert "Latest full local verification" in release_readiness
     assert "current `main` HEAD" in release_readiness
     assert "edition apply-feedback" in readiness

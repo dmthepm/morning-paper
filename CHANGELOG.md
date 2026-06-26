@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.9] - 2026-06-26
+
+### Added
+- Added the public newsroom role model: `ROLES.md` plus role references for
+  orchestrator, assignment editor, beat reporters, editor, copy desk, art desk,
+  producer, and taste editor.
+- `edition prepare` now scaffolds `editions/<date>/desks/README.md`, the
+  handoff contract for role artifacts in each daily run.
+- `edition status` now records desk role artifacts in the run ticket, validates
+  their required YAML frontmatter, and blocks the run when a role artifact
+  reports `status: blocked`.
+
+### Changed
+- The edition skill now starts from the orchestrator role, keeps the public
+  skill surface at `setup`, `edition`, and `writing`, and treats newsroom roles
+  as assignable desks inside the edition workflow.
+- `PRODUCT.md` and `DESIGN.md` are now explicitly internal product/design
+  context for shaping surfaces, while `docs/friend-ready-newsroom.md` and
+  `ROLES.md` are the operating contracts for running the paper.
+- Renamed the old generic readiness/gap docs to newsroom-native contracts:
+  `docs/friend-ready-newsroom.md` and `docs/newsroom-gap-audit.md`.
+
 ## [0.8.8] - 2026-06-26
 
 ### Added
@@ -336,7 +358,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Docs tightened and re-baselined: `architecture-decisions.md` §8 (CLI surface refreshed to the real stable verbs), §11/§12 (the 0.4.2 Jina-to-local amendments folded into the base text so the doc stops contradicting itself — local is the default), §16 (skill-distribution path corrected to `skills/`); `docs/collectors.md` fixed the broken `/dev/stdin` collector example (the CLI requires a real file) and points at the scaffolded example collectors; ROADMAP re-baselined through 0.7.0 with the stale `v0.4` "Next" regression removed; the duplicate `### Added` block under 0.4.0 merged
 
 ### Removed
-- The thin shadowing skill stub `.claude/skills/morning-paper/SKILL.md` (no frontmatter, never shipped through the plugin loader, claimed jina was the default, and shadowed the real `setup`/`edition`/`writing` skills during local dev) and the now-cut `docs/product-spec.md` (Devon's private brief spec) and `docs/qa-contract.md` (superseded by the `review` verb)
+- The thin shadowing skill stub `.claude/skills/morning-paper/SKILL.md` (no frontmatter, never shipped through the plugin loader, claimed jina was the default, and shadowed the real `setup`/`edition`/`writing` skills during local dev) and the now-cut `docs/product-spec.md` (a private brief spec) and `docs/qa-contract.md` (superseded by the `review` verb)
 
 ## [0.6.1] - 2026-06-22
 

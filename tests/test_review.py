@@ -197,7 +197,7 @@ class DeterministicChecksTest(unittest.TestCase):
         # the 0.6.0 false positive: a department/deck title is long BY DESIGN
         # (a multi-sentence summary). It must NOT trip the two LENGTH checks.
         long_deck = (
-            "Devon's two same-day Monologue notes plus fourteen newsroom commits "
+            "The reader's two same-day field notes plus fourteen newsroom commits "
             "make the lead write itself this morning, and the gap, the connection, "
             "the drift, and the move are all present and mutually reinforcing today."
         )

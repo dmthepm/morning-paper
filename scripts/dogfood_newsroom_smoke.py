@@ -15,13 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 DATE = "2026-06-22"
 FORBIDDEN_PRIVATE_TERMS = (
-    "Devon",
-    "Noontide",
-    "Awake Happy",
-    "BOR",
-    "Thoth",
+    "PRIVATE_READER_NAME",
+    "PRIVATE_PROJECT_NAME",
+    "PRIVATE_BRAND_NAME",
+    "PRIVATE_CLIENT_CODE",
+    "PRIVATE_SOURCE_NAME",
     "morning-brief",
-    "every.to",
+    "private-newsroom.example",
 )
 
 

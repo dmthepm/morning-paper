@@ -79,7 +79,7 @@ python scripts/fresh_friend_smoke.py
 python scripts/install_smoke.py
 python scripts/host_plugin_smoke.py
 python scripts/validate_codex_plugin.py
-claude plugin validate --strict /Users/devonmeadows/Documents/GitHub/morning-paper
+claude plugin validate --strict <repo>
 python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-rc-final-local --install-check
 ```
 

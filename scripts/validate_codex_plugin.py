@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Structurally validate the Codex plugin + marketplace surface.
 
-Mirrors the rules the official Codex `plugin-creator` validator enforces
-(``~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py``) so CI
-catches drift without needing Codex installed on the runner:
+Mirrors the public plugin contract so CI catches drift without needing a host
+runtime installed on the runner:
 
 - ``plugins/morning-paper/.codex-plugin/plugin.json`` exists, is a JSON object,
   carries real ``name`` / ``version`` (strict semver) / ``description`` /

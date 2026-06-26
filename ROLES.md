@@ -5,10 +5,10 @@ newsroom. The host agent is the orchestrator. It assigns work, calls the CLI,
 keeps the run moving, and decides whether to use separate context windows,
 subagents, profiles, or a single sequential pass.
 
-The roles below are portable. Codex may call them subagents, Claude Code may
-call them subagents, Hermes may map them to profiles or models. The contract is
-the same: each role reads the shared edition folder, does one job, and leaves
-one markdown handoff in `editions/<date>/desks/`.
+The roles below are portable. One host may call them subagents, another may map
+them to profiles, models, or plain sequential passes. The contract is the same:
+each role reads the shared edition folder, does one job, and leaves one
+markdown handoff in `editions/<date>/desks/`.
 
 ## Role Order
 

@@ -17,8 +17,8 @@ skill. The reader-facing path stays simple:
 
 The agent can still run a full newsroom behind those prompts. The richer
 structure lives in role references, durable edition artifacts, and CLI checks.
-That lets Codex, Claude Code, Hermes, or another host map the same work to
-subagents, profiles, models, or a single sequential run.
+That lets Codex, Claude Code, or another host map the same work to subagents,
+profiles, models, or a single sequential run.
 
 The product split stays fixed:
 
@@ -100,7 +100,7 @@ Likely future splits, if evals justify them:
 
 ## Skill Shape
 
-Follow the skill-creator guidance:
+Follow the skill-maintenance guidance:
 
 - Keep SKILL.md bodies lean. Move long examples and variant-specific detail to
   references or docs that the skill points at.

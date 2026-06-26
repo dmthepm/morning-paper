@@ -1,9 +1,9 @@
 # Friend-Ready Newsroom Contract
 
 Status: shipped source of truth for the 0.8 friend-ready newsroom pass.
-Current release: 0.8.8.
+Current release: 0.8.9.
 
-release: 0.8.8
+release: 0.8.9
 
 This file is the operating contract for the friend-ready paper workflow.
 Brand/product surface direction lives in root `PRODUCT.md` and `DESIGN.md`;
@@ -28,11 +28,11 @@ The paper promise stays narrow:
 
 ## Current Truth
 
-- `morning-paper` 0.8.8 is live on PyPI and tagged as `v0.8.8`; the repo
-  carries one skill tree for Claude Code and Codex.
+- This tree is prepared as release: 0.8.9; after tag/publish verification, the
+  repo carries one skill tree for Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
-  host manifests carry the same 0.8.8 semver.
+  host manifests carry the same 0.8.9 semver.
 - The public README now has the owned-algorithm mission and a copyable agent
   install prompt.
 - The setup skill writes a real newsroom scaffold instead of empty folders and
