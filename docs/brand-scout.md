@@ -1,18 +1,18 @@
 # Brand Scout
 
-Status: exploratory. This is not canonical Impeccable project context. Run the
-official `/impeccable init` flow before writing `PRODUCT.md` or `DESIGN.md`.
+Status: exploratory. This is not canonical project context. The durable public
+context lives in `PRODUCT.md` and `DESIGN.md`.
 
-## Protocol
+## Product-Design Workflow
 
-Impeccable v3 expects this order:
+Use this order when evolving the brand or a new surface:
 
-1. `/impeccable init` to establish `PRODUCT.md`.
-2. `/impeccable document` to establish `DESIGN.md`.
-3. `/impeccable shape <surface>` to create a confirmed brief.
-4. `/impeccable craft <surface>` to build after shape.
-5. `/impeccable critique`, `audit`, `polish`, `layout`, `delight`, `typeset`,
-   `colorize`, `live`, and related commands to iterate.
+1. Establish or update `PRODUCT.md`.
+2. Establish or update `DESIGN.md`.
+3. Shape a specific surface as a confirmed brief.
+4. Build only after the shape is clear.
+5. Critique, audit, polish, layout, delight, typeset, and iterate from the
+   rendered surface rather than from abstract taste.
 
 For this project, brand work should use subagents for scouting, but canonical
 context files should wait for user confirmation.
@@ -88,7 +88,7 @@ Typography:
 
 - sturdy grotesk plus a workhorse text face;
 - avoid Newsreader, Fraunces, IBM Plex, Inter, Space Mono, Cormorant, and other
-  Impeccable reflex-reject defaults;
+  saturated default type choices;
 - look toward job-ticket, pressroom, civic-print, or field-proof specimens.
 
 Imagery:
