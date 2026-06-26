@@ -19,6 +19,14 @@ reader-owned newsroom, a host-native routine, CLI-backed proofs, and enough
 context windows to report, edit, proof, deliver, and learn taste without relying
 on chat memory.
 
+The unattended completion promise is in `docs/daily-run-contract.md`. Keep
+working until the run is `complete`, `complete_with_notes`, or `blocked`. Do
+not stop for ordinary source gaps, thin desks, or editorial uncertainty: record
+source-health notes, cut/hold weak material, and ship the best honest paper.
+Stop only for hard blockers such as no valid newsroom, no writable edition
+folder, broken render/PDF stack, unreadable PDF, privacy/sensitivity conflict,
+or final-editor artifacts that cannot be repaired.
+
 Resumability rule: before substantive work, run:
 
 ```bash
@@ -210,6 +218,15 @@ Required durable artifacts:
    change visually, add as a source, change about delivery, save as taste, or
    print tomorrow. Then stop. Do not run `morning-paper edition prepare` for
    tomorrow or start tomorrow's edition unless the reader explicitly asks.
+
+Default done status:
+
+- `complete` — sources checked, edition rendered, review/visual QA/final-editor
+  ran, ledgers updated, and configured delivery succeeded or was not configured.
+- `complete_with_notes` — the PDF is readable and delivered or handed back, but
+  source gaps, review nudges, visual notes, or delivery attempts need attention.
+- `blocked` — no readable, honest edition can be produced without reader action
+  or environment repair.
 
 Write `operator-answers.md` like this:
 

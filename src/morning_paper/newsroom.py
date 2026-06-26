@@ -182,6 +182,14 @@ quote, source, or trend. If a collector returns nothing, say so plainly.
 
 Replace this with the saved print command, or keep "hand me the PDF path".
 
+## Done Contract
+
+Use Morning Paper's Daily Run Contract unless this newsroom overrides it:
+sources checked, collectors reported honestly, edition composed, desk sheet
+included when enabled, PDF rendered, review/visual QA/final-editor run, memory
+updated, and configured delivery attempted. Source failures usually become
+source-health notes, not blockers.
+
 ## Feedback loop
 
 When the reader says "more like this", "less of that", "too busy", "email it
@@ -454,6 +462,21 @@ Record preferences here before wiring scripts:
 - "Read later" staging for links or files that should enter a future edition.
 
 Credentials, bot tokens, and deploy secrets stay outside the repo.
+
+## Done Contract Overrides
+
+Default: follow Morning Paper's Daily Run Contract.
+
+- Required delivery attempts: none beyond reporting the PDF path.
+- Required source desks: none. Failed sources become source-health notes unless
+  this file says otherwise.
+- Desk sheet: follow `preferences/desk-sheet.yaml`.
+- Hard blockers: invalid newsroom, unwritable edition folder, broken renderer,
+  unreadable PDF, privacy/sensitivity conflict, or final-editor artifacts that
+  cannot be repaired.
+
+If you require Preview open, Telegram delivery, GitHub artifact links, printer
+output, or a mandatory source desk, write that here explicitly.
 
 ## Feedback
 

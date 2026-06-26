@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-06-26
+
+### Added
+- Added `docs/daily-run-contract.md`, the unattended completion promise for
+  routines and automations. It defines `complete`, `complete_with_notes`, and
+  `blocked`, plus graceful source-failure behavior, hard blockers, per-newsroom
+  overrides, the Assignment Board role, and the default "no external action
+  outside the paper" boundary.
+- Edition and setup skills now point at the Daily Run Contract so fresh agents
+  keep working until the run is complete, complete with notes, or truly blocked.
+- New scaffolded newsrooms include Done Contract language in `CLAUDE.md` and
+  explicit Done Contract override fields in `DELIVERY.md`.
+
+### Fixed
+- Re-synchronized the runtime `__version__` with the package and plugin
+  manifests.
+
 ## [0.8.7] - 2026-06-25
 
 ### Added

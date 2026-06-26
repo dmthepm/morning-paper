@@ -29,6 +29,12 @@ The product vision is the private newsroom operating model in
 files; agents collect, report, edit, proof, deliver, and evolve taste; the CLI
 supplies deterministic tools. Keep setup pointed at that model.
 
+The daily routine's default completion promise is in
+`docs/daily-run-contract.md`. Setup should capture only the reader-specific
+overrides: whether a desk sheet is enabled, which delivery attempts are
+required, which sources are mandatory, and what should count as a blocker in
+their private `DELIVERY.md`.
+
 Resumability rule: as soon as the newsroom path exists, create and keep current
 `setup-state.json` and `SETUP.md`. After every major step, update them before
 continuing. If setup resumes after compaction or a fresh agent picks it up,

@@ -138,16 +138,18 @@ Copy one of these into the host:
 
 ```text
 Set up a Claude Code routine that builds my Morning Paper each weekday morning.
-Use the Morning Paper edition skill in my private newsroom, render the PDF, open
-or deliver it the way my DELIVERY.md says, and tell me only if the run failed or
-needs my attention. If you are in the Claude Code CLI, use /schedule to create
-the routine.
+Use the Morning Paper edition skill in my private newsroom and follow the Daily
+Run Contract: check sources, compose, render the PDF, review, run final-editor,
+update memory, open or deliver it the way my DELIVERY.md says, and tell me only
+if the run failed or needs my attention. If you are in the Claude Code CLI, use
+/schedule to create the routine.
 ```
 
 ```text
 Set up a Codex automation that builds my Morning Paper each weekday morning.
-Use this project/newsroom, run the Morning Paper edition workflow, render the
-PDF, and report the PDF path plus anything that needs my attention.
+Use this project/newsroom, run the Morning Paper edition workflow through the
+Daily Run Contract, render the PDF, update memory, and report the PDF path plus
+anything that needs my attention.
 ```
 
 ```text
@@ -202,6 +204,7 @@ use `--newsroom <path>` when checking from somewhere else.
 - [PRODUCT.md](PRODUCT.md) — canonical Impeccable product context for brand, users, principles, and anti-references
 - [DESIGN.md](DESIGN.md) — canonical Impeccable design context for colors, type, components, and guardrails
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
+- [docs/daily-run-contract.md](docs/daily-run-contract.md) — the unattended completion promise for routines and automations
 - [docs/newsroom-metaphor.md](docs/newsroom-metaphor.md) — the newsroom/pressroom product model, roles, data structures, and prototype surfaces
 - [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes before canonical Impeccable `PRODUCT.md` / `DESIGN.md`
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown

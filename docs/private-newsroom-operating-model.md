@@ -70,6 +70,11 @@ must have access to the newsroom, the installed CLI, and the host's approved
 tools. It should stop with a real PDF, a clear status, and durable artifacts in
 `editions/<date>/`.
 
+The default completion promise is in
+[daily-run-contract.md](daily-run-contract.md). Different readers may make the
+contract stricter in their private `DELIVERY.md`, but source failures should
+usually degrade into source-health notes instead of stopping the paper.
+
 ## Source Discovery
 
 Setup should assume the first source list is incomplete. The reader may have
