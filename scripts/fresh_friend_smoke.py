@@ -207,7 +207,15 @@ def assert_first_edition_quality(
     for phrase in ("Applied Feedback", "EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         if phrase not in feedback_plan:
             errors.append(f"{persona['id']}: feedback plan missing `{phrase}`")
-    for phrase in ("Keep", "Cut", "More", "Visuals", "Sources To Add", "Taste To Save", "Print Tomorrow"):
+    for phrase in (
+        "Keep",
+        "Cut",
+        "More",
+        "Visuals",
+        "Sources To Add",
+        "Taste To Save",
+        "Tomorrow's Assignment Board",
+    ):
         if phrase not in operator_answers:
             errors.append(f"{persona['id']}: operator answers missing `{phrase}`")
     if review_payload.get("status") == "review":
