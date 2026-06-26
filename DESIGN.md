@@ -123,7 +123,8 @@ The Desk Sheet is the primary human feedback surface. Assignment boards, source
 desks, role handoffs, and run tickets are important agent/operator
 infrastructure, but the first public visual should not look like a dashboard.
 `PRODUCT.md` and `DESIGN.md` guide design surfaces and prototypes. The
-friend-ready newsroom contract and `ROLES.md` remain the operating contracts.
+edition run contract, private newsroom operating model, and `ROLES.md` remain
+the operating contracts.
 
 **Key Characteristics:**
 
@@ -329,7 +330,8 @@ status, and provenance. They still stay flat, printable, and quiet.
   desks, role handoffs, run tickets, and assignment boards as imagery before
   invented decoration.
 - **Do** keep `PRODUCT.md` and `DESIGN.md` focused on design surfaces while
-  operating contracts stay in friend-ready and roles documentation.
+  operating contracts stay in edition-run, private-newsroom, and roles
+  documentation.
 
 ### Don't:
 

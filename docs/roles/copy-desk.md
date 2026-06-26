@@ -23,3 +23,7 @@ It does not flatten the paper into agent summary prose.
 4. Keep consumption separate from ideation unless the newsroom asked for that
    section.
 5. Leave disputed edits in the handoff instead of silently changing taste.
+6. Remove production chatter from reader-facing copy unless the reader asked to
+   read about the run itself.
+7. Preserve actual posts, quotes, titles, names, dates, metrics, and source
+   facts. Do not polish them into generic trend prose.

@@ -2,14 +2,14 @@
 
 Status: current skill contract plus future split rules. Keep this aligned with
 `ROLES.md`, the plugin manifests, and the setup/edition/writing skills.
-The friend-ready newsroom contract lives in
-[`docs/friend-ready-newsroom.md`](friend-ready-newsroom.md). Product/design
+The edition run contract lives in `docs/edition-run-contract.md`; product/design
 surface context lives separately in root `PRODUCT.md` and `DESIGN.md`.
 
 ## Principle
 
 Morning Paper skills are newsroom desks, but not every desk should be a public
-skill. The reader-facing path stays simple:
+skill. The public skill surface is intentionally small, and the reader-facing
+path stays simple:
 
 - "set up my morning paper"
 - "make today's paper"
@@ -118,14 +118,14 @@ Current length pressure:
 - `edition` is acceptable but should keep pushing detail into `ROLES.md`,
   `docs/roles/`, and CLI artifacts.
 - `setup` is too long. The next cleanup should move scaffold examples into
-  references or deterministic CLI templates while preserving the friend path.
+  references or deterministic CLI templates while preserving the new-user path.
 
 ## Evaluation Before Expansion
 
 Before shipping new skills or renaming existing ones, create realistic eval
 prompts:
 
-- "Install this for my nontechnical friend and stop when the demo PDF is open."
+- "Install this for a new user and stop when the demo PDF is open."
 - "My paper feels too long and too tilted toward one source; tune tomorrow's
   edition."
 - "Add my Obsidian project folder and a local Twitter export as sources."

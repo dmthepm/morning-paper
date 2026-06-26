@@ -409,7 +409,7 @@ the style — recompose instead.
 `words_extracted`, `warning`), and each item's markdown sits next to it as
 `{slug}.md`.
 
-The daily `build` consumes that queue itself: staged items are appended as a
+The edition `build` consumes that queue itself: staged items are appended as a
 **Staged for today** section (the broadsheet-native build template serves
 every style), clipped items carry an on-page `.trunc-notice`, and the build
 JSON reports the included slugs under `staged_included`. If a queue exists
@@ -447,7 +447,7 @@ The contract is stable even if the backend changes:
 Backend names and configuration live in the architecture/reference docs. The
 composition skill should care about source honesty and page fit.
 
-## Scheduling the daily compose
+## Scheduling an edition run
 
 The composition pass can run manually or through the host's native recurring
 primitive:
@@ -458,6 +458,9 @@ primitive:
   CLI) and run the edition workflow from the private newsroom;
 - ChatGPT scheduled task: good for reminders, check-ins, or connected workflows;
   it may not have access to project files and should not claim it rendered a local PDF unless it has approved access to the newsroom runner.
+
+Host recurrence APIs change. Treat these names as platform routing guidance and
+verify the current host command before installing a recurring edition.
 
 The CLI's `morning-paper routine install|status|uninstall` remains an advanced
 local fallback for users who explicitly want launchd/systemd/cron. It should

@@ -71,9 +71,8 @@ filler; *one of the most* as an opener; *worth while* as vague approval;
 What readers now flag as machine prose, deadliest first. Vocabulary tells
 ("delve," "tapestry," "testament") have largely faded from current models;
 the structural habits below survive every model generation so far — current
-frontier models (Claude Opus 4.8, Codex 5.5) included still default to a voice
-reviewers describe as fluent, tidy, editorially polished, and generic. This
-pass exists to cut exactly that.
+frontier models included still default to a voice reviewers describe as fluent,
+tidy, editorially polished, and generic. This pass exists to cut exactly that.
 
 1. **Uniform cadence.** Sentences of 18–24 words, one after another, page
    after page — the single most durable tell. Fix with sentence music

@@ -187,8 +187,20 @@ class EditionWorkspaceTest(unittest.TestCase):
                         "warning": "truncated",
                         "extractor_note": "",
                     },
+                    {
+                        "slug": "partial-tweet",
+                        "kind": "tweet",
+                        "source": "https://x.com/example/status/1",
+                        "title": "Partial Tweet",
+                        "words": 30,
+                        "est_pages": 0,
+                        "truncated": True,
+                        "warning": "",
+                        "extractor_note": "",
+                        "hydration_status": "snippet_only",
+                    },
                 ],
-                "count": 2,
+                "count": 3,
                 "est_pages_total": 2,
                 "page_budget": 18,
                 "budget_remaining": 16,
@@ -203,8 +215,10 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertEqual(rc, 0)
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["summary"]["ready_to_edit"], 1)
+            self.assertEqual(payload["summary"]["needs_hydration"], 1)
             self.assertEqual(payload["summary"]["needs_source_proof"], 1)
             self.assertEqual(payload["lanes"]["ready_to_edit"][0]["title"], "Clean Read")
+            self.assertEqual(payload["lanes"]["needs_hydration"][0]["title"], "Partial Tweet")
             self.assertEqual(payload["lanes"]["needs_source_proof"][0]["title"], "Thin Read")
 
     def test_edition_prepare_respects_disabled_desk_sheet_preference(self) -> None:
@@ -531,6 +545,155 @@ phase: "04"
             self.assertEqual(ticket["roles"]["invalid"][0]["file"], "04-editor.md")
             self.assertIn("missing status", ticket["roles"]["invalid"][0]["issue"])
             self.assertIn("Needs repair", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+    def test_substantial_run_requires_late_desks_and_producer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            rendered = edition_dir / "edition"
+            rendered.mkdir()
+            pdf = rendered / "edition.pdf"
+            self._minimal_pdf(pdf)
+            (rendered / "edition.md").write_text("# Big Paper\n", encoding="utf-8")
+            draft = edition_dir / "draft.md"
+            (edition_dir / "estimate-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "estimated",
+                        "date": "2026-06-22",
+                        "file": str(draft.resolve()),
+                        "file_mtime": draft.stat().st_mtime,
+                        "est_pages": 10,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "render-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "rendered",
+                        "date": "2026-06-22",
+                        "pages": 10,
+                        "outputs": {"pdf": str(pdf), "markdown": str(rendered / "edition.md")},
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "review.json").write_text(
+                json.dumps(
+                    {
+                        "status": "clean",
+                        "edition": {"artifacts": {"markdown": str(rendered / "edition.md")}},
+                        "summary": {"flag": 0, "nudge": 0, "info": 0},
+                        "findings": [],
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (edition_dir / "visual-qa.json").write_text(
+                json.dumps({"status": "clean", "pdf": {"path": str(pdf), "ok": True, "pages": 1}, "findings": []}),
+                encoding="utf-8",
+            )
+            (edition_dir / "final-editor.json").write_text(
+                json.dumps({"status": "clean", "summary": {"flag": 0, "nudge": 0, "info": 0}}, indent=2),
+                encoding="utf-8",
+            )
+            (edition_dir / "desks" / "03.1-x-reporter.md").write_text(
+                """---
+role: x-reporter
+phase: "03.1"
+status: ready
+date: 2026-06-22
+---
+
+## Handoff
+- Candidate tweets found.
+""",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "blocked")
+            self.assertIn("04-editor", ticket["roles"]["missing"])
+            self.assertIn("05-copy-desk", ticket["roles"]["missing"])
+            self.assertIn("06-art-desk", ticket["roles"]["missing"])
+            self.assertIn("07-producer", ticket["roles"]["missing"])
+            check_names = {item["name"] for item in ticket["checks"]}
+            self.assertIn("desk quality gates", check_names)
+            self.assertIn("producer", check_names)
+            self.assertIn("Missing quality gate", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+            for filename, role, phase in (
+                ("04-editor.md", "editor", "04"),
+                ("05-copy-desk.md", "copy-desk", "05"),
+                ("06-art-desk.md", "art-desk", "06"),
+                ("07-producer.md", "producer", "07"),
+            ):
+                (edition_dir / "desks" / filename).write_text(
+                    f"""---
+role: {role}
+phase: "{phase}"
+status: ready
+date: 2026-06-22
+---
+
+## Handoff
+- Ready.
+""",
+                    encoding="utf-8",
+                )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "complete")
+            self.assertNotIn("missing", ticket["roles"])
 
     def test_final_editor_flags_unproven_delivery(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

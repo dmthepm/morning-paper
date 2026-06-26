@@ -83,8 +83,8 @@ def install_local_wrapper(bin_dir: Path, env: dict[str, str]) -> None:
 
 def configure_default_config(config_path: Path, output_dir: Path) -> None:
     data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-    data["name"] = "Friend Desk"
-    data["profile"] = "Sandboxed setup-smoke friend validating the first newsroom path."
+    data["name"] = "Demo Desk"
+    data["profile"] = "Sandboxed setup-smoke reader validating the first newsroom path."
     data["outputs"]["directory"] = str(output_dir)
     data["sources"]["hacker_news"]["enabled"] = False
     data["sources"]["rss"] = []
@@ -95,13 +95,13 @@ def compose_first_draft(newsroom: Path, staged_title: str) -> Path:
     edition_dir = newsroom / "editions" / DATE
     draft = edition_dir / "draft.md"
     draft.write_text(
-        f"""# Friend Desk Proves Setup Works - {DATE}
+        f"""# Demo Desk Proves Setup Works - {DATE}
 
 ## The Read
 
 The important result is that a cold private newsroom can accept a local source,
 preserve setup state, survive the prepare step, and produce a reviewed PDF.
-That is the first friend path: owned files in, printable paper out.
+That is the first new-user path: owned files in, printable paper out.
 
 ## Source Inventory
 
@@ -144,7 +144,7 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     xdg = home / ".config"
     bin_dir = base / "bin"
     output_dir = base / "outputs"
-    newsroom = base / "Friend-Newsroom"
+    newsroom = base / "Demo-Newsroom"
     for path in (home, xdg, bin_dir, output_dir):
         path.mkdir(parents=True, exist_ok=True)
 
@@ -174,7 +174,7 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     if not demo_pdf.is_file():
         raise RuntimeError(f"demo PDF missing: {demo_pdf}")
 
-    require_ok(run_cli(["newsroom", "init", str(newsroom), "--name", "Friend Desk"], env=env), "newsroom init")
+    require_ok(run_cli(["newsroom", "init", str(newsroom), "--name", "Demo Desk"], env=env), "newsroom init")
     assert_required_files(newsroom)
 
     state_updates = [

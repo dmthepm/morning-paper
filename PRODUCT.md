@@ -38,10 +38,10 @@ readable edition on the desk, with a Desk Sheet or natural-language reply that
 lets the reader's notes become better taste tomorrow.
 
 PRODUCT.md and DESIGN.md are internal design/product context for surfaces,
-prototypes, and brand decisions. They are not operating contracts for the daily
-run. The friend-ready newsroom contract and `ROLES.md` define how agents
-actually run the paper; these files define how the product should feel, speak,
-and present that work.
+prototypes, and brand decisions. They are not operating contracts for an edition
+run. `docs/edition-run-contract.md`, `docs/private-newsroom-operating-model.md`,
+and `ROLES.md` define how agents actually run the paper; these files define how
+the product should feel, speak, and present that work.
 
 ## Brand Personality
 

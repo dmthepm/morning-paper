@@ -141,8 +141,8 @@ Start here after setup resumes:
 
 1. Read `setup-state.json`.
 2. Read `SETUP.md`.
-3. Read `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and
-   `TASTELOG.md`.
+3. Read `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`,
+   `TASTELOG.md`, and `preferences/source-budgets.yaml`.
 4. Run `morning-paper sources check` from this newsroom root.
 5. Run `collectors/run_all.sh $(date +%F)`.
 6. Compose today's edition into `editions/<date>/draft.md`.
@@ -166,12 +166,13 @@ in files I own.
 5. `DELIVERY.md` - PDF, print, and email delivery preferences.
 6. `preferences/voice.md` - how the paper talks. Overrides engine defaults.
 7. `preferences/algorithm-prior.yaml` - standing interests. Empty means ignore.
-8. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
-9. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
-10. `editions/<latest>/feedback-plan.md` - route feedback to durable files.
-11. `TASTELOG.md` - accepted/rejected taste changes over time.
-12. `memory/MEMORY.md` and `memory/threads/` - running threads.
-13. `collectors/` - source adapters. Empty sources print "not configured".
+8. `preferences/source-budgets.yaml` - source/beat appetite and cut-first rules.
+9. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
+10. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
+11. `editions/<latest>/feedback-plan.md` - route feedback to durable files.
+12. `TASTELOG.md` - accepted/rejected taste changes over time.
+13. `memory/MEMORY.md` and `memory/threads/` - running threads.
+14. `collectors/` - source adapters. Empty sources print "not configured".
 
 ## Honesty
 
@@ -184,7 +185,7 @@ Replace this with the saved print command, or keep "hand me the PDF path".
 
 ## Done Contract
 
-Use Morning Paper's Daily Run Contract unless this newsroom overrides it:
+Use Morning Paper's Edition Run Contract unless this newsroom overrides it:
 sources checked, collectors reported honestly, edition composed, desk sheet
 included when enabled, PDF rendered, review/visual QA/final-editor run, memory
 updated, and configured delivery attempted. Source failures usually become
@@ -200,7 +201,7 @@ update the smallest durable file that will make tomorrow better:
   file in `specs/`
 - visual/layout preference -> `VISUALS.md`
 - source preference -> `SOURCES.md`, `preferences/algorithm-prior.yaml`,
-  `collectors/`, or `memory/reads-ledger.md`
+  `preferences/source-budgets.yaml`, `collectors/`, or `memory/reads-ledger.md`
 - delivery preference -> `DELIVERY.md`
 - a durable decision or rejected idea -> `TASTELOG.md`
 
@@ -269,6 +270,7 @@ surfaces:
     - email_article
 default_visual_budget:
   major_visuals_per_edition: 0-3
+  substantial_edition_minimum: one earned visual when sources allow
   minor_visuals_per_edition: as_earned
 print_constraints:
   color_must_survive_mono: true
@@ -296,6 +298,10 @@ preferred_primitives:
 Visuals are editorial furniture. A chart, diagram, illustration, pull quote,
 map, timeline, or generated image must explain something the prose cannot
 explain as well. If it only decorates, cut it.
+
+For 8+ page editions, the Art Desk should look for at least one earned visual
+from the day's real sources. If no visual earns ink, the handoff should say why
+instead of filling space.
 
 ## Visual Types
 
@@ -380,6 +386,10 @@ place, how often it should be checked, and what to do when it fails.
   and let `collectors/local-drop.sh` add them to the Assignment Board.
 - Social platforms, communities, and markets should become beats, not raw link
   dumps: define what the paper should notice, how often, and why it matters.
+- Social discovery is not the same as social printing. Snippet-only posts must
+  be hydrated before they appear as tweet/thread cards.
+- Source budgets live in `preferences/source-budgets.yaml`. They are ceilings
+  and appetite signals, not quotas.
 
 ## Registry
 
@@ -405,6 +415,20 @@ Run `morning-paper sources check --newsroom .` during setup and when a source
 changes. It reports configured inputs, reader-owned collectors, the local drop
 folder, and suggested next actions. If a source fails, record the next action
 here instead of hiding the failure in chat.
+
+## Social Hydration
+
+Print-ready social items should preserve:
+
+- full text or `hydration_status: snippet_only`;
+- author name, handle, date/time, canonical URL;
+- metrics such as likes, reposts, replies, views, and quotes when available;
+- thread, reply, quote-post, native-article, media, and linked-artifact context;
+- media paths or URLs plus whether the visual is printer-friendly;
+- route: `tweet card`, `thread`, `long read`, `visual`, `source health`, or `cut`.
+
+If a collector can only discover an item, stage it with a clear hydration note
+so the Assignment Board sends it to `needs_hydration`.
 
 ## Feedback Routing
 
@@ -465,7 +489,7 @@ Credentials, bot tokens, and deploy secrets stay outside the repo.
 
 ## Done Contract Overrides
 
-Default: follow Morning Paper's Daily Run Contract.
+Default: follow Morning Paper's Edition Run Contract.
 
 - Required delivery attempts: none beyond reporting the PDF path.
 - Required source desks: none. Failed sources become source-health notes unless
@@ -615,6 +639,36 @@ If a section is thin, say so instead of padding.
 #   - check: headline-length
 #     when: { section: "Field Notes" }
 """,
+        "preferences/source-budgets.yaml": """# source-budgets.yaml - appetite by source family and beat.
+# Budgets are ceilings and planning signals, not quotas. A source can earn
+# zero pages on a quiet day. Never add filler to satisfy this file.
+
+version: 1
+edition:
+  target_pages: 20
+  max_pages: 25
+  max_pages_about_the_paper: 3
+beats:
+  x_social:
+    target_pages: 2
+    max_pages: 4
+    require_hydrated_posts: true
+    lanes:
+      frontier_agents:
+        target_pages: 1
+      commerce_shopify:
+        target_pages: 1
+  articles:
+    target_pages: 4
+    max_pages: 8
+  work:
+    target_pages: 2
+    max_pages: 4
+cut_first:
+  - process notes that belong in the run ticket
+  - generic trend summaries without source objects
+  - repeated stories unless the angle advanced
+""",
         "preferences/desk-sheet.yaml": """# desk-sheet.yaml - reader-owned feedback sheet preferences.
 # The engine reads this during `morning-paper edition prepare`.
 # Turn it off if you prefer chat-only feedback or `operator-answers.md`.
@@ -685,8 +739,15 @@ a partial digest, say so in the markdown.
 
 - Treat exports as private taste/source intelligence, not a new feed.
 - Group by story, creator, topic, repeated interest, or blind spot.
-- Prefer "what this says about the reader's algorithm" over raw chronology.
-- Mark sensitive analysis before printing it.
+- Separate discovery from print. A search hit or clipped export row can point
+  at something worth hydrating, but it is not yet a tweet/thread/article card.
+- For print candidates, preserve full text, author, handle, date/time,
+  canonical URL, metrics, media/artifact links, thread/reply/quote/article
+  context, and `hydration_status`.
+- Route each candidate as `tweet card`, `thread`, `long read`, `visual`,
+  `source health`, or `cut`.
+- Mark sensitive analysis before printing it. Keep raw private taste analysis
+  out of the paper unless the reader asked for it.
 
 ## Agent Prompt
 

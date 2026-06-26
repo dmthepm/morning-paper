@@ -74,7 +74,7 @@
   contract with worked examples, and an editions dir) instead of empty folders
 - removed the thin shadowing skill stub; doc tightening + version re-baseline
 
-## Shipped (`v0.8.x` friend-ready newsroom)
+## Shipped (`v0.8.x private newsroom`)
 
 - WeasyPrint is treated as the production renderer, not an implementation
   detail: `doctor --strict` runs a real layout self-test and `doctor --json`
@@ -109,7 +109,7 @@
   default config, `doctor --strict --json`, demo PDF, newsroom scaffold,
   setup-state refresh, local-drop collector, edition prepare, render, review,
   and feedback artifact without touching real user config or routines
-- `scripts/fresh_friend_smoke.py` runs deterministic local simulations for the
+- `scripts/new_user_smoke.py` runs deterministic local simulations for the
   creator/news reader, business owner/Main Branch, technical agent,
   nontechnical RSS/newsletter, and local-folder/source-dump personas; each now
   reaches a rendered PDF, complete edition artifact set, and clean review

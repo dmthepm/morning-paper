@@ -54,9 +54,9 @@ The implementation can be simple: markdown files, YAML, JSON artifacts, shell
 collectors, and a host agent. The important product standard is that a fresh
 agent can inspect the loop and understand why the paper chose what it chose.
 
-## One-Line Routine
+## One-Line Edition Run
 
-A mature reader should be able to ask their host to run one routine:
+A mature reader should be able to ask their host to run one edition:
 
 ```text
 Use the Morning Paper skills in my private newsroom. Collect today's sources,
@@ -65,13 +65,13 @@ to DELIVERY.md, then route any feedback I give into the smallest durable file.
 ```
 
 Claude Code may call this a routine, Codex may call it an automation, another
-host may call it a scheduled workflow. The name is not important. The routine
-must have access to the newsroom, the installed CLI, and the host's approved
-tools. It should stop with a real PDF, a clear status, and durable artifacts in
+host may call it a scheduled workflow. The cadence name is not important. The
+edition run must have access to the newsroom, the installed CLI, and the host's
+approved tools. It should stop with a real PDF, a clear status, and durable artifacts in
 `editions/<date>/`.
 
 The default completion promise is in
-[daily-run-contract.md](daily-run-contract.md). Different readers may make the
+[edition-run-contract.md](edition-run-contract.md). Different readers may make the
 contract stricter in their private `DELIVERY.md`, but source failures should
 usually degrade into source-health notes instead of stopping the paper.
 

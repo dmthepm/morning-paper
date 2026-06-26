@@ -33,11 +33,10 @@ def _one_line(text: str) -> str:
     return " ".join(text.split())
 
 
-def test_friend_install_path_uses_the_same_print_proof_everywhere() -> None:
+def test_public_install_path_uses_the_same_print_proof_everywhere() -> None:
     readme = _read("README.md")
     agents = _read("AGENTS.md")
     setup_skill = _read("plugins/morning-paper/skills/setup/SKILL.md")
-    spec = _read("docs/friend-ready-newsroom.md")
 
     assert "morning-paper doctor --strict" in readme
     assert "morning-paper demo --open" in readme
@@ -50,8 +49,6 @@ def test_friend_install_path_uses_the_same_print_proof_everywhere() -> None:
     assert "morning-paper doctor --strict" in setup_skill
     assert "morning-paper demo --output ./morning-paper-demo --open" in setup_skill
 
-    assert "demo --open" in spec
-    assert "doctor --strict" in spec
     assert "doctor            Check config, dependencies, and renderer status (--json, --strict)" in HELP_TEXT
 
 
@@ -102,11 +99,13 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
-    readiness = _read("docs/friend-ready-newsroom.md")
     version = _pyproject_field("version")
     release_readiness = _read(f"docs/archive/releases/release-readiness-{version}.md")
     roadmap = _read("ROADMAP.md")
     skill_suite = _read("docs/newsroom-skill-suite.md")
+    edition_run = _read("docs/edition-run-contract.md")
+    operating_model = _read("docs/private-newsroom-operating-model.md")
+    feedback_loop = _read("docs/feedback-loop.md")
     install_smoke = _read("scripts/install_smoke.py")
     host_smoke = _read("scripts/host_plugin_smoke.py")
     setup_smoke = _read("scripts/setup_scaffold_smoke.py")
@@ -119,20 +118,12 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "private newsroom" in summary
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
-    assert "Friend-ready personal newsroom setup" in changelog
-    assert f"release: {version}" in readiness
-    assert (
-        f"This tree is prepared as release: {version}" in readiness
-        or f"`morning-paper` {version} is live on PyPI" in readiness
-    )
+    assert "Substantial editions" in changelog
     assert f"`v{version}`" in release_readiness
     assert "Status: published and verified." in release_readiness or "Status: candidate, ready to tag." in release_readiness
     assert "Clean Python 3.13 venv installed" in release_readiness
-    assert f"Current release: {version}." in readiness
-    assert "live 0.7.1 demo" not in readiness
-    assert "docs/archive/" in readiness
-    assert "## Shipped (`v0.8.x` friend-ready newsroom)" in roadmap
-    assert "public skill surface is intentionally small" in readiness
+    assert "## Shipped (`v0.8.x private newsroom`)" in roadmap
+    assert "public skill surface is intentionally small" in skill_suite
     assert "Morning Paper skills are newsroom desks" in skill_suite
     assert "0.8.x ships exactly three plugin skills" in skill_suite
     assert "This section is a design direction, not shipped surface" in skill_suite
@@ -146,12 +137,14 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "feedback_rules_carried" in five_loop_smoke
     assert "reprinted old read title" in five_loop_smoke
     assert "quality_notes" in five_loop_smoke
-    assert "morning-paper doctor --strict" in readiness
+    assert "morning-paper doctor --strict" in _read("README.md")
     assert "scripts/release_candidate_check.py --outdir" in release_readiness
     assert "--install-check" in release_readiness
     assert "Latest full local verification" in release_readiness
     assert "current `main` HEAD" in release_readiness
-    assert "edition apply-feedback" in readiness
+    assert "edition apply-feedback" in feedback_loop
+    assert "complete_with_notes" in edition_run
+    assert "private newsroom" in operating_model
     assert "edition final-editor" in _read("plugins/morning-paper/skills/edition/SKILL.md")
     for newsroom_file in ("EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"):
         assert newsroom_file in skill_suite
@@ -171,7 +164,7 @@ def test_product_and_design_context_remain_active_design_contracts() -> None:
 
     assert "[PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md)" in readme
     assert "PRODUCT.md and DESIGN.md are internal design/product context" in product
-    assert "friend-ready newsroom contract and `ROLES.md`" in product
+    assert "`docs/edition-run-contract.md`, `docs/private-newsroom-operating-model.md`" in product
     assert "`PRODUCT.md` and `DESIGN.md` guide design surfaces and prototypes" in design
     assert "root `PRODUCT.md` and `DESIGN.md`" in skill_architecture
     assert "A real paper every morning" in readme
@@ -180,7 +173,8 @@ def test_product_and_design_context_remain_active_design_contracts() -> None:
 def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
     roadmap = _read("ROADMAP.md")
     composing = _read("docs/composing.md")
-    spec = _read("docs/friend-ready-newsroom.md")
+    readme = _read("README.md")
+    edition_run = _read("docs/edition-run-contract.md")
     reviewers = _read("src/morning_paper/reviewers.py")
 
     assert "chart row/label bounds" not in roadmap
@@ -189,8 +183,8 @@ def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
     assert "mp-spark`" in composing and "90 values" in composing
     assert "`visual-provenance`" in composing
     assert "check_visual_provenance" in reviewers
-    assert "print-ready" in spec
-    assert "visual QA" in spec
+    assert "print-ready" in readme
+    assert "visual QA" in edition_run
 
 
 def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
@@ -202,7 +196,6 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "docs/collectors.md": _read("docs/collectors.md"),
         "docs/composing.md": _read("docs/composing.md"),
         "docs/feedback-loop.md": _read("docs/feedback-loop.md"),
-        "docs/friend-ready-newsroom.md": _read("docs/friend-ready-newsroom.md"),
         "docs/source-conversion.md": _read("docs/source-conversion.md"),
         "plugins/morning-paper/skills/setup/SKILL.md": _read("plugins/morning-paper/skills/setup/SKILL.md"),
         "plugins/morning-paper/skills/edition/SKILL.md": _read("plugins/morning-paper/skills/edition/SKILL.md"),
@@ -212,6 +205,15 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "src/morning_paper/resources/demo.md": _read("src/morning_paper/resources/demo.md"),
     }
     forbidden = [
+        "docs/daily-run-contract.md",
+        "Daily Run Contract",
+        "daily run contract",
+        "daily routine",
+        "daily compose",
+        "friend-ready",
+        "Friend-ready",
+        "fresh_friend_smoke",
+        "fresh friend",
         "RSS and Hacker News",
         "starter inputs",
         "starter_inputs",
@@ -229,7 +231,7 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         for phrase in forbidden:
             assert phrase not in text, f"{path} still contains stale framing: {phrase}"
 
-    readme_sources = current_docs["README.md"].split("## Sources", 1)[1].split("## Daily Routine", 1)[0]
+    readme_sources = current_docs["README.md"].split("## Sources", 1)[1].split("## Recurring Editions", 1)[0]
     for phrase in (
         "email newsletters",
         "Slack channels",
@@ -257,9 +259,9 @@ def test_recurrence_guidance_prefers_host_native_primitives() -> None:
     readme = _read("README.md")
     setup_skill = _read("plugins/morning-paper/skills/setup/SKILL.md")
     composing = _read("docs/composing.md")
-    readiness = _read("docs/friend-ready-newsroom.md")
+    edition_run = _read("docs/edition-run-contract.md")
 
-    for text in (readme, setup_skill, composing, readiness):
+    for text in (readme, setup_skill, composing):
         lowered = text.lower()
         assert "Codex automation" in text or "Codex: **automations**" in text
         assert "Claude Code routine" in text or "Claude Code: **routines**" in text
@@ -269,6 +271,10 @@ def test_recurrence_guidance_prefers_host_native_primitives() -> None:
     assert "Set up a Claude Code routine" in readme
     assert "Set up a Codex automation" in readme
     assert "Set up a scheduled task for my Morning Paper" in readme
+    assert "chosen cadence" in readme
+    assert "Recurring Editions" in readme
+    assert "Cadence is a reader preference" in edition_run
+    assert "Host recurrence APIs change" in composing
     assert "/schedule" in readme
     assert "do not pretend you rendered the PDF" in readme
     assert "may not have access to project files" in readme
@@ -288,7 +294,7 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     release_check = _read("scripts/release_candidate_check.py")
     changelog = _read("CHANGELOG.md")
     architecture = _read("docs/architecture-decisions.md")
-    readiness = _read("docs/friend-ready-newsroom.md")
+    readme = _read("README.md")
 
     assert "Local extraction" in readme
     assert "keeps URL capture on your machine" in readme
@@ -303,8 +309,7 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     assert '"trafilatura"' in release_check
     assert '"feedparser"' in release_check
     assert "`doctor --json` reports every core source/parser/render dependency version" in architecture
-    assert "Trafilatura is currently the" in readiness
-    assert "local article parser behind `article_extractor: local`" in _one_line(readiness)
-    assert "`>=2.1,<3`" in readiness
+    assert "Article extraction is replaceable plumbing" in readme
+    assert '"trafilatura>=2.1,<3"' in pyproject
     assert "no longer escalates" in changelog
     assert "Jina remote" in changelog

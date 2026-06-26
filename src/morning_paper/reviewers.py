@@ -196,6 +196,26 @@ _WORKSPACE_METADATA_STEMS = {
     "review",
     "source-inventory",
 }
+_PROCESS_DENSITY_TERMS = (
+    "run ticket",
+    "final-editor",
+    "final editor",
+    "collector report",
+    "source inventory",
+    "assignment board",
+    "operator answers",
+    "visual qa",
+    "desk sheet",
+    "delivery record",
+    "telegram returned",
+    "production ledger",
+    "edition status",
+    "source health",
+    "desks/",
+    "draft.md",
+    "render-result",
+    "review.json",
+)
 
 
 def _strip_tags(value: str) -> str:
@@ -1185,6 +1205,46 @@ def check_visual_density(ed: ParsedEdition, prefs: Preferences) -> list[Finding]
     ]
 
 
+def check_process_density(ed: ParsedEdition, prefs: Preferences) -> list[Finding]:
+    """Nudge when the reader-facing paper is too much about the run itself."""
+    min_words, words_src = prefs.threshold("process-density", "min_words", 2500, pack=ed.style)
+    min_mentions, mentions_src = prefs.threshold("process-density", "min_mentions", 12, pack=ed.style)
+    max_ratio, ratio_src = prefs.threshold("process-density", "max_ratio", 0.045, pack=ed.style)
+    words = _body_word_count(ed.body)
+    if words < int(min_words):
+        return []
+    text = _strip_tags(ed.body).lower()
+    hits: dict[str, int] = {}
+    mention_count = 0
+    for term in _PROCESS_DENSITY_TERMS:
+        count = text.count(term)
+        if count:
+            hits[term] = count
+            mention_count += count
+    if mention_count < int(min_mentions):
+        return []
+    ratio = mention_count / max(1, words)
+    if ratio <= float(max_ratio):
+        return []
+    return [
+        Finding(
+            check="process-density",
+            severity="nudge",
+            location={"section": "", "kind": "edition", "ref": "run/process language"},
+            issue="Reader-facing copy appears to spend too much space on production state.",
+            why="Run tickets, source-health details, and production proof belong mostly in handoffs; the paper should spend its pages on source material.",
+            measured={"words": words, "mentions": mention_count, "ratio": round(ratio, 4), "top_terms": hits},
+            threshold={
+                "min_words": int(min_words),
+                "min_mentions": int(min_mentions),
+                "max_ratio": float(max_ratio),
+                "source": words_src if words_src != "default" else mentions_src if mentions_src != "default" else ratio_src,
+            },
+            hint="Move proof/status detail to the run ticket or back page; keep at most a small source-health note in the paper.",
+        )
+    ]
+
+
 # ---------------------------------------------------------------------------
 # The registry (§4.3). Adding a builtin = adding one entry; the runner never
 # changes. tier is 'text' for deterministic markdown/artifact checks.
@@ -1210,6 +1270,7 @@ REGISTRY: list[Check] = [
     Check("stacked-subheads", "text", check_stacked_subheads),
     Check("unsupported-glyphs", "text", check_unsupported_glyphs),
     Check("visual-density", "text", check_visual_density),
+    Check("process-density", "text", check_process_density),
 ]
 
 

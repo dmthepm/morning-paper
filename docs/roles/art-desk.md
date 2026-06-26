@@ -24,6 +24,17 @@ checks the page as an object, not only as markdown.
 4. Fix missing glyphs, overflow, cramped tables, giant URL lists, and repeated
    rule lines.
 5. Keep the Desk Sheet spacious and useful.
+6. For 8+ page editions, look for at least one earned visual when source
+   material allows it. If none earns ink, say why.
+7. Inspect the last page for filler, orphaned production notes, or sparse
+   leftovers before the producer sees it.
+
+## Social And Product Media
+
+For social beats, inspect available images, demos, screenshots, long-native
+posts, and linked artifacts. A visual can be a small sourced figure, annotated
+crop, compact evidence card, or mini-layout. It must clarify the story and
+remain printer-friendly.
 
 ## Taste Defaults
 

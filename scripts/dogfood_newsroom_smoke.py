@@ -20,7 +20,7 @@ FORBIDDEN_PRIVATE_TERMS = (
     "PRIVATE_BRAND_NAME",
     "PRIVATE_CLIENT_CODE",
     "PRIVATE_SOURCE_NAME",
-    "morning-brief",
+    "reader-newsroom",
     "private-newsroom.example",
 )
 

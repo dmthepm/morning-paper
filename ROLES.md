@@ -1,6 +1,6 @@
 # Morning Paper Roles
 
-Morning Paper works best when the daily run feels like a small private
+Morning Paper works best when an edition run feels like a small private
 newsroom. The host agent is the orchestrator. It assigns work, calls the CLI,
 keeps the run moving, and decides whether to use separate context windows,
 subagents, profiles, or a single sequential pass.
@@ -9,6 +9,11 @@ The roles below are portable. One host may call them subagents, another may map
 them to profiles, models, or plain sequential passes. The contract is the same:
 each role reads the shared edition folder, does one job, and leaves one
 markdown handoff in `editions/<date>/desks/`.
+
+A tiny/simple run can ship without every desk. A substantial edition
+(8+ estimated/rendered pages, or any broad source run) must include the late
+desks: editor, copy desk, art desk, and producer. Reporter handoffs alone are
+not enough for a real paper.
 
 ## Role Order
 
@@ -78,6 +83,10 @@ did not run.
 - Beat reporters should find more than the paper needs. The editor chooses
   what earns space.
 - The editor checks memory and ledgers before printing repeats.
+- Page budgets are ceilings and appetite signals, not quotas. A thin honest
+  paper is better than filler.
+- Keep process pages small. Unless the reader asks, source/run-status material
+  belongs in handoffs and the run ticket, not in the reader's pages.
 - The art desk protects readability: printer-friendly, accessible, no gradient
   decoration, no feed chrome.
 - The producer does not make the paper better by adding prose. It makes the

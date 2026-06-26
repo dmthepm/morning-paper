@@ -372,6 +372,21 @@ class DeterministicChecksTest(unittest.TestCase):
         self.assertTrue(found)
         self.assertEqual(found[0]["severity"], "flag")
 
+    def test_15_process_density_nudges_run_log_paper(self) -> None:
+        body = (
+            "## Production Notes\n\n"
+            + (
+                "The run ticket, final editor, source inventory, assignment board, "
+                "visual QA, operator answers, and delivery record remain reader-facing "
+                "instead of staying in the handoff. "
+            )
+            * 140
+        )
+        report = _review(body)
+        found = self._checks(report, "process-density")
+        self.assertTrue(found)
+        self.assertIn("production state", found[0]["issue"])
+
 
 class PreferencesTest(unittest.TestCase):
     def test_threshold_override_changes_the_number_and_provenance(self) -> None:

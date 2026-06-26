@@ -5,7 +5,7 @@ The two host manifests each declare a ``skills`` path. This resolves both
 exactly as each host would, and asserts that both land on the *same* real
 directory carrying exactly the three shipped 0.8.x skills with valid
 frontmatter. It is the
-file-level proof behind "a fresh friend's install carries the newsroom skills"
+file-level proof behind "a new install carries the newsroom skills"
 on Claude Code and Codex, runnable on a CI box with no CLI installed.
 
 Usage: ``python3 scripts/install_smoke.py`` (run from the repo root).

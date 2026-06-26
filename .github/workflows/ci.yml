@@ -67,7 +67,7 @@ jobs:
           morning-paper demo
           python -m pytest tests/test_demo.py tests/test_styles.py tests/test_frontpage_visual_snapshot.py -q
           python scripts/setup_scaffold_smoke.py
-          python scripts/fresh_friend_smoke.py
+          python scripts/new_user_smoke.py
           python scripts/five_edition_loop_smoke.py
           python scripts/source_shape_intake_smoke.py
 

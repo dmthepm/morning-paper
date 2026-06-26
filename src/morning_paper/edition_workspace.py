@@ -36,6 +36,14 @@ DEFAULT_DESK_SHEET_PREFS: dict[str, object] = {
     "tomorrow_choices": 5,
 }
 
+SUBSTANTIAL_PAGE_THRESHOLD = 8
+REQUIRED_SUBSTANTIAL_PHASES = {
+    "04": "editor",
+    "05": "copy-desk",
+    "06": "art-desk",
+}
+PRODUCER_PHASE = "07"
+
 
 def _utc_stamp() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -138,6 +146,7 @@ def _assignment_board(
     """
     lanes: dict[str, list[dict[str, object]]] = {
         "ready_to_edit": [],
+        "needs_hydration": [],
         "needs_source_proof": [],
         "source_health": [],
         "selected": [],
@@ -166,7 +175,23 @@ def _assignment_board(
             for key in ("warning", "extractor_note")
             if str(item.get(key) or "").strip()
         ]
-        if item.get("truncated") or proof_notes:
+        hydration_status = str(item.get("hydration_status") or "").strip().lower()
+        social_like = str(item.get("kind") or "").strip().lower() in {"social", "tweet", "thread", "x-post"}
+        if hydration_status in {"discovery", "snippet_only", "snippet-only", "needs_hydration", "partial"}:
+            board_item["route"] = "needs hydration"
+            board_item["reason"] = (
+                "; ".join(proof_notes)
+                or "social item is discovery/partial; hydrate full text, author/date, metrics, media, and thread context"
+            )
+            lanes["needs_hydration"].append(board_item)
+        elif social_like and item.get("truncated"):
+            board_item["route"] = "needs hydration"
+            board_item["reason"] = (
+                "; ".join(proof_notes)
+                or "social post is truncated; do not print until the real object is hydrated"
+            )
+            lanes["needs_hydration"].append(board_item)
+        elif item.get("truncated") or proof_notes:
             board_item["route"] = "needs source proof"
             board_item["reason"] = "; ".join(proof_notes) or "source copy is incomplete"
             lanes["needs_source_proof"].append(board_item)
@@ -232,7 +257,16 @@ def _render_assignment_board_markdown(board: dict[str, object]) -> str:
         "",
     ]
     lanes = board.get("lanes") if isinstance(board.get("lanes"), dict) else {}
-    for lane in ("ready_to_edit", "needs_source_proof", "source_health", "selected", "cut", "held", "printed"):
+    for lane in (
+        "ready_to_edit",
+        "needs_hydration",
+        "needs_source_proof",
+        "source_health",
+        "selected",
+        "cut",
+        "held",
+        "printed",
+    ):
         items = lanes.get(lane) if isinstance(lanes.get(lane), list) else []
         title = lane.replace("_", " ").title()
         lines.extend([f"## {title}", ""])
@@ -288,12 +322,18 @@ def _render_run_ticket_markdown(ticket: dict[str, object]) -> str:
             lines.append(f"- `{filename}`")
         invalid = roles.get("invalid") if isinstance(roles.get("invalid"), list) else []
         blocked = roles.get("blocked") if isinstance(roles.get("blocked"), list) else []
+        missing = roles.get("missing") if isinstance(roles.get("missing"), list) else []
+        phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
         for item in invalid:
             if isinstance(item, dict):
                 lines.append(f"- Needs repair: `{item.get('file', '')}` - {item.get('issue', '')}")
         for item in blocked:
             if isinstance(item, dict):
                 lines.append(f"- Blocked: `{item.get('file', '')}` - role reported blocked")
+        if phases:
+            lines.append("- Phases: " + ", ".join(sorted(str(phase) for phase in phases)))
+        for phase in missing:
+            lines.append(f"- Missing quality gate: `{phase}`")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -313,7 +353,7 @@ def _add_ticket_check(checks: list[dict[str, object]], *, name: str, state: str,
 def _role_artifacts(edition_dir: Path) -> dict[str, object]:
     desks_dir = edition_dir / "desks"
     if not desks_dir.is_dir():
-        return {"dir": str(desks_dir), "count": 0, "files": [], "invalid": [], "blocked": []}
+        return {"dir": str(desks_dir), "count": 0, "files": [], "invalid": [], "blocked": [], "phases": {}}
     paths = sorted(
         path
         for path in desks_dir.glob("*.md")
@@ -321,6 +361,7 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
     )
     invalid: list[dict[str, str]] = []
     blocked: list[dict[str, str]] = []
+    phases: dict[str, dict[str, str]] = {}
     required = {"role", "phase", "status"}
     allowed_statuses = {"ready", "notes", "blocked"}
     for path in paths:
@@ -348,15 +389,32 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
         if status not in allowed_statuses:
             invalid.append({"file": path.name, "issue": "status must be ready, notes, or blocked"})
             continue
+        phase = str(frontmatter.get("phase", "")).strip()
+        role = str(frontmatter.get("role", "")).strip()
+        phases[phase] = {"file": path.name, "role": role, "status": status}
         if status == "blocked":
-            blocked.append({"file": path.name, "role": str(frontmatter.get("role", ""))})
+            blocked.append({"file": path.name, "role": role})
     return {
         "dir": str(desks_dir),
         "count": len(paths),
         "files": [path.name for path in paths],
         "invalid": invalid,
         "blocked": blocked,
+        "phases": phases,
     }
+
+
+def _substantial_page_count(estimate: dict[str, object], render: dict[str, object]) -> int:
+    return max(_int_or_zero(estimate.get("est_pages")), _int_or_zero(render.get("pages")))
+
+
+def _missing_substantial_phases(roles: dict[str, object]) -> list[str]:
+    phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
+    missing: list[str] = []
+    for phase, role_name in REQUIRED_SUBSTANTIAL_PHASES.items():
+        if phase not in phases:
+            missing.append(f"{phase}-{role_name}")
+    return missing
 
 
 def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) -> dict[str, object]:
@@ -464,6 +522,37 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     else:
         _add_ticket_check(checks, name="final editor", state="block", detail=f"final-editor status is `{final_status}`")
 
+    substantial_pages = _substantial_page_count(estimate, render)
+    if substantial_pages >= SUBSTANTIAL_PAGE_THRESHOLD:
+        missing = _missing_substantial_phases(roles)
+        if missing:
+            roles["missing"] = missing
+            _add_ticket_check(
+                checks,
+                name="desk quality gates",
+                state="block",
+                detail=f"substantial {substantial_pages}-page edition is missing " + ", ".join(missing),
+            )
+        else:
+            _add_ticket_check(
+                checks,
+                name="desk quality gates",
+                state="pass",
+                detail="editor, copy desk, and art desk handoffs exist",
+            )
+        phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
+        if final_status in {"clean", "notes"} and PRODUCER_PHASE not in phases:
+            current_missing = roles.get("missing") if isinstance(roles.get("missing"), list) else []
+            roles["missing"] = sorted({*current_missing, "07-producer"})
+            _add_ticket_check(
+                checks,
+                name="producer",
+                state="block",
+                detail="substantial edition needs a producer handoff after final-editor and before delivery",
+            )
+        elif final_status in {"clean", "notes"}:
+            _add_ticket_check(checks, name="producer", state="pass", detail="producer handoff exists")
+
     status = _run_ticket_status(checks)
     next_action = {
         "complete": "deliver or archive according to DELIVERY.md",
@@ -556,6 +645,8 @@ def final_editor_pass(
         edition_dir / "queue-snapshot.json",
         edition_dir / "assignment-board.json",
         edition_dir / "assignment-board.md",
+        edition_dir / "run-ticket.json",
+        edition_dir / "run-ticket.md",
         edition_dir / "estimate-result.json",
         edition_dir / "render-result.json",
         edition_dir / "review.json",
@@ -591,6 +682,37 @@ def final_editor_pass(
     draft_path = edition_dir / "draft.md"
     if draft_path.is_file():
         files_read.append(str(draft_path))
+
+    roles = _role_artifacts(edition_dir)
+    phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
+    desks_dir = edition_dir / "desks"
+    role_files = roles.get("files") if isinstance(roles.get("files"), list) else []
+    for filename in role_files:
+        role_path = desks_dir / str(filename)
+        if role_path.is_file():
+            files_read.append(str(role_path))
+    role_blocked = roles.get("blocked") if isinstance(roles.get("blocked"), list) else []
+    role_invalid = roles.get("invalid") if isinstance(roles.get("invalid"), list) else []
+    if role_blocked:
+        _final_finding(
+            findings,
+            check="desk-quality-gates",
+            severity="flag",
+            issue=f"{len(role_blocked)} role handoff(s) reported blocked.",
+            why="The final editor should not ship over a role that explicitly said its desk could not finish.",
+            hint="Repair or replace the blocked handoff before delivery.",
+            measured={"blocked_roles": role_blocked},
+        )
+    if role_invalid:
+        _final_finding(
+            findings,
+            check="desk-quality-gates",
+            severity="nudge",
+            issue=f"{len(role_invalid)} role handoff(s) need frontmatter repair.",
+            why="Role artifacts are the run's memory; malformed handoffs are hard for fresh agents to trust.",
+            hint="Fix the YAML frontmatter so the run ticket can read the desk trail.",
+            measured={"invalid_roles": role_invalid},
+        )
 
     if not estimate_result:
         _final_finding(
@@ -683,6 +805,28 @@ def final_editor_pass(
             hint="Mention the overage in the handoff or cut a weak item.",
             measured={"pages": pages, "page_budget": config.page_budget},
         )
+    if pages >= SUBSTANTIAL_PAGE_THRESHOLD:
+        missing = _missing_substantial_phases(roles)
+        if missing:
+            _final_finding(
+                findings,
+                check="desk-quality-gates",
+                severity="flag",
+                issue="Substantial edition is missing " + ", ".join(missing) + ".",
+                why="A real edition needs separate selection, copy, and art judgment; reporter output alone is not enough.",
+                hint="Run the editor, copy desk, and art desk passes and save their `desks/` handoffs before final-editor.",
+                measured={"pages": pages, "missing": missing},
+            )
+        elif pages >= SUBSTANTIAL_PAGE_THRESHOLD and not phases:
+            _final_finding(
+                findings,
+                check="desk-quality-gates",
+                severity="flag",
+                issue="Substantial edition has no readable role phases.",
+                why="The final editor cannot prove who selected, copy-edited, or visually checked the paper.",
+                hint="Save role handoffs in `editions/<date>/desks/` before delivery.",
+                measured={"pages": pages},
+            )
 
     outputs = render_result.get("outputs") if isinstance(render_result.get("outputs"), dict) else {}
     pdf_path = Path(str(outputs.get("pdf", ""))).expanduser() if outputs else Path()
@@ -1196,9 +1340,11 @@ def desks_readme_template(date_str: str) -> str:
     return f"""# Desk Artifacts - {date_str}
 
 This folder is the newsroom handoff trail for today's edition. Use it when the
-host supports subagents, profiles, or separate context windows. A simple run can
-ship without role artifacts, but a serious run should leave enough here for a
-fresh agent to understand who checked what and why the paper looks this way.
+host supports subagents, profiles, or separate context windows. A tiny/simple
+run can ship without role artifacts. A substantial edition (8+ pages, or
+any run with broad source coverage) must leave enough here for a fresh agent to
+understand who reported, selected, copy-edited, designed, and produced the
+paper.
 
 ## File Pattern
 
@@ -1216,6 +1362,19 @@ fresh agent to understand who checked what and why the paper looks this way.
 Use `03.1`, `03.2`, `03.3`, and so on for beat reporters that run in parallel.
 Rename the beat, not the role: `03.1-shopify-reporter.md`,
 `03.2-frontier-agents-reporter.md`, `03.3-work-reporter.md`.
+
+## Substantial Edition Gates
+
+For a substantial edition, these late desks are required:
+
+- `04-editor.md` - selection, cuts, page/source budgets, repeat checks.
+- `05-copy-desk.md` - language, labels, headlines, source clarity, voice.
+- `06-art-desk.md` - visual choices, page shape, PDF readability.
+- `07-producer.md` - after final-editor/status, proves the run can ship.
+
+Page budgets are ceilings and appetite signals, not quotas. If the source
+material is thin, ship the thinner honest paper with a source-health note.
+Never add filler or extra process pages to hit a target.
 
 ## Artifact Contract
 

@@ -128,7 +128,7 @@ See [docs/source-conversion.md](docs/source-conversion.md) for small converter
 recipes when the local drop folder contains CSV, JSON, PDFs, vaults, work
 exports, or social/video history.
 
-## Daily Routine
+## Recurring Editions
 
 Prefer the native recurring primitive of the agent host you already use.
 Morning Paper should not invent a second scheduling system unless you ask for a
@@ -137,26 +137,27 @@ local fallback.
 Copy one of these into the host:
 
 ```text
-Set up a Claude Code routine that builds my Morning Paper each weekday morning.
-Use my private newsroom to make today's paper and follow the Daily
-Run Contract: check sources, compose, render the PDF, review, run final-editor,
-update memory, open or deliver it the way my DELIVERY.md says, and tell me only
-if the run failed or needs my attention. If you are in the Claude Code CLI, use
-/schedule to create the routine.
+Set up a Claude Code routine that builds my Morning Paper on my chosen cadence
+(weekday mornings by default unless I say otherwise). Use my private newsroom
+to make the next edition and follow the Edition Run Contract: check sources,
+compose, render the PDF, review, run final-editor, update memory, open or
+deliver it the way my DELIVERY.md says, and tell me only if the run failed or
+needs my attention. If you are in the Claude Code CLI, use /schedule to create
+the routine.
 ```
 
 ```text
-Set up a Codex automation that builds my Morning Paper each weekday morning.
-Use this project/newsroom to build today's edition through the Daily Run
-Contract, render the PDF, update memory, and report the PDF path plus anything
-that needs my attention.
+Set up a Codex automation that builds my Morning Paper on my chosen cadence
+(weekday mornings by default unless I say otherwise). Use this project/newsroom
+to build the next edition through the Edition Run Contract, render the PDF,
+update memory, and report the PDF path plus anything that needs my attention.
 ```
 
 ```text
-Set up a scheduled task for my Morning Paper. Each weekday morning, check
-whether today's paper was produced or remind me to make today's paper in my
-newsroom. If you have an approved way to access the
-newsroom runner, use it; otherwise do not pretend you rendered the PDF.
+Set up a scheduled task for my Morning Paper. On my chosen cadence, check
+whether the next edition was produced or remind me to make the paper in my
+newsroom. If you have an approved way to access the newsroom runner, use it;
+otherwise do not pretend you rendered the PDF.
 ```
 
 Claude Code calls this a **routine**. Codex calls it an **automation**. ChatGPT
@@ -166,7 +167,9 @@ connected workflows, but may not have access to project files and should not
 claim local PDF work unless the local runner is actually available. If those are
 not available or you specifically want a machine-local fallback, the CLI still
 has `morning-paper routine install|status|uninstall`; use it deliberately, not
-by default.
+by default. Verify the host's current recurrence command before saving the
+schedule; the Edition Run Contract is stable, host scheduling commands can
+change.
 
 ## Styles
 
@@ -201,11 +204,10 @@ use `--newsroom <path>` when checking from somewhere else.
 ## Docs
 
 - [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) — product and visual context for shaping public/product surfaces
-- [docs/friend-ready-newsroom.md](docs/friend-ready-newsroom.md) — shipped friend-ready newsroom contract
 - [ROLES.md](ROLES.md) — the newsroom role model and handoff contract
 - [docs/roles/](docs/roles/) — role references for orchestrator, assignment editor, beat reporters, editor, copy desk, art desk, producer, and taste editor
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
-- [docs/daily-run-contract.md](docs/daily-run-contract.md) — the unattended completion promise for routines and automations
+- [docs/edition-run-contract.md](docs/edition-run-contract.md) — the unattended completion promise for routines and automations
 - [docs/newsroom-skill-suite.md](docs/newsroom-skill-suite.md) — current skill architecture and future split rules
 - [docs/collectors.md](docs/collectors.md) — bring your own sources
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into Assignment Board material
@@ -223,7 +225,7 @@ cd morning-paper
 pip install -e ".[dev,pretty]"
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=src python -m pytest tests/
 python scripts/setup_scaffold_smoke.py --isolated
-python scripts/fresh_friend_smoke.py
+python scripts/new_user_smoke.py
 python scripts/dogfood_newsroom_smoke.py
 python scripts/five_edition_loop_smoke.py
 python scripts/source_shape_intake_smoke.py

@@ -17,7 +17,7 @@ contracts the edition skill obeys** (not four empty directories), and
 honestly at every step — a paper with two sources beats a broken setup with ten.
 
 The keystone of this skill is §5: setup must **write** the newsroom's
-contracts. A friend who finishes setup has a `CLAUDE.md`, section specs led by
+contracts. A reader who finishes setup has a `CLAUDE.md`, section specs led by
 The Read, newsroom-native taste files (`EDITORIAL.md`, `VISUALS.md`,
 `SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`), an empty reads-ledger, voice and
 desk-sheet preferences, an editions dir, and a collector contract with worked
@@ -33,8 +33,8 @@ The current skill architecture is in `docs/newsroom-skill-suite.md`: `setup`,
 `edition`, and `writing` stay as the public skills, while newsroom roles live
 inside `ROLES.md`, `docs/roles/`, and each edition's `desks/` artifacts.
 
-The daily routine's default completion promise is in
-`docs/daily-run-contract.md`. Setup should capture only the reader-specific
+The edition routine's default completion promise is in
+`docs/edition-run-contract.md`. Setup should capture only the reader-specific
 overrides: whether a desk sheet is enabled, which delivery attempts are
 required, which sources are mandatory, and what should count as a blocker in
 their private `DELIVERY.md`.
@@ -734,26 +734,28 @@ Offer the matching prompt:
 
 ```text
 Set up a Claude Code routine with a schedule trigger that builds my Morning
-Paper each weekday morning. Use this private newsroom to make today's paper,
-render the PDF, open or deliver it according to DELIVERY.md, and tell me only
-if the run failed or needs my attention. If you are in the Claude Code CLI, use
-/schedule to create the routine.
+Paper on my chosen cadence (weekday mornings by default unless I say
+otherwise). Use this private newsroom to make the next edition, render the PDF,
+open or deliver it according to DELIVERY.md, and tell me only if the run failed
+or needs my attention. If you are in the Claude Code CLI, use /schedule to
+create the routine.
 ```
 
 ```text
-Set up a Codex automation that builds my Morning Paper each weekday morning.
-Use this private newsroom/project to build today's edition, render the PDF, and
-report the PDF path plus anything that needs my attention. Use a Codex automation
-environment that can actually see this newsroom.
+Set up a Codex automation that builds my Morning Paper on my chosen cadence
+(weekday mornings by default unless I say otherwise). Use this private
+newsroom/project to build the next edition, render the PDF, and report the PDF
+path plus anything that needs my attention. Use a Codex automation environment
+that can actually see this newsroom.
 ```
 
 ```text
-Set up a ChatGPT scheduled task for my Morning Paper. Each weekday morning,
-check whether today's paper was produced or remind me to make today's paper in
-my newsroom. If you have an approved way to access the
-newsroom runner, use it; otherwise do not pretend you rendered the PDF. Do not
-assume a scheduled task can read project files or my local newsroom unless that
-access is explicitly available.
+Set up a ChatGPT scheduled task for my Morning Paper. On my chosen cadence,
+check whether the next edition was produced or remind me to make the paper in
+my newsroom. If you have an approved way to access the newsroom runner, use it;
+otherwise do not pretend you rendered the PDF. Do not assume a scheduled task
+can read project files or my local newsroom unless that access is explicitly
+available.
 ```
 
 Only if they specifically want a machine-local fallback, run

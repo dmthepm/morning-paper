@@ -15,7 +15,7 @@ through the same renderer, under the same page budget.
 
 ## Start With A Source Experiment
 
-Do not make an untested scrape, export, or tool call part of the daily routine
+Do not make an untested scrape, export, or tool call part of the edition routine
 just because it worked once in chat. Start with a source experiment:
 
 1. Name the source and the beat it should support.

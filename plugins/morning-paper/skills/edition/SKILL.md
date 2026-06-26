@@ -23,7 +23,7 @@ context windows to report, edit, proof, deliver, and learn taste without relying
 on chat memory. The skill architecture is in `docs/newsroom-skill-suite.md`;
 the role model is in `ROLES.md`.
 
-The unattended completion promise is in `docs/daily-run-contract.md`. Keep
+The unattended completion promise is in `docs/edition-run-contract.md`. Keep
 working until the run is `complete`, `complete_with_notes`, or `blocked`. Do
 not stop for ordinary source gaps, thin desks, or editorial uncertainty: record
 source-health notes, cut/hold weak material, and ship the best honest paper.
@@ -83,7 +83,15 @@ or separate context windows, use `ROLES.md` and `docs/roles/` from the public
 engine repo. Every role that runs writes one markdown artifact with YAML
 frontmatter into `editions/<date>/desks/`. Beat reporters that run in parallel
 use `03.1`, `03.2`, `03.3`, and so on. If the host cannot split contexts, run
-the same roles sequentially and leave the same handoff files when useful.
+the same roles sequentially and leave the same handoff files.
+
+Substantial edition rule: a real edition (8+ estimated/rendered pages, or any
+broad/source-rich run) needs the late desks. Run and persist `04-editor.md`,
+`05-copy-desk.md`, `06-art-desk.md`, and, after final-editor/status,
+`07-producer.md`. Reporter handoffs alone are not enough. If a subagent returns
+richer findings than the current desk file, update the desk file before using
+that work. The run ticket will block substantial editions that skip these
+gates.
 
 ## The pass
 
@@ -106,10 +114,10 @@ the same roles sequentially and leave the same handoff files when useful.
    assignment-board . --date <edition-date>` when the board needs refreshing.
    If the host supports subagents and the source surface is broad, split this
    pass: the Assignment Editor inventories source health and assigns beats;
-   beat reporters test one source family or topic lane each. They write role
-   artifacts into `editions/<date>/desks/`, plus source markdown, source
-   ledgers, or collector notes when the newsroom uses them. They do not write
-   the final paper.
+   beat reporters test one source family or topic lane each. They find more
+   candidates than the paper needs, preserve source specifics, mark repeat
+   risk, and write role artifacts into `editions/<date>/desks/`. They do not
+   write the final paper.
 2. **Read the newsroom.** `specs/*` (section contracts), `EDITORIAL.md`
    (what earns ink), `VISUALS.md` (charts/images/layout), `SOURCES.md`
    (source purpose and cadence), `DELIVERY.md` (how the paper lands), and
@@ -145,24 +153,11 @@ the same roles sequentially and leave the same handoff files when useful.
      specific posts, threads, releases, artifacts, and disagreements. Do not
      flatten them into generic "people are talking about" summaries unless the
      concrete evidence is visible on the page.
-   - For X/social sections, show the actual pulled post or thread excerpt as
-     the card's main object. Do not replace every post with agent-written
-     Claim/Context boilerplate; selection is the editorial act.
-   - Treat social search results as discovery, not print-ready copy. If a
-   social item earns space, prove it first: full text, author/date, metrics
-     when available, media/artifact links, thread/reply/quote/article context,
-     and a clear route (`tweet card`, `thread`, `long read`, `source health`,
-     or `cut`). Do not print ellipsis-truncated snippets as whole posts.
-   - Budget fast social sources by beat, not only by platform. A single X/social
-     source may have separate lanes for frontier agents, coding workflows,
-     commerce, creative models, or a reader-specific project. Spend pages on
-     the lanes that have real evidence today, and leave thin lanes as source
-     health notes.
-   - Inspect media and long-native social posts before print. Images,
-     screenshots, videos, demos, and X Articles may earn a small figure,
-     annotated crop, mini-read, or full-read route; they should not be ignored
-     just because the first card layout was text-only. Include media only when
-     it clarifies and remains printer-friendly.
+   - For X/social sections, show actual hydrated posts, threads, native
+     articles, media, and linked artifacts. Search results are discovery, not
+     print-ready copy. If a social item is truncated or snippet-only, put it in
+     `needs_hydration` or Source Health instead of printing it as a tweet. See
+     `docs/roles/beat-reporter.md` for the required social handoff fields.
    - Keep consumption and ideation separate. Do not weave agent advice, next
      actions, post ideas, or reader-specific prompts into source cards unless
      the newsroom explicitly asks for that shape. If ideation earns space, put
@@ -170,22 +165,32 @@ the same roles sequentially and leave the same handoff files when useful.
    - A visual decision. If the edition runs long, add at least one earned
      chart, figure, diagram, or deliberately visual page from `VISUALS.md` and
      the collected data. If no visual earns ink, say why in the handoff.
+   Keep process/self-reference small: unless the reader explicitly asks, no
+   more than about three pages of a 20-page paper should be about the paper,
+   run status, source health, or production notes. Put proof details in the run
+   ticket and desk handoffs.
+   For substantial editions, stop here and run `04-editor.md`: the Editor
+   chooses the lead, page/source budgets, cuts, holds, repeats, and any extra
+   reporting needed before draft lock.
 4. **The revision pass (mandatory when `preferences/voice.md` exists, recommended always).**
-   Load `skills/writing` and run its discipline over the draft: the Strunk
+   For substantial editions, run `05-copy-desk.md` as its own pass. Load
+   `skills/writing` and run its discipline over the draft: the Strunk
    per-sentence checks, the AI-tells cut list, the craft that makes a page
-   worth reading. Aim: same information, markedly fewer words — then spend
-   the reclaimed space on MORE useful context, not whitespace. The reader's
-   voice preferences in `preferences/voice.md` override every default in
-   that skill; honor them exactly.
+   worth reading. Aim: same information, markedly fewer words — then spend the
+   reclaimed space on more useful context, not padding. The reader's voice
+   preferences in `preferences/voice.md` override every default in that skill;
+   honor them exactly.
 
 5. **Budget.** Run
    `morning-paper edition estimate . --date <edition-date>` and keep its JSON
-   in `estimate-result.json`. Fit `page_budget` ±2 by cutting the weakest
-   material, never by shrinking type. Track page budget, source budget,
-   beat/topic budget, full-read budget, visual budget, and research budget. For
-   new or changing source layouts, render a small proof page when useful so the
-   editor can see how many real items fit before locking the whole edition. If
-   you edit `draft.md` after estimating, rerun the estimate before rendering.
+   in `estimate-result.json`. Treat `page_budget` as a ceiling and appetite
+   signal, not a quota. Cut the weakest material when over budget; do not shrink
+   type, add filler, or add process pages when under budget. Track page budget,
+   source budget, beat/topic budget, full-read budget, visual budget, and
+   research budget. For new or changing source layouts, render a small proof
+   page when useful so the editor can see how many real items fit before
+   locking the whole edition. If you edit `draft.md` after estimating, rerun
+   the estimate before rendering.
 6. **Render.** `morning-paper render draft.md --style <their style> --palette
    <their palette> --date <today> --id edition`. Save the command's JSON as
    `render-result.json`.
@@ -200,7 +205,8 @@ the same roles sequentially and leave the same handoff files when useful.
    or source/synthetic note when provenance matters.
    When the host supports subagents, this is an art-desk pass: ask a fresh
    visual reviewer to inspect the draft/render/review output and propose only
-   visuals that improve comprehension inside the page budget.
+   visuals that improve comprehension inside the page budget. For substantial
+   editions, save this as `06-art-desk.md` before final-editor.
 8. **Editorial review.** Run the copy desk over the finished edition before it
    ships: `morning-paper review <edition-dir> --json`. Save the output as
    `review.json`. It reads the composed artifacts and returns editorial
@@ -229,10 +235,15 @@ the same roles sequentially and leave the same handoff files when useful.
    - `review` → revise, re-render, re-review, and run final-editor again; or
      record the explicit editorial rationale for shipping despite the flag.
 10. **Run ticket.** Run `morning-paper edition status . --date <edition-date>`
-   and save its JSON/markdown. It maps the whole daily run to `complete`,
+   and save its JSON/markdown. It maps the whole edition run to `complete`,
    `complete_with_notes`, or `blocked`, and records whether desk role
-   artifacts exist for the run.
-11. **Deliver.** Their saved print command (duplex flag and all), or just hand
+   artifacts exist for the run. If the run is substantial and the ticket blocks
+   on missing desk quality gates, run the missing desks, rerun estimate/render
+   if the draft changed, then rerun final-editor/status.
+11. **Producer and deliver.** For substantial editions, run `07-producer.md`
+   after final-editor/status and rerun status so the ticket reflects the
+   producer handoff. Then deliver using their saved print command (duplex flag
+   and all), or just hand
    back the PDF path. If `preferences/desk-sheet.yaml` enables the separate
    desk sheet, render or hand back `desk-sheet.md` with the edition; the
    default is a No. 10-style writing sheet with generous note space, a small

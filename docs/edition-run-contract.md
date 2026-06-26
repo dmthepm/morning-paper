@@ -1,9 +1,13 @@
-# Daily Run Contract
+# Edition Run Contract
 
 Morning Paper needs an unattended completion promise. A routine, automation, or
 scheduled agent should keep working until it has produced a real edition or hit
 a defined blocker. It should not stop mid-run to ask the reader ordinary
 editorial questions.
+
+Cadence is a reader preference, not part of the contract. One newsroom may run
+every weekday, another weekly, monthly, quarterly, or only on demand. Once a run
+starts, the same edition-run rules apply.
 
 The paper is the product. The Assignment Board, collectors, ledgers, review
 files, and source health notes exist so agents can coordinate and recover
@@ -26,7 +30,8 @@ For the public project, a run is **complete** when all of these are true:
 9. `morning-paper edition visual-qa` ran.
 10. `morning-paper edition final-editor` ran and returned `clean` or `notes`,
     or the agent recorded a clear rationale for shipping despite a review flag.
-11. Memory and ledgers were updated enough to prevent obvious repeats tomorrow.
+11. Memory and ledgers were updated enough to prevent obvious repeats in the
+    next edition.
 12. `morning-paper edition status` wrote a current run ticket.
 13. The edition folder contains the durable artifacts another agent needs to
     resume: source inventory, collector report, Assignment Board, draft,
@@ -116,7 +121,7 @@ The reader's normal feedback loop remains the paper and desk sheet:
 
 ```text
 read paper -> mark desk sheet or reply in chat -> agent applies feedback ->
-tomorrow's newsroom is better
+the next edition is better
 ```
 
 ## No External Action By Default
@@ -127,4 +132,4 @@ memory. It should not publish posts, send replies, draft outbound emails, edit
 Shopify, or run work loops unless a future explicit extension says so.
 
 Future action-oriented desks can build on the same newsroom model, but they are
-not part of the default daily run contract.
+not part of the default edition run contract.

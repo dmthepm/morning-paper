@@ -6,14 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.10] - 2026-06-26
+
+### Added
+- Added a `needs_hydration` Assignment Board lane so snippet-only social items
+  are routed for full text, author/date, metrics, media, and thread context
+  before they can print as posts.
+- Added scaffolded `preferences/source-budgets.yaml` with source/beat appetite,
+  max pages about the paper, and cut-first rules.
+- Added a `process-density` review nudge for editions that spend too much
+  reader-facing space on run tickets, source-health proof, or production state.
+
 ### Changed
-- Reframed public copy around "a real paper every morning" and "make today's
-  paper" while keeping the public skill names `setup`, `edition`, and
-  `writing` stable.
-- Archived release-readiness notes, exploratory brand/visual notes, and the
-  pre-0.8.9 gap audit under `docs/archive/`.
-- Replaced the long friend-ready release notebook with a shorter current
-  newsroom contract.
+- Substantial editions now require separate editor, copy desk, art desk,
+  and producer handoffs. `edition final-editor` and `edition status` flag or
+  block missing late desks for 8+ page runs.
+- The edition skill and role references now treat page budgets as ceilings and
+  appetite signals, not quotas, and tell agents to ship thin honest papers
+  instead of adding filler.
+- Social/X guidance now centers hydrated posts, threads, native articles,
+  media, and linked artifacts rather than generic summaries or truncated
+  snippets.
+- Retired an accidental standalone setup/readiness contract as a current public
+  doc and moved its useful promises into README, the edition run contract, the
+  skill architecture, the private newsroom operating model, and role docs.
+
+### Fixed
+- Removed stale model-name examples from the writing skill's AI-tell guidance.
+- Tightened producer guidance to catch stale production truth and filler final
+  pages before delivery.
 
 ## [0.8.9] - 2026-06-26
 
@@ -22,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   orchestrator, assignment editor, beat reporters, editor, copy desk, art desk,
   producer, and taste editor.
 - `edition prepare` now scaffolds `editions/<date>/desks/README.md`, the
-  handoff contract for role artifacts in each daily run.
+  handoff contract for role artifacts in each edition run.
 - `edition status` now records desk role artifacts in the run ticket, validates
   their required YAML frontmatter, and blocks the run when a role artifact
   reports `status: blocked`.
@@ -32,20 +53,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   skill surface at `setup`, `edition`, and `writing`, and treats newsroom roles
   as assignable desks inside the edition workflow.
 - `PRODUCT.md` and `DESIGN.md` are now explicitly internal product/design
-  context for shaping surfaces, while `docs/friend-ready-newsroom.md` and
-  `ROLES.md` are the operating contracts for running the paper.
-- Renamed the old generic readiness/gap docs to newsroom-native contracts:
-  `docs/friend-ready-newsroom.md` and `docs/newsroom-gap-audit.md`.
+  context for shaping surfaces, while `docs/edition-run-contract.md`,
+  `docs/private-newsroom-operating-model.md`, and `ROLES.md` are the operating
+  contracts for running the paper.
+- Renamed the old generic readiness/gap docs to newsroom-native contracts.
 
 ## [0.8.8] - 2026-06-26
 
 ### Added
-- Added `docs/daily-run-contract.md`, the unattended completion promise for
+- Added `docs/edition-run-contract.md`, the unattended completion promise for
   routines and automations. It defines `complete`, `complete_with_notes`, and
   `blocked`, plus graceful source-failure behavior, hard blockers, per-newsroom
   overrides, the Assignment Board role, and the default "no external action
   outside the paper" boundary.
-- Edition and setup skills now point at the Daily Run Contract so fresh agents
+- Edition and setup skills now point at the Edition Run Contract so fresh agents
   keep working until the run is complete, complete with notes, or truly blocked.
 - New scaffolded newsrooms include Done Contract language in `CLAUDE.md` and
   explicit Done Contract override fields in `DELIVERY.md`.
@@ -183,10 +204,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   as needing a converter collector instead of being implied as ready-to-stage.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
-- Active setup, edition, collector, roadmap, and friend-ready newsroom docs now describe a
+- Active setup, edition, collector, roadmap, and new-user ready newsroom docs now describe a
   newsroom intake layer for work systems, people, saved reading, exports,
   folders, and agent outputs instead of centering public feed examples.
-- `scripts/fresh_friend_smoke.py` now checks first-edition quality, not just
+- `scripts/new_user_smoke.py` now checks first-edition quality, not just
   PDF existence: The Read, source inventory, page budget, feedback route,
   durable feedback file routing, clean review status, and reader-owned next
   source candidates must all be present.
@@ -240,7 +261,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Verified
 - Current local release-candidate checks pass: unit tests, Codex plugin
   validation, Claude Code plugin validation, host plugin smoke, setup scaffold
-  smoke, fresh-friend persona simulations, and clean wheel/sdist install checks
+  smoke, new-user persona simulations, and clean wheel/sdist install checks
   with WeasyPrint 69.0 and a rendered demo PDF.
 
 ## [0.8.1] - 2026-06-22
@@ -261,14 +282,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `_font_face_css` now emits the correct `format()` hint per file
   (`opentype` for `.otf`, `truetype` for `.ttf`) so WeasyPrint loads the OTF
   serif instead of skipping it.
-- `tests/test_friend_contract.py` reads `pyproject.toml` with a tolerant regex
-  instead of `tomllib`, so the friend-contract guardrail runs on Python 3.10
+- `tests/test_public_contract.py` reads `pyproject.toml` with a tolerant regex
+  instead of `tomllib`, so the public-contract guardrail runs on Python 3.10
   (the package's floor) instead of erroring at import.
 
 ## [0.8.0] - 2026-06-22
 
 ### Added
-- **Friend-ready personal newsroom setup.** `morning-paper newsroom init
+- **New-user ready personal newsroom setup.** `morning-paper newsroom init
   <path>` now scaffolds a private newsroom repo with resumable setup state
   (`setup-state.json` + `SETUP.md`), the operating constitution (`CLAUDE.md`),
   section specs, source collectors, edition templates, memory files, and
@@ -298,7 +319,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   open the PDF (`open`, `start`, or `xdg-open`) so setup ends with the product
   on screen.
 - **Release verification machinery.** New smoke scripts cover setup scaffold,
-  fresh-friend personas, host plugin installs, install-smoke, and clean release
+  new-user personas, host plugin installs, install-smoke, and clean release
   artifact builds. `scripts/release_candidate_check.py` builds from a clean
   source copy, rejects stale build debris, and can install both wheel and sdist
   with `[pretty]` to prove `doctor --strict` and demo rendering before publish.
@@ -339,7 +360,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Verified
 - Current local release-candidate checks pass: unit tests, Codex plugin
   validation, Claude Code plugin validation, install-smoke, host plugin smoke,
-  setup scaffold smoke, fresh-friend persona simulations, `doctor --strict`,
+  setup scaffold smoke, new-user persona simulations, `doctor --strict`,
   and clean wheel/sdist install checks with WeasyPrint 69.0 and a rendered demo
   PDF.
 
@@ -359,7 +380,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 - **Full-text RSS — feeds that ship the whole article now print as real reads.** `fetch_rss_feeds` reads `content:encoded` (feedparser's `entry.content`) into a new `SourceItem.body` field, kept whole (never truncated). `summary` stays the short blurb, still capped at 280 chars. The broadsheet build reads (`_render_broadsheet_reads`) and the markdown render print the full `body` when present, falling back to the capped summary for summary-only feeds — so a full-text feed (Substack/Atom full, paid full-text feeds) prints the essay, not a 280-char clip, while summary feeds are unchanged. The build JSON carries `body` automatically. The engine learns nothing about any specific feed: it just stops mangling full-text RSS
-- **The setup scaffold — `setup` writes the newsroom's working contracts, not empty folders.** The `setup` skill's §5 now generates a genericized, fully working newsroom: an operating constitution (`CLAUDE.md`) with the ordered LAW input list and the honesty rule; section specs led by `specs/the-read.md` (the four moves: GAPS / CONNECTIONS / ALIGNMENT-DRIFT / NEXT MOVE; the NO-MIRRORING / OUTSIDE-IN / SURPRISE-ONCE rules) plus `front-page.md`, `reading.md`, and a five-field `_template.md`; `preferences/` (voice template, commented `algorithm-prior.yaml` — the installable artifact behind "own your algorithm" — and a commented `checks.yaml`); `memory/` (an EMPTY `reads-ledger.md`, an empty `MEMORY.md` index, a `threads/` README); an `editions/` dir with a `*.pdf` gitignore; and a `collectors/` contract (`_lib.sh`, `run_all.sh`, and two worked examples) that follows the public `morning-paper stage`/`queue.json` contract — never the old `editions/<date>/data/` path. The result is a paper a fresh friend gets end-to-end, with zero operator-specific content
+- **The setup scaffold — `setup` writes the newsroom's working contracts, not empty folders.** The `setup` skill's §5 now generates a genericized, fully working newsroom: an operating constitution (`CLAUDE.md`) with the ordered LAW input list and the honesty rule; section specs led by `specs/the-read.md` (the four moves: GAPS / CONNECTIONS / ALIGNMENT-DRIFT / NEXT MOVE; the NO-MIRRORING / OUTSIDE-IN / SURPRISE-ONCE rules) plus `front-page.md`, `reading.md`, and a five-field `_template.md`; `preferences/` (voice template, commented `algorithm-prior.yaml` — the installable artifact behind "own your algorithm" — and a commented `checks.yaml`); `memory/` (an EMPTY `reads-ledger.md`, an empty `MEMORY.md` index, a `threads/` README); an `editions/` dir with a `*.pdf` gitignore; and a `collectors/` contract (`_lib.sh`, `run_all.sh`, and two worked examples) that follows the public `morning-paper stage`/`queue.json` contract — never the old `editions/<date>/data/` path. The result is a paper a new user gets end-to-end, with zero operator-specific content
 - The `examples/brief.example.md` skeleton is now the edition skeleton the scaffold copies into the newsroom and the `edition` skill references
 
 ### Changed
@@ -396,7 +417,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [0.5.1] - 2026-06-12
 
 ### Added
-- **`morning-paper routine` — the paper without the chat.** The editor is an agent, so the scheduled job is just `claude -p` run headless against the user's existing subscription: `routine install` schedules a daily run of the edition skill (default 05:00, `--time HH:MM` to change, `--command CMD` to replace the job; if `claude` is not on PATH the install refuses, warns, and prints the exact command to wire into your own scheduler). Platform ladder: macOS gets a launchd LaunchAgent (`~/Library/LaunchAgents/com.morning-paper.edition.plist`) using `StartCalendarInterval` — chosen because launchd coalesces runs missed during sleep into one run on wake, so the paper is ready when the laptop opens; `RunAtLoad` stays false (install never triggers an immediate run) and the installing user's `PATH` is frozen into the job so launchd's minimal environment can still find `claude`. Linux gets a systemd user timer with `Persistent=true` (the same catch-up behavior), falling back to a crontab line with the honest note that cron has no coalescing. Loading prefers `launchctl bootstrap gui/$UID` with a legacy `launchctl load` fallback
+- **`morning-paper routine` — the paper without the chat.** The editor is an agent, so the scheduled job is just `claude -p` run headless against the user's existing subscription: `routine install` schedules a edition run of the edition skill (default 05:00, `--time HH:MM` to change, `--command CMD` to replace the job; if `claude` is not on PATH the install refuses, warns, and prints the exact command to wire into your own scheduler). Platform ladder: macOS gets a launchd LaunchAgent (`~/Library/LaunchAgents/com.morning-paper.edition.plist`) using `StartCalendarInterval` — chosen because launchd coalesces runs missed during sleep into one run on wake, so the paper is ready when the laptop opens; `RunAtLoad` stays false (install never triggers an immediate run) and the installing user's `PATH` is frozen into the job so launchd's minimal environment can still find `claude`. Linux gets a systemd user timer with `Persistent=true` (the same catch-up behavior), falling back to a crontab line with the honest note that cron has no coalescing. Loading prefers `launchctl bootstrap gui/$UID` with a legacy `launchctl load` fallback
 - `routine status` — JSON: installed?, scheduler, schedule (time + plain-language semantics), the raw command, last run (parsed from timestamped run markers the routine wraps around every invocation in `~/.local/share/morning-paper/routine.log`, plus `launchctl print` state on macOS), computed next fire, and the log path. `routine uninstall` removes the job cleanly and is idempotent — uninstalling an absent routine is a no-op, not an error
 - `doctor` now reports the routine (installed/not, scheduler, time) — in `--json` under `"routine"` and as a human line; absence is informational, never an error
 - The scheduling ladder documented in the README ("The morning routine"): Tier 0 say-"paper"-each-morning, Tier 1 `routine install` laptop-wake magic, Tier 2 always-on (+ the `pmset repeat wakeorpoweron` note for self-waking Macs), Tier 3 cloud-compose split. docs/composing.md points at the seam; the setup skill's routine section now offers the real command and the ladder

@@ -39,6 +39,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
                 "specs/reading.md",
                 "preferences/voice.md",
                 "preferences/algorithm-prior.yaml",
+                "preferences/source-budgets.yaml",
                 "preferences/checks.yaml",
                 "collectors/CONVERTERS.md",
                 "collectors/_lib.sh",
@@ -104,6 +105,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             visuals = (root / "VISUALS.md").read_text(encoding="utf-8")
             self.assertIn("Visual Desk", visuals)
             self.assertIn("major_visuals_per_edition", visuals)
+            self.assertIn("substantial_edition_minimum", visuals)
             self.assertIn("Do not leave a visual floating narrower", visuals)
             self.assertIn("Reading Furniture", visuals)
             self.assertIn("Desk Sheet", visuals)
@@ -126,7 +128,16 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("YouTube", sources)
             self.assertIn("experiments first", sources)
             self.assertIn("beats, not raw link", sources)
+            self.assertIn("Social Hydration", sources)
+            self.assertIn("needs_hydration", sources)
             self.assertNotIn("Hacker News", sources)
+
+            source_budgets = (root / "preferences" / "source-budgets.yaml").read_text(encoding="utf-8")
+            self.assertIn("source-budgets.yaml", source_budgets)
+            self.assertIn("max_pages_about_the_paper: 3", source_budgets)
+            self.assertIn("frontier_agents", source_budgets)
+            self.assertIn("commerce_shopify", source_budgets)
+            self.assertIn("require_hydrated_posts: true", source_budgets)
 
             inbox = (root / "inbox" / "README.md").read_text(encoding="utf-8")
             self.assertIn("Local Drop Inbox", inbox)
@@ -143,6 +154,8 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Obsidian", converters)
             self.assertIn("GitHub / Main Branch", converters)
             self.assertIn("Social / Video", converters)
+            self.assertIn("hydration_status", converters)
+            self.assertIn("tweet card", converters)
             self.assertIn("Do not move or mutate originals", converters)
 
             delivery = (root / "DELIVERY.md").read_text(encoding="utf-8")

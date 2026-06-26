@@ -338,13 +338,13 @@ def main() -> int:
     env = os.environ.copy()
     env["PYTHONPATH"] = f"{SRC}{os.pathsep}{env.get('PYTHONPATH', '')}"
 
-    with tempfile.TemporaryDirectory(prefix="morning-paper-friend-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="morning-paper-new-user-") as tmp:
         base = Path(tmp)
         results = [simulate(persona, base, env) for persona in PERSONAS]
         report = {"base": str(base), "results": results, "ok": all(item["ok"] for item in results)}
         print(json.dumps(report, indent=2))
         if args.keep:
-            kept = Path(tempfile.mkdtemp(prefix="morning-paper-friend-kept-"))
+            kept = Path(tempfile.mkdtemp(prefix="morning-paper-new-user-kept-"))
             import shutil
 
             shutil.copytree(base, kept / "simulations", dirs_exist_ok=True)

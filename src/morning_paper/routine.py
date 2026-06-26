@@ -633,7 +633,7 @@ def routine_command(args: list[str]) -> int:
     usage = (
         "usage: morning-paper routine <install|status|uninstall> "
         "[--time HH:MM] [--command CMD] [--workdir PATH]\n"
-        "  --workdir PATH  newsroom directory the daily run starts in "
+        "  --workdir PATH  newsroom directory the edition run starts in "
         "(default: current directory)"
     )
     if not args or args[0] in {"-h", "--help"}:
@@ -667,7 +667,7 @@ def routine_command(args: list[str]) -> int:
         if workdir is not None and not os.path.isdir(workdir):
             print(
                 f"invalid --workdir {workdir!r}: not an existing directory — pass the "
-                "newsroom directory the daily run should start in "
+                "newsroom directory the edition run should start in "
                 "(default: current directory)",
                 file=sys.stderr,
             )
