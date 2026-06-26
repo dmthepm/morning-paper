@@ -200,18 +200,18 @@ use `--newsroom <path>` when checking from somewhere else.
 
 ## Docs
 
-- [docs/collectors.md](docs/collectors.md) — bring your own sources
+- [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) — product and visual context for shaping public/product surfaces
+- [docs/friend-ready-newsroom.md](docs/friend-ready-newsroom.md) — shipped friend-ready newsroom contract
+- [ROLES.md](ROLES.md) — the newsroom role model and handoff contract
+- [docs/roles/](docs/roles/) — role references for orchestrator, assignment editor, beat reporters, editor, copy desk, art desk, producer, and taste editor
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
 - [docs/daily-run-contract.md](docs/daily-run-contract.md) — the unattended completion promise for routines and automations
-- [docs/public-visual-model.md](docs/public-visual-model.md) — the website/README visual contract for the paper, Desk Sheet, and private newsroom
-- [docs/product-gap-analysis.md](docs/product-gap-analysis.md) — current gaps between the working product and the paper-first newsroom vision
-- [docs/newsroom-metaphor.md](docs/newsroom-metaphor.md) — the newsroom/pressroom product model, roles, data structures, and prototype surfaces
-- [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes behind the public design direction
+- [docs/newsroom-skill-suite.md](docs/newsroom-skill-suite.md) — current skill architecture and future split rules
+- [docs/collectors.md](docs/collectors.md) — bring your own sources
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into Assignment Board material
 - [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
 - [docs/inbox.md](docs/inbox.md) — trusted contributor email intake
-- [docs/newsroom-skill-suite.md](docs/newsroom-skill-suite.md) — next skill architecture
 - [ROADMAP.md](ROADMAP.md) — what shipped, what's next
 - [CHANGELOG.md](CHANGELOG.md) — release history
 

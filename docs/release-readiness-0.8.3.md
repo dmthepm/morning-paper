@@ -77,7 +77,7 @@ versions, runs `doctor --strict`, and renders a demo PDF.
 
 | Gate | Evidence |
 | --- | --- |
-| Docs and skills agree | README, `AGENTS.md`, setup/edition skills, changelog, and product-readiness docs use the same setup/source/feedback model. |
+| Docs and skills agree | README, `AGENTS.md`, setup/edition skills, changelog, and friend-ready newsroom docs use the same setup/source/feedback model. |
 | README stays concise and true | README keeps details to setup, sources, daily routine, styles, agents, and development. |
 | No stale source identity | Current-facing docs and examples describe the whole source stack; legacy built-ins are off by default. |
 | No stale scraper assumption | Local extraction is default; remote fallback is explicit; scraper/parser packages are treated as implementation details. |

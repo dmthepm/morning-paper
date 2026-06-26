@@ -1,22 +1,26 @@
-# Morning Paper Newsroom Skill Suite
+# Morning Paper Skill Architecture
 
-Status: design contract for the next hardening pass. Do not implement the full
-suite until the current `setup`/`edition`/`writing` skills have been evaluated
-against real friend prompts.
+Status: current skill contract plus future split rules. Keep this aligned with
+`ROLES.md`, the plugin manifests, and the setup/edition/writing skills.
+The friend-ready newsroom contract lives in
+[`docs/friend-ready-newsroom.md`](friend-ready-newsroom.md). Product/design
+surface context lives separately in root `PRODUCT.md` and `DESIGN.md`.
 
 ## Principle
 
-Morning Paper skills are newsroom desks. Each skill should help an agent decide
-what to do, read the right durable files, call the CLI for deterministic work,
-and write the smallest durable update back to the private newsroom.
+Morning Paper skills are newsroom desks, but not every desk should be a public
+skill. The reader-facing path stays simple:
 
-The full product operating model lives in
-[`docs/private-newsroom-operating-model.md`](private-newsroom-operating-model.md).
-Keep this skill suite aligned with that vision: a reader owns their algorithm
-in a private newsroom; agents collect, report, edit, proof, deliver, and evolve
-taste through files; the CLI supplies the repeatable tools.
+- "set up my morning paper"
+- "make today's paper"
+- "revise this like the paper"
 
-The split stays fixed:
+The agent can still run a full newsroom behind those prompts. The richer
+structure lives in role references, durable edition artifacts, and CLI checks.
+That lets Codex, Claude Code, Hermes, or another host map the same work to
+subagents, profiles, models, or a single sequential run.
+
+The product split stays fixed:
 
 - the agent composes and edits;
 - the CLI renders, estimates, stages, validates, and offers a local scheduling
@@ -28,26 +32,12 @@ The split stays fixed:
 Do not copy generic `product.md` / `design.md` conventions. Morning Paper has
 newsroom-native primitives already:
 
-- `EDITORIAL.md` — what earns ink, what gets cut, what makes The Read.
-- `VISUALS.md` — layout, charts, illustrations, image policy, PDF/email taste.
-- `SOURCES.md` — source purpose, trust, cadence, health, backlog.
-- `DELIVERY.md` — print, email, host-native recurrence/local fallback, page
+- `EDITORIAL.md` - what earns ink, what gets cut, what makes The Read.
+- `VISUALS.md` - layout, charts, illustrations, image policy, PDF/email taste.
+- `SOURCES.md` - source purpose, trust, cadence, health, backlog.
+- `DELIVERY.md` - print, email, host-native recurrence/local fallback, page
   budget, opening behavior.
-- `TASTELOG.md` — accepted/rejected feedback with dates and provenance.
-
-## Current Problem
-
-The three shipped skills prove the product path, but they are too broad for the
-next phase:
-
-- `setup` is doing interview, install, scaffold, source onboarding, recurring
-  setup guidance, and first-edition coaching in one very large body.
-- `edition` is the right main loop, but visual editing, source triage, feedback
-  digestion, and final proofing are becoming separate jobs.
-- `writing` is correctly narrow and should remain the copy desk.
-- The generic names (`setup`, `edition`, `writing`) are easy for humans but weak
-  as a long-term cross-plugin namespace. Future additions should use explicit
-  Morning Paper names unless host constraints require otherwise.
+- `TASTELOG.md` - accepted/rejected feedback with dates and provenance.
 
 ## Current Shipping Contract
 
@@ -59,119 +49,107 @@ next phase:
 
 That exact set is intentional. `scripts/install_smoke.py`,
 `scripts/host_plugin_smoke.py`, and `scripts/validate_codex_plugin.py` fail if
-an unfinished desk skill leaks into the plugin surface. Future desk skills must
-land with updated manifests, smoke contracts, eval prompts, and README/setup
-guidance in the same release.
+an unfinished desk skill leaks into the plugin surface. The names are plain
+because the user path is plain. Do not rename them casually; compatibility
+across hosts matters more than a neat taxonomy.
 
-## Proposed Suite
+## Skill Roles
 
-This section is a design direction, not shipped surface. Keep the friend-facing
-path simple: "set up my morning paper" and "build today's edition" should still
-work. Internally, grow toward narrow desks:
-
-| Skill | Role | Durable files read/write |
+| Skill | Public job | Internal newsroom shape |
 | --- | --- | --- |
-| `morning-paper-setup` | Front desk. Install, interview, create private newsroom, open demo/first PDF. | `SETUP.md`, `setup-state.json`, all initial contracts |
-| `morning-paper-status` | Triage. Inspect install, plugin state, newsroom state, host recurrence/local fallback, source health, latest edition. | reads state; writes no taste by default |
-| `morning-paper-sources` | Assignment desk. Discover, inventory, connect, and debug local/RSS/inbox/collector sources; test reader-owned scrape/export tools before a source becomes recurring. | `SOURCES.md`, collectors, source inventory |
-| `morning-paper-edition` | Editor-in-chief. Compose, render, review, deliver, ask for feedback. | edition workspace, all taste files |
-| `morning-paper-visuals` | Art/layout desk. Choose charts/images/illustrations, enforce visual fit, update style taste. | `VISUALS.md`, edition draft, render/review outputs |
-| `morning-paper-feedback` | Taste desk. Turn natural-language notes or desk-sheet photos into durable rules. | `TASTELOG.md`, smallest matching taste file |
-| `morning-paper-doctor` | Pressroom ops. Repair engine/plugin/install/native print stack/local fallback problems. | setup state, install logs; avoids editorial changes |
-| `morning-paper-writing` | Copy desk. Revise prose for clarity, honesty, and reader fit. | `EDITORIAL.md`, voice/preferences, draft |
+| `setup` | Install the engine, prove the demo PDF, interview the reader, and scaffold a private newsroom with real contracts. | Front desk plus first operator interview. It writes durable taste/source/delivery files, not empty folders. |
+| `edition` | Orchestrate today's paper end to end: prepare, collect, compose, render, review, prove, deliver, and route feedback. | Orchestrator. It may assign roles from `ROLES.md` into `editions/<date>/desks/`, then uses CLI artifacts as the run record. |
+| `writing` | Revise prose the paper will print. | Copy desk. It is intentionally narrow and should stay narrow. |
 
-The `edition` skill may orchestrate those desks with subagents before they
-ship as first-class skills. Subagents should write source-backed markdown,
-status, or review notes into the edition workspace; the editor-in-chief still
-owns the final paper.
+`edition` is the main one-liner skill. It can call the role model without
+forcing the user to think about roles. A serious run may create:
 
-The existing `setup`, `edition`, and `writing` skills can either stay as aliases
-or migrate to these explicit names in a compatibility release. Do not break the
-current manifests casually; cross-host discoverability matters more than a neat
-rename.
+- `01-orchestrator.md`
+- `02-assignment-editor.md`
+- `03.N-<beat>-reporter.md`
+- `04-editor.md`
+- `05-copy-desk.md`
+- `06-art-desk.md`
+- `07-producer.md`
+- `08-taste-editor.md`
+
+Those are role artifacts, not public skills.
+
+## When To Split A New Skill
+
+This section is a design direction, not shipped surface. A role can graduate
+into a first-class skill only when all of these are true:
+
+1. It has repeated, distinct user prompts that should trigger it directly.
+2. It needs enough procedure that keeping it inside `edition` hurts context
+   economy or reliability.
+3. It has realistic eval prompts comparing the new skill against the current
+   three-skill baseline.
+4. It ships with updated plugin manifests, smoke tests, README/setup guidance,
+   and any required CLI support in the same release.
+
+Until then, keep the public surface small and strengthen `ROLES.md`,
+`docs/roles/`, CLI checks, and edition artifacts.
+
+Likely future splits, if evals justify them:
+
+- source onboarding and collector repair;
+- feedback/taste digestion from Desk Sheet photos or chat notes;
+- visual/layout review when it becomes too large for `edition`;
+- install/pressroom repair separate from first-run setup.
 
 ## Skill Shape
 
-Each skill body should stay under roughly 500 lines and follow progressive
-disclosure:
+Follow the skill-creator guidance:
 
-- `SKILL.md` holds trigger behavior, required reads, command sequence, and stop
-  conditions.
-- `references/` holds long examples: source adapters, visual patterns, feedback
-  examples, delivery recipes.
-- `scripts/` holds deterministic checks when agents would otherwise rewrite
-  the same code: source inventory diffs, visual overflow audits, setup-state
-  validation, style-guide linting.
-- The skill should say which newsroom files it is allowed to modify and which
-  ones it must only read.
+- Keep SKILL.md bodies lean. Move long examples and variant-specific detail to
+  references or docs that the skill points at.
+- Put trigger behavior in the YAML `description`, not in a buried "when to use"
+  section.
+- Preserve the skill `name` unless making an intentional compatibility release.
+- Bundle scripts only when agents would otherwise rewrite the same deterministic
+  code repeatedly.
+- Forward-test substantial revisions with fresh contexts and raw artifacts, not
+  leaked diagnoses.
 
-## Visual Desk Contract
+Current length pressure:
 
-The visual skill exists because generated charts and illustrations can be
-beautiful while still wasting measure, stranding lines, or breaking a printed
-page. It should:
-
-- inspect the edition draft and rendered review output before changing visuals;
-- decide whether a visual should be full-width, two-column, inline, or cut;
-- prefer semantic charts (`mp-bars`, `mp-spark`, `mp-stats`) when they explain
-  data better than prose;
-- use generated or searched imagery only when it adds reporting value, texture,
-  or comprehension;
-- check print density, label collision, image resolution, and page-break impact;
-- update `VISUALS.md` when a reader accepts a stable visual preference.
-
-## Source Desk Contract
-
-The source skill should not force a user into Morning Paper's folder structure.
-It should meet existing systems where they are:
-
-- RSS feeds and newsletters;
-- local folders, Obsidian vaults, synced folders, exports, and agent output;
-- collector scripts owned by the private newsroom;
-- browser/API/scrape tools chosen by the reader;
-- optional business systems such as Main Branch.
-
-It should record source purpose and trust before volume. A source is not
-"configured" just because it can be scraped; it earns a role in the paper.
-
-For social systems such as X/Twitter, the default target should be a beat, not
-a raw link dump: recurring source shape, trust, cadence, and a clear answer to
-what the reader expects the beat to notice.
+- `writing` is healthy and narrow.
+- `edition` is acceptable but should keep pushing detail into `ROLES.md`,
+  `docs/roles/`, and CLI artifacts.
+- `setup` is too long. The next cleanup should move scaffold examples into
+  references or deterministic CLI templates while preserving the friend path.
 
 ## Evaluation Before Expansion
 
-Before shipping new skills, create realistic eval prompts:
+Before shipping new skills or renaming existing ones, create realistic eval
+prompts:
 
 - "Install this for my nontechnical friend and stop when the demo PDF is open."
-- "My paper feels too long and too tilted toward one source; tune tomorrow's edition."
+- "My paper feels too long and too tilted toward one source; tune tomorrow's
+  edition."
 - "Add my Obsidian project folder and a local Twitter export as sources."
 - "The chart on page one wasted space; make visuals fit the surrounding copy."
-- "I marked up today's desk sheet; update my paper's taste without overfitting."
+- "I marked up today's desk sheet; update my paper's taste without
+  overfitting."
 
-Compare the new suite against the current three-skill baseline. Success means
-better artifacts and fewer wrong durable edits, not more clever prose.
+Success means better artifacts, fewer wrong durable edits, fewer stops for
+ordinary uncertainty, and a more honest paper. It does not mean more public
+skills.
 
-## Reference Patterns
+## Patterns To Keep
 
-Patterns worth copying:
+- Small public skill surface.
+- Role references for separate contexts.
+- One markdown role artifact with YAML frontmatter per role.
+- Deterministic CLI checks for fragile proof work.
+- Source-of-truth files edited in place.
+- Evals that compare new behavior with the current baseline.
 
-- small composable skills with explicit triggers;
-- router skills that send the agent to the right narrow workflow;
-- deterministic scripts for fragile checks;
-- source-of-truth files edited in place;
-- evals that compare with-skill and baseline behavior.
+## Patterns To Avoid
 
-Patterns to avoid:
-
-- one giant skill that contains every adapter and every taste rule;
-- empty scaffolds that look complete but carry no operating contract;
-- dozens of source-specific skills before the source model is proven;
-- skills that bypass the CLI and reimplement rendering, staging, or scheduling;
-- skills that write public-repo docs with private newsroom facts.
-
-Useful outside references for the pattern library:
-
-- Matt Pocock skills: <https://github.com/mattpocock/skills>
-- Garry Tan gstack skills: <https://github.com/garrytan/gstack/blob/main/docs/skills.md>
-- Compound Engineering plugin: <https://github.com/everyinc/compound-engineering-plugin>
-- Awesome Agent Skills index: <https://github.com/VoltAgent/awesome-agent-skills>
+- One giant skill that contains every adapter and every taste rule.
+- A public skill per source before the source model is proven.
+- Skills that bypass the CLI and reimplement rendering, staging, or scheduling.
+- Skills that write public-repo docs with private newsroom facts.
+- Cute internal names that leak into user-facing language.

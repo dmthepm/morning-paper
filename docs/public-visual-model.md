@@ -1,5 +1,10 @@
 # Public Visual Model
 
+Status: exploratory visual note. It informs public presentation alongside root
+`PRODUCT.md` and `DESIGN.md`, but the current operating contract is
+`docs/friend-ready-newsroom.md`; the edition workflow obeys `ROLES.md`,
+`docs/roles/`, and the active skills first.
+
 Morning Paper should be shown first as a ritual and an object, not as software
 chrome. The public visual promise is:
 

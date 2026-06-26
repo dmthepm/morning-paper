@@ -13,24 +13,35 @@ newsletters, feeds, repos, notes, social exports, local folders, articles,
 voice notes, and agent-produced files.
 
 They are comfortable working with AI agents, but they do not want a black-box
-feed or a generic dashboard. They want a finite daily edition they can read,
-mark up, and improve over time.
+feed, a generic dashboard, or a new source marketplace. They want a finite
+daily edition they can read, mark up, and improve over time. The product should
+make them feel like they have a private newsroom working from their material,
+not like they are supervising an AI workflow chart.
 
 ## Product Purpose
 
 Morning Paper helps a reader turn their own sources, data, patterns, and taste
 into a finite daily paper. The reader owns the private newsroom as files:
-sources, preferences, memory, delivery rules, and feedback. Agents collect,
-edit, proof, and learn from those files. The CLI renders, estimates, reviews,
-and delivers deterministic artifacts.
+sources, preferences, memory, delivery rules, and feedback. The host agent is
+the orchestrator. It prepares the edition, assigns newsroom roles when useful,
+collects, composes, renders, reviews, proves, delivers, and routes feedback.
+The CLI renders, estimates, reviews, validates, stages, and records
+deterministic artifacts.
 
-The project sits between algorithmic and analog: it uses agents to build a
-reader-owned algorithm, then lands that intelligence as a real paper. The
-public promise should read in this order: a real paper every morning, a private
-newsroom behind it, and an algorithm the reader owns.
+The project sits between algorithmic and analog: it uses agents and durable
+files to build a reader-owned algorithm, then lands that intelligence as a real
+paper. The public promise should read in this order: a real paper every
+morning, a private newsroom behind it, and an algorithm the reader owns.
 
-Success is not a clever automation. Success is a readable edition on the desk,
-with a visible route for the reader's notes to become better taste tomorrow.
+Success is not a clever automation or a populated dashboard. Success is a
+readable edition on the desk, with a Desk Sheet or natural-language reply that
+lets the reader's notes become better taste tomorrow.
+
+PRODUCT.md and DESIGN.md are internal design/product context for surfaces,
+prototypes, and brand decisions. They are not operating contracts for the daily
+run. The friend-ready newsroom contract and `ROLES.md` define how agents
+actually run the paper; these files define how the product should feel, speak,
+and present that work.
 
 ## Brand Personality
 
@@ -48,8 +59,9 @@ like an object and a world people want to show other serious readers, while
 staying restrained enough to actually read and print.
 
 The tone is concise and grounded. Use newsroom language when it helps the user
-understand the system: newsroom, desk, beat, editor, art desk, copy desk, final
-editor, pressroom, edition, ledger. Do not turn every interaction into lingo.
+understand the system: newsroom, desk, beat, orchestrator, assignment editor,
+beat reporter, editor, copy desk, art desk, producer, taste editor, pressroom,
+edition, ledger. Do not turn every interaction into lingo or character play.
 Plain language wins when the metaphor gets in the way.
 
 Useful reference direction:
@@ -91,20 +103,24 @@ public impression leads with the paper.
 
 1. **The paper is the proof.** Every setup, collector, skill, and CLI command
    should point toward a real edition the reader can inspect.
-2. **The desk sheet is the loop.** The primary human interaction is reading the
-   paper, marking the desk sheet or replying naturally, and letting tomorrow's
+2. **The Desk Sheet is the loop.** The primary human interaction is reading the
+   paper, marking the Desk Sheet or replying naturally, and letting tomorrow's
    paper improve. Agent tuning is a superuser layer, not the morning ritual.
 3. **Own the algorithm, then make it finite.** The product turns many sources
    and adaptive preferences into one readable paper, not another stream.
 4. **Use metaphor as structure.** Newsroom language should clarify roles,
-   files, source health, and proofing. It should not become theatrical.
+   files, source health, proofing, and feedback routing. It should not become
+   theatrical.
 5. **Treat internal language as product language.** CLI nouns, file names, docs,
    and skills become the words agents use with readers. Prefer plain newsroom
    words: sources, desks, beats, candidates, assignment board, edition, proof.
-6. **Show the work without making work.** Sources, desks, ledgers, assignment
-   boards, and proof views should make the system more trustworthy and easier
-   to steer.
-7. **Nostalgia earns its place through utility.** Old software and print
+6. **The orchestrator is a backstage role.** The host agent may assign desks,
+   read handoffs, and prove the run, but the reader should mostly see a paper,
+   a path for notes, and clear status when something is blocked.
+7. **Show the work without making work.** Sources, desks, ledgers, assignment
+   boards, run tickets, and proof views should make the system more trustworthy
+   and easier to steer.
+8. **Nostalgia earns its place through utility.** Old software and print
    references should make the product feel personal and tangible, never merely
    decorative.
 

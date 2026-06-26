@@ -1,11 +1,11 @@
 ---
 name: setup
 description: >
-  Morning Paper cold-start: install the engine, interview the reader, scaffold
-  their private newsroom repo with working contracts (not empty folders), and
-  offer host-native recurring setup. Use on first run, when
-  ~/.config/morning-paper/config.yaml is missing, or when the user says
-  "set up my morning paper", "onboard me", "configure morning paper".
+  Morning Paper cold-start and first newsroom setup. Use when the user says
+  "set up my morning paper", "onboard me", "configure morning paper", asks for
+  a first install, or has no working private newsroom/config yet. Install and
+  prove the engine, interview the reader, scaffold their private newsroom with
+  real contracts (not empty folders), and offer host-native recurrence.
 ---
 
 # Morning Paper — Setup
@@ -28,6 +28,10 @@ The product vision is the private newsroom operating model in
 `docs/private-newsroom-operating-model.md`: the reader owns their algorithm in
 files; agents collect, report, edit, proof, deliver, and evolve taste; the CLI
 supplies deterministic tools. Keep setup pointed at that model.
+
+The current skill architecture is in `docs/newsroom-skill-suite.md`: `setup`,
+`edition`, and `writing` stay as the public skills, while newsroom roles live
+inside `ROLES.md`, `docs/roles/`, and each edition's `desks/` artifacts.
 
 The daily routine's default completion promise is in
 `docs/daily-run-contract.md`. Setup should capture only the reader-specific

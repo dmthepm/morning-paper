@@ -142,9 +142,9 @@
   `feedback-plan.md` artifacts, visual integration guardrails, explicit
   opt-in remote extractor fallback, and stricter release-candidate artifact
   checks
-- next skill architecture is banked in `docs/newsroom-skill-suite.md`: grow
-  from the current setup/edition/writing proof into narrow newsroom desks
-  without breaking the friend path
+- skill architecture is banked in `docs/newsroom-skill-suite.md`: keep the
+  public setup/edition/writing path stable while roles mature inside the
+  edition workflow
 - collector date semantics are explicit: edition collectors target the
   edition date, ad hoc `stage` remains "read this later" and defaults to
   tomorrow

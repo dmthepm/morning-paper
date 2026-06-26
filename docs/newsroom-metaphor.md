@@ -1,5 +1,9 @@
 # Newsroom Metaphor
 
+Status: background language note, not the current operating contract. Use it to
+understand the vocabulary, then obey `docs/friend-ready-newsroom.md`,
+`ROLES.md`, and `docs/roles/` when building or running the paper.
+
 Morning Paper should make the reader feel they own a small, competent newsroom.
 That is more than copy. It is a product model, a data model, and an agent
 coordination model.

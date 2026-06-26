@@ -257,6 +257,7 @@ def _pending_run_ticket(root: Path, *, date_str: str) -> dict[str, object]:
         "status": "pending",
         "date": date_str,
         "command": f"morning-paper edition status {root} --date {date_str}",
+        "roles": _role_artifacts(root / "editions" / date_str),
         "updated_at": _utc_stamp(),
     }
 
@@ -278,6 +279,21 @@ def _render_run_ticket_markdown(ticket: dict[str, object]) -> str:
             continue
         state = str(check.get("state", "")).upper()
         lines.append(f"- {state} `{check.get('name', '')}` - {check.get('detail', '')}")
+    roles = ticket.get("roles") if isinstance(ticket.get("roles"), dict) else {}
+    role_files = roles.get("files") if isinstance(roles.get("files"), list) else []
+    if roles:
+        lines.extend(["", "## Desk Artifacts"])
+        lines.append(f"- Count: {roles.get('count', 0)}")
+        for filename in role_files:
+            lines.append(f"- `{filename}`")
+        invalid = roles.get("invalid") if isinstance(roles.get("invalid"), list) else []
+        blocked = roles.get("blocked") if isinstance(roles.get("blocked"), list) else []
+        for item in invalid:
+            if isinstance(item, dict):
+                lines.append(f"- Needs repair: `{item.get('file', '')}` - {item.get('issue', '')}")
+        for item in blocked:
+            if isinstance(item, dict):
+                lines.append(f"- Blocked: `{item.get('file', '')}` - role reported blocked")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -292,6 +308,55 @@ def _run_ticket_status(checks: list[dict[str, object]]) -> str:
 
 def _add_ticket_check(checks: list[dict[str, object]], *, name: str, state: str, detail: str) -> None:
     checks.append({"name": name, "state": state, "detail": detail})
+
+
+def _role_artifacts(edition_dir: Path) -> dict[str, object]:
+    desks_dir = edition_dir / "desks"
+    if not desks_dir.is_dir():
+        return {"dir": str(desks_dir), "count": 0, "files": [], "invalid": [], "blocked": []}
+    paths = sorted(
+        path
+        for path in desks_dir.glob("*.md")
+        if path.is_file() and path.name.lower() != "readme.md"
+    )
+    invalid: list[dict[str, str]] = []
+    blocked: list[dict[str, str]] = []
+    required = {"role", "phase", "status"}
+    allowed_statuses = {"ready", "notes", "blocked"}
+    for path in paths:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if not text.startswith("---\n"):
+            invalid.append({"file": path.name, "issue": "missing YAML frontmatter"})
+            continue
+        marker = text.find("\n---", 4)
+        if marker == -1:
+            invalid.append({"file": path.name, "issue": "unclosed YAML frontmatter"})
+            continue
+        try:
+            frontmatter = yaml.safe_load(text[4:marker]) or {}
+        except yaml.YAMLError:
+            invalid.append({"file": path.name, "issue": "invalid YAML frontmatter"})
+            continue
+        if not isinstance(frontmatter, dict):
+            invalid.append({"file": path.name, "issue": "frontmatter must be a mapping"})
+            continue
+        missing = sorted(required - set(str(key) for key in frontmatter))
+        if missing:
+            invalid.append({"file": path.name, "issue": "missing " + ", ".join(missing)})
+            continue
+        status = str(frontmatter.get("status", "")).strip().lower()
+        if status not in allowed_statuses:
+            invalid.append({"file": path.name, "issue": "status must be ready, notes, or blocked"})
+            continue
+        if status == "blocked":
+            blocked.append({"file": path.name, "role": str(frontmatter.get("role", ""))})
+    return {
+        "dir": str(desks_dir),
+        "count": len(paths),
+        "files": [path.name for path in paths],
+        "invalid": invalid,
+        "blocked": blocked,
+    }
 
 
 def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) -> dict[str, object]:
@@ -311,11 +376,46 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     require_file("source-inventory.json", "sources")
     require_file("collector-report.md", "collector report", block=False)
     require_file("assignment-board.json", "assignment board", block=False)
+    require_file("desks/README.md", "desk artifact guide", block=False)
     require_file("draft.md", "draft")
     require_file("feedback-plan.md", "feedback route")
     require_file("operator-answers.md", "reader feedback sheet", block=False)
     if _desk_sheet_enabled(root):
         require_file("desk-sheet.md", "Desk Sheet", block=False)
+
+    roles = _role_artifacts(edition_dir)
+    role_count = int(roles.get("count") or 0)
+    role_invalid = roles.get("invalid") if isinstance(roles.get("invalid"), list) else []
+    role_blocked = roles.get("blocked") if isinstance(roles.get("blocked"), list) else []
+    if role_count:
+        if role_blocked:
+            _add_ticket_check(
+                checks,
+                name="desk artifacts",
+                state="block",
+                detail=f"{len(role_blocked)} role artifact(s) reported blocked",
+            )
+        elif role_invalid:
+            _add_ticket_check(
+                checks,
+                name="desk artifacts",
+                state="note",
+                detail=f"{len(role_invalid)} role artifact(s) need frontmatter repair",
+            )
+        else:
+            _add_ticket_check(
+                checks,
+                name="desk artifacts",
+                state="pass",
+                detail=f"{role_count} valid role artifact(s) in `desks/`",
+            )
+    else:
+        _add_ticket_check(
+            checks,
+            name="desk artifacts",
+            state="pass",
+            detail="no role artifacts yet; simple run path is allowed",
+        )
 
     estimate = _load_json_object(edition_dir / "estimate-result.json")
     if estimate.get("status") == "estimated":
@@ -380,6 +480,7 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
             "note": sum(1 for check in checks if check.get("state") == "note"),
             "block": sum(1 for check in checks if check.get("state") == "block"),
         },
+        "roles": roles,
         "page_budget": config.page_budget,
         "next_action": next_action,
         "artifacts": {
@@ -1091,6 +1192,74 @@ No feedback applied yet.
 """
 
 
+def desks_readme_template(date_str: str) -> str:
+    return f"""# Desk Artifacts - {date_str}
+
+This folder is the newsroom handoff trail for today's edition. Use it when the
+host supports subagents, profiles, or separate context windows. A simple run can
+ship without role artifacts, but a serious run should leave enough here for a
+fresh agent to understand who checked what and why the paper looks this way.
+
+## File Pattern
+
+- `01-orchestrator.md`
+- `02-assignment-editor.md`
+- `03.1-x-reporter.md`
+- `03.2-articles-reporter.md`
+- `03.3-email-reporter.md`
+- `04-editor.md`
+- `05-copy-desk.md`
+- `06-art-desk.md`
+- `07-producer.md`
+- `08-taste-editor.md`
+
+Use `03.1`, `03.2`, `03.3`, and so on for beat reporters that run in parallel.
+Rename the beat, not the role: `03.1-shopify-reporter.md`,
+`03.2-frontier-agents-reporter.md`, `03.3-work-reporter.md`.
+
+## Artifact Contract
+
+Each role leaves one markdown file with YAML frontmatter and a short body.
+Do not split the handoff into separate JSON and markdown files.
+
+```markdown
+---
+role: x-reporter
+phase: "03.1"
+status: ready
+date: {date_str}
+inputs:
+  - source-inventory.json
+  - assignment-board.json
+handoff:
+  candidates: 8
+  repeats_cut: 2
+  needs_followup: false
+---
+
+## What I Checked
+- Source or search surface, date range, commands, and limits.
+
+## Findings
+- Source-backed findings, with URLs or local paths.
+
+## Candidates
+- Items that might earn ink, with why they matter and repeat risk.
+
+## Cuts
+- Interesting material that should not print today.
+
+## Handoff
+- What the next role should know.
+```
+
+## Role References
+
+Start at the public repo's `ROLES.md`, then use `docs/roles/` for the specific
+role you are running. The orchestrator owns the loop; roles own their handoff.
+"""
+
+
 def draft_template(date_str: str, paper_name: str) -> str:
     return f"""# {paper_name} - {date_str}
 
@@ -1282,12 +1451,13 @@ must be reported as "not configured"; never invent source data.
     board = _assignment_board(source_payload, queue_payload, date_str=date_str, edition_dir=edition_dir)
     record("assignment-board.json", _write_json(edition_dir / "assignment-board.json", board, force=force))
     record("assignment-board.md", _write(edition_dir / "assignment-board.md", _render_assignment_board_markdown(board), force=force))
+    record("desks/README.md", _write(edition_dir / "desks" / "README.md", desks_readme_template(date_str), force=force))
     record("draft.md", _write(edition_dir / "draft.md", draft_template(date_str, config.name), force=force))
 
     render_pending = {
         "status": "pending",
         "date": date_str,
-        "command": f"morning-paper render {edition_dir / 'draft.md'} --date {date_str} --slug edition",
+        "command": f"morning-paper render {edition_dir / 'draft.md'} --date {date_str} --id edition",
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     estimate_pending = {
@@ -1355,6 +1525,7 @@ morning-paper edition final-editor {root} --date {date_str}
             "queue_snapshot": str(edition_dir / "queue-snapshot.json"),
             "assignment_board": str(edition_dir / "assignment-board.json"),
             "assignment_board_markdown": str(edition_dir / "assignment-board.md"),
+            "desks_readme": str(edition_dir / "desks" / "README.md"),
             "estimate_result": str(edition_dir / "estimate-result.json"),
             "draft": str(edition_dir / "draft.md"),
             "render_result": str(edition_dir / "render-result.json"),

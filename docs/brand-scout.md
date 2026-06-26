@@ -1,21 +1,23 @@
 # Brand Scout
 
 Status: exploratory. This is not canonical project context. The durable public
-context lives in `PRODUCT.md` and `DESIGN.md`.
+design context lives in root `PRODUCT.md` and `DESIGN.md`. The daily paper's
+operating contract lives in `docs/friend-ready-newsroom.md`, `ROLES.md`, and
+the active setup/edition/writing skills.
 
 ## Product-Design Workflow
 
 Use this order when evolving the brand or a new surface:
 
-1. Establish or update `PRODUCT.md`.
-2. Establish or update `DESIGN.md`.
+1. Load root `PRODUCT.md` and `DESIGN.md`.
+2. Read the friend-ready newsroom contract and role model for operating truth.
 3. Shape a specific surface as a confirmed brief.
 4. Build only after the shape is clear.
 5. Critique, audit, polish, layout, delight, typeset, and iterate from the
    rendered surface rather than from abstract taste.
 
-For this project, brand work should use subagents for scouting, but canonical
-context files should wait for user confirmation.
+For this project, brand work may use subagents for scouting, but the stable
+product/design context belongs in `PRODUCT.md` and `DESIGN.md`, not in chat.
 
 ## Working Product Frame
 

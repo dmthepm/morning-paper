@@ -33,7 +33,7 @@ def test_friend_install_path_uses_the_same_print_proof_everywhere() -> None:
     readme = _read("README.md")
     agents = _read("AGENTS.md")
     setup_skill = _read("plugins/morning-paper/skills/setup/SKILL.md")
-    spec = _read("docs/product-readiness-0.8.md")
+    spec = _read("docs/friend-ready-newsroom.md")
 
     assert "morning-paper doctor --strict" in readme
     assert "morning-paper demo --open" in readme
@@ -53,19 +53,19 @@ def test_friend_install_path_uses_the_same_print_proof_everywhere() -> None:
 
 def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
     expected = ["EDITORIAL.md", "VISUALS.md", "SOURCES.md", "DELIVERY.md", "TASTELOG.md"]
-    contracts = [
-        _read("README.md"),
+    readme = _read("README.md")
+    runtime_contracts = [
         _read("AGENTS.md"),
         _read("plugins/morning-paper/skills/setup/SKILL.md"),
         _read("plugins/morning-paper/skills/edition/SKILL.md"),
         _read("src/morning_paper/newsroom.py"),
     ]
 
-    for text in contracts:
+    for text in [readme, *runtime_contracts]:
         for filename in expected:
             assert filename in text
 
-    for text in contracts:
+    for text in runtime_contracts:
         assert "product.md" not in text.lower()
         assert "design.md" not in text.lower()
 
@@ -98,7 +98,7 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     claude_manifest = json.loads(_read(".claude-plugin/plugin.json"))
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
-    readiness = _read("docs/product-readiness-0.8.md")
+    readiness = _read("docs/friend-ready-newsroom.md")
     version = _pyproject_field("version")
     release_readiness = _read(f"docs/release-readiness-{version}.md")
     roadmap = _read("ROADMAP.md")
@@ -155,10 +155,25 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
         assert "preferences you own as files" in description
 
 
+def test_product_and_design_context_remain_active_design_contracts() -> None:
+    readme = _read("README.md")
+    product = _read("PRODUCT.md")
+    design = _read("DESIGN.md")
+    skill_architecture = _read("docs/newsroom-skill-suite.md")
+    brand_scout = _read("docs/brand-scout.md")
+
+    assert "[PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md)" in readme
+    assert "PRODUCT.md and DESIGN.md are internal design/product context" in product
+    assert "friend-ready newsroom contract and `ROLES.md`" in product
+    assert "`PRODUCT.md` and `DESIGN.md` guide design surfaces and prototypes" in design
+    assert "root `PRODUCT.md` and `DESIGN.md`" in skill_architecture
+    assert "stable\nproduct/design context belongs in `PRODUCT.md` and `DESIGN.md`" in brand_scout
+
+
 def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
     roadmap = _read("ROADMAP.md")
     composing = _read("docs/composing.md")
-    spec = _read("docs/product-readiness-0.8.md")
+    spec = _read("docs/friend-ready-newsroom.md")
     reviewers = _read("src/morning_paper/reviewers.py")
 
     assert "chart row/label bounds" not in roadmap
@@ -180,7 +195,7 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "docs/collectors.md": _read("docs/collectors.md"),
         "docs/composing.md": _read("docs/composing.md"),
         "docs/feedback-loop.md": _read("docs/feedback-loop.md"),
-        "docs/product-readiness-0.8.md": _read("docs/product-readiness-0.8.md"),
+        "docs/friend-ready-newsroom.md": _read("docs/friend-ready-newsroom.md"),
         "docs/source-conversion.md": _read("docs/source-conversion.md"),
         "plugins/morning-paper/skills/setup/SKILL.md": _read("plugins/morning-paper/skills/setup/SKILL.md"),
         "plugins/morning-paper/skills/edition/SKILL.md": _read("plugins/morning-paper/skills/edition/SKILL.md"),
@@ -235,7 +250,7 @@ def test_recurrence_guidance_prefers_host_native_primitives() -> None:
     readme = _read("README.md")
     setup_skill = _read("plugins/morning-paper/skills/setup/SKILL.md")
     composing = _read("docs/composing.md")
-    readiness = _read("docs/product-readiness-0.8.md")
+    readiness = _read("docs/friend-ready-newsroom.md")
 
     for text in (readme, setup_skill, composing, readiness):
         lowered = text.lower()
@@ -266,7 +281,7 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     release_check = _read("scripts/release_candidate_check.py")
     changelog = _read("CHANGELOG.md")
     architecture = _read("docs/architecture-decisions.md")
-    readiness = _read("docs/product-readiness-0.8.md")
+    readiness = _read("docs/friend-ready-newsroom.md")
 
     assert "Local extraction" in readme
     assert "keeps URL capture on your machine" in readme

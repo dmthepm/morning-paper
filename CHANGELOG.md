@@ -152,7 +152,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   as needing a converter collector instead of being implied as ready-to-stage.
 - Package/plugin metadata, README, collector docs, scaffolded newsroom files,
   and smoke tests now use the broader personal-newsroom source model.
-- Active setup, edition, collector, roadmap, and readiness docs now describe a
+- Active setup, edition, collector, roadmap, and friend-ready newsroom docs now describe a
   newsroom intake layer for work systems, people, saved reading, exports,
   folders, and agent outputs instead of centering public feed examples.
 - `scripts/fresh_friend_smoke.py` now checks first-edition quality, not just

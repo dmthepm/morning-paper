@@ -64,6 +64,7 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "queue-snapshot.json",
                 "assignment-board.json",
                 "assignment-board.md",
+                "desks/README.md",
                 "estimate-result.json",
                 "draft.md",
                 "render-result.json",
@@ -96,6 +97,10 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertEqual(board["date"], "2026-06-22")
             self.assertEqual(board["status"], "empty")
             self.assertIn("Ready To Edit", (edition_dir / "assignment-board.md").read_text(encoding="utf-8"))
+            desks_readme = (edition_dir / "desks" / "README.md").read_text(encoding="utf-8")
+            self.assertIn("03.1-x-reporter.md", desks_readme)
+            self.assertIn("role: x-reporter", desks_readme)
+            self.assertIn("Do not split", desks_readme)
             estimate_result = json.loads((edition_dir / "estimate-result.json").read_text(encoding="utf-8"))
             self.assertEqual(estimate_result["status"], "pending")
             self.assertIn("morning-paper edition estimate", estimate_result["command"])
@@ -115,6 +120,7 @@ class EditionWorkspaceTest(unittest.TestCase):
             run_ticket = json.loads((edition_dir / "run-ticket.json").read_text(encoding="utf-8"))
             self.assertEqual(run_ticket["status"], "pending")
             self.assertIn("morning-paper edition status", run_ticket["command"])
+            self.assertEqual(run_ticket["roles"]["count"], 0)
             operator_answers = (edition_dir / "operator-answers.md").read_text(encoding="utf-8")
             self.assertIn("Visuals", operator_answers)
             self.assertIn("Delivery", operator_answers)
@@ -139,6 +145,7 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("YAML targets", feedback_plan)
             self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
             self.assertEqual(payload["artifacts"]["desk_sheet"], str((edition_dir / "desk-sheet.md").resolve()))
+            self.assertEqual(payload["artifacts"]["desks_readme"], str((edition_dir / "desks" / "README.md").resolve()))
             self.assertEqual(payload["artifacts"]["final_editor"], str((edition_dir / "final-editor.json").resolve()))
             self.assertEqual(payload["artifacts"]["assignment_board"], str((edition_dir / "assignment-board.json").resolve()))
             self.assertEqual(payload["artifacts"]["run_ticket"], str((edition_dir / "run-ticket.json").resolve()))
@@ -360,6 +367,19 @@ class EditionWorkspaceTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (edition_dir / "desks" / "03.1-x-reporter.md").write_text(
+                """---
+role: x-reporter
+phase: "03.1"
+status: ready
+date: 2026-06-22
+---
+
+## Handoff
+- One valid role handoff.
+""",
+                encoding="utf-8",
+            )
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
@@ -401,8 +421,116 @@ class EditionWorkspaceTest(unittest.TestCase):
             ticket = json.loads(stdout.getvalue())
             self.assertEqual(ticket["status"], "complete")
             self.assertEqual(ticket["summary"]["block"], 0)
+            self.assertEqual(ticket["roles"]["count"], 1)
+            self.assertEqual(ticket["roles"]["files"], ["03.1-x-reporter.md"])
             self.assertTrue((edition_dir / "run-ticket.json").is_file())
             self.assertIn("Status: complete", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+    def test_run_ticket_blocks_when_role_artifact_reports_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            (edition_dir / "desks" / "02-assignment-editor.md").write_text(
+                """---
+role: assignment-editor
+phase: "02"
+status: blocked
+date: 2026-06-22
+---
+
+## Handoff
+- Source access failed.
+""",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "blocked")
+            self.assertEqual(ticket["roles"]["blocked"][0]["file"], "02-assignment-editor.md")
+            self.assertIn("reported blocked", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+    def test_run_ticket_notes_invalid_role_artifact_frontmatter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            (edition_dir / "desks" / "04-editor.md").write_text(
+                """---
+role: editor
+phase: "04"
+---
+
+## Handoff
+- Missing status.
+""",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["roles"]["invalid"][0]["file"], "04-editor.md")
+            self.assertIn("missing status", ticket["roles"]["invalid"][0]["issue"])
+            self.assertIn("Needs repair", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
 
     def test_final_editor_flags_unproven_delivery(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

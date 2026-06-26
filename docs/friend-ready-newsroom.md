@@ -1,8 +1,13 @@
-# Morning Paper 0.8 Product Readiness
+# Friend-Ready Newsroom Contract
 
-Status: shipped source of truth for the 0.8 hardening pass. Current release: 0.8.8.
+Status: shipped source of truth for the 0.8 friend-ready newsroom pass.
+Current release: 0.8.8.
 
 release: 0.8.8
+
+This file is the operating contract for the friend-ready paper workflow.
+Brand/product surface direction lives in root `PRODUCT.md` and `DESIGN.md`;
+role coordination lives in `ROLES.md`.
 
 ## Mission
 
@@ -12,7 +17,7 @@ get a real first paper: engine installed, print stack proved, private newsroom
 created, sources explained in normal language, first PDF opened, and a clear
 feedback loop for tomorrow.
 
-The product promise stays narrow:
+The paper promise stays narrow:
 
 - the reader owns the algorithm as files;
 - the agent edits and composes the paper;
@@ -62,11 +67,11 @@ The product promise stays narrow:
   faces now lead with vendored MP Serif (TeX Gyre Pagella) and MP Sans (Arimo),
   charts lead with vendored Courier Prime, and `@font-face` emits the correct
   format hint for OTF vs TTF files.
-- The next skill architecture is drafted in `docs/newsroom-skill-suite.md`.
-  It treats skills as newsroom desks over durable files, not as a pile of
-  source adapters or a clone of generic product/design docs. It is explicitly
-  future-facing: 0.8.x ships exactly `setup`, `edition`, and `writing`, and
-  plugin smoke tests fail if an unfinished desk skill leaks into the surface.
+- The skill architecture is drafted in `docs/newsroom-skill-suite.md`. It treats
+  skills as newsroom desks over durable files, keeps roles inside the edition
+  workflow until evals justify a split, and preserves the 0.8.x surface:
+  exactly `setup`, `edition`, and `writing`. Plugin smoke tests fail if an
+  unfinished desk skill leaks into the surface.
 
 ## User Stories
 

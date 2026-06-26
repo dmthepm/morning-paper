@@ -118,7 +118,7 @@ and passes setup smoke without touching real user config.
 
 | Gate | Evidence |
 | --- | --- |
-| Docs and skills agree | README, `AGENTS.md`, setup/edition skills, changelog, and product-readiness docs use the same setup/source/feedback model. |
+| Docs and skills agree | README, `AGENTS.md`, setup/edition skills, changelog, and friend-ready newsroom docs use the same setup/source/feedback model. |
 | README stays concise and true | README now keeps details to setup, sources, daily routine, styles, agents, and development. |
 | No stale source identity | Friend-facing docs describe the whole source stack; legacy built-ins stay internal and do not define the product surface. |
 | No stale scraper assumption | Local extraction is default; remote fallback is explicit and tested. Jina/trafilatura are implementation details, not the product promise; dependency versions are visible in `doctor --json` and release checks. |

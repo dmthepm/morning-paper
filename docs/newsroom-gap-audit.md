@@ -1,4 +1,8 @@
-# Product Gap Analysis
+# Newsroom Gap Audit
+
+Status: working audit, not canonical operating law. Current canon starts with
+`docs/friend-ready-newsroom.md`, `ROLES.md`, `docs/newsroom-skill-suite.md`,
+and the active setup/edition/writing skills.
 
 This document compares the current working product with the newer Morning
 Paper vision:

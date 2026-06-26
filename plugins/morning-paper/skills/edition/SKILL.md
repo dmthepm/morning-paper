@@ -1,23 +1,26 @@
 ---
 name: edition
 description: >
-  Compose, render, and deliver today's Morning Paper edition. Use every
-  morning (manual, Claude Code routine, Codex automation, ChatGPT scheduled
-  task, or local fallback), or when the user says "build my paper" or
-  "today's edition". Requires setup to have run.
+  Orchestrate today's Morning Paper edition end to end. Use every morning
+  (manual, Claude Code routine, Codex automation, ChatGPT scheduled task, or
+  local fallback), or when the user says "build my paper", "make today's
+  paper", "run the paper", or "today's edition". Prepare the edition workspace,
+  assign newsroom roles when useful, collect sources, compose, render, review,
+  prove, deliver, and route feedback. Requires setup to have run.
 ---
 
 # Morning Paper — The Edition
 
-You are the editor. Collectors and the CLI are deterministic; the judgment is
-yours. The binding lesson from this project's history: the agent composes
-against a good stylesheet; code renders it faithfully; code never writes the
-paper.
+You are the orchestrator for today's private newsroom run. Collectors and the
+CLI are deterministic; the judgment is yours. The binding lesson from this
+project's history: the agent composes against a good stylesheet; code renders
+it faithfully; code never writes the paper.
 
 The operating model is in `docs/private-newsroom-operating-model.md`: a
 reader-owned newsroom, a host-native routine, CLI-backed proofs, and enough
 context windows to report, edit, proof, deliver, and learn taste without relying
-on chat memory.
+on chat memory. The skill architecture is in `docs/newsroom-skill-suite.md`;
+the role model is in `ROLES.md`.
 
 The unattended completion promise is in `docs/daily-run-contract.md`. Keep
 working until the run is `complete`, `complete_with_notes`, or `blocked`. Do
@@ -52,6 +55,9 @@ Required durable artifacts:
   `morning-paper queue list --date <date>` after collectors and any pruning.
 - `assignment-board.json` / `assignment-board.md` — source material projected
   into newsroom lanes.
+- `desks/README.md` — the role handoff contract for orchestrator, assignment
+  editor, beat reporters, editor, copy desk, art desk, producer, and taste
+  editor artifacts.
 - `draft.md` — current composed edition, written before estimating.
 - `estimate-result.json` — JSON output from
   `morning-paper edition estimate . --date <date>` against the current draft.
@@ -68,6 +74,15 @@ Required durable artifacts:
 - `desk-sheet.md` — optional print feedback sheet, created only when
   `preferences/desk-sheet.yaml` enables it.
 - `feedback-plan.md` — the route from reader notes to durable newsroom files.
+
+Role model: the host agent is the orchestrator. It owns the run, calls the CLI,
+assigns roles, reads their handoffs, and delivers the edition. The Assignment
+Editor does not own the whole run. When the host supports subagents, profiles,
+or separate context windows, use `ROLES.md` and `docs/roles/` from the public
+engine repo. Every role that runs writes one markdown artifact with YAML
+frontmatter into `editions/<date>/desks/`. Beat reporters that run in parallel
+use `03.1`, `03.2`, `03.3`, and so on. If the host cannot split contexts, run
+the same roles sequentially and leave the same handoff files when useful.
 
 ## The pass
 
@@ -89,10 +104,11 @@ Required durable artifacts:
    `queue-snapshot.json` before composing. Run `morning-paper edition
    assignment-board . --date <edition-date>` when the board needs refreshing.
    If the host supports subagents and the source surface is broad, split this
-   pass: an assignment desk inventories source health, and beat reporters test
-   one source family each. They write source markdown, source ledgers, or
-   collector notes into the edition workspace. They do not write the final
-   paper.
+   pass: the Assignment Editor inventories source health and assigns beats;
+   beat reporters test one source family or topic lane each. They write role
+   artifacts into `editions/<date>/desks/`, plus source markdown, source
+   ledgers, or collector notes when the newsroom uses them. They do not write
+   the final paper.
 2. **Read the newsroom.** `specs/*` (section contracts), `EDITORIAL.md`
    (what earns ink), `VISUALS.md` (charts/images/layout), `SOURCES.md`
    (source purpose and cadence), `DELIVERY.md` (how the paper lands), and
@@ -213,7 +229,8 @@ Required durable artifacts:
      record the explicit editorial rationale for shipping despite the flag.
 10. **Run ticket.** Run `morning-paper edition status . --date <edition-date>`
    and save its JSON/markdown. It maps the whole daily run to `complete`,
-   `complete_with_notes`, or `blocked`.
+   `complete_with_notes`, or `blocked`, and records whether desk role
+   artifacts exist for the run.
 11. **Deliver.** Their saved print command (duplex flag and all), or just hand
    back the PDF path. If `preferences/desk-sheet.yaml` enables the separate
    desk sheet, render or hand back `desk-sheet.md` with the edition; the

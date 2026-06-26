@@ -1,9 +1,9 @@
 ---
 name: Morning Paper
-description: A private pressroom that turns owned sources and taste into a finite daily paper.
+description: A private newsroom that turns owned sources and taste into a real paper every morning.
 colors:
   ink: "#1a1612"
-  paper: "#ffffff"
+  paper: "#fffdf8"
   muted: "#6b6258"
   rule: "#1a1612"
   proof-red: "#a4231b"
@@ -78,19 +78,32 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.none}"
     padding: "0.07in 0.1in"
+  desk-sheet:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.none}"
+    padding: "0.12in"
+  role-handoff:
+    backgroundColor: "{colors.card-paper-soft}"
+    textColor: "{colors.ink}"
+    typography: "{typography.code}"
+    rounded: "{rounded.none}"
+    padding: "0.08in 0.1in"
 ---
 
 # Design System: Morning Paper
 
 ## 1. Overview
 
-**Creative North Star: "The Private Pressroom"**
+**Creative North Star: "The Private Newsroom"**
 
 Morning Paper should feel like a serious personal machine for reading: tactile,
 intelligent, independent. The system sits between algorithmic and analog. It
-uses agents and source files to build a reader-owned algorithm, then lands the
-result as a finite edition that can be read, marked up, and improved tomorrow.
-The public visual order is: the paper, the desk sheet, the private newsroom,
+uses a private newsroom, a host-agent orchestrator, and durable source files to
+build a reader-owned algorithm, then lands the result as a finite edition that
+can be read, marked up, and improved tomorrow. The public visual order is: a
+real paper every morning, the Desk Sheet feedback ritual, the private newsroom,
 then the owned algorithm.
 
 The visual world borrows from proof sheets, old Mac software, small-run zines,
@@ -101,19 +114,23 @@ generic AI dashboards, cutesy roleplay, fake newspaper nostalgia, and beige
 productivity apps are not.
 
 The system should be concise, functional, and a little romantic about print.
-Newsroom language is useful when it makes roles and proof clearer: desk, beat,
-edition, final editor, pressroom, ledger. Plain language wins when the metaphor
-gets in the way.
+Newsroom language is useful when it makes roles and proof clearer:
+orchestrator, assignment editor, beat reporter, editor, copy desk, art desk,
+producer, taste editor, edition, proof, ledger. Plain language wins when the
+metaphor gets in the way.
 
-The Desk Sheet is the primary human feedback surface. Assignment boards and
-source desks are important agent/operator infrastructure, but the first public
-visual should not look like a dashboard.
+The Desk Sheet is the primary human feedback surface. Assignment boards, source
+desks, role handoffs, and run tickets are important agent/operator
+infrastructure, but the first public visual should not look like a dashboard.
+`PRODUCT.md` and `DESIGN.md` guide design surfaces and prototypes. The
+friend-ready newsroom contract and `ROLES.md` remain the operating contracts.
 
 **Key Characteristics:**
 
 - Print-first, with the PDF as the proof.
-- Desk-sheet-first as the feedback ritual.
+- Desk Sheet first as the feedback ritual.
 - Source-aware, finite, and skeptical of single-source truth.
+- Orchestrated behind the scenes, plain at the reader's surface.
 - Nostalgic through utility, not decoration.
 - Visual metaphors backed by durable newsroom files.
 - Calm enough to read, distinct enough to remember.
@@ -139,7 +156,9 @@ supports editorial state; it does not decorate the paper.
 
 ### Neutral
 
-- **Paper** (`#ffffff`): the print surface.
+- **Paper** (`#fffdf8`): the digital preview of the print surface. Physical
+  paper remains printer white; the screen token is slightly warm so previews
+  do not feel like app chrome.
 - **Newsprint Muted** (`#6b6258`): secondary labels, folios, running headers,
   and source notes.
 - **Card Paper** (`#faf6ef`): the warm inset for move boxes, proof slips, and
@@ -156,7 +175,12 @@ supports editorial state; it does not decorate the paper.
 only when it clarifies status, source, or proof.
 
 **The No Feed Chrome Rule.** Never import social-platform color systems into
-the paper. X, RSS, GitHub, and inbox material become Morning Paper material.
+the paper. X, RSS, GitHub, email, and local exports become Morning Paper
+material.
+
+**The No Gradient Rule.** Gradients are prohibited for brand, proof, chart, and
+feedback surfaces. Morning Paper earns character through type, rules, paper
+geometry, and source evidence.
 
 ## 3. Typography
 
@@ -198,8 +222,9 @@ surface.
 ## 4. Elevation
 
 Morning Paper is flat by default. Depth comes from page geometry, rules,
-insets, source hierarchy, and proof marks rather than shadows. The printed
-edition should survive home printers, PDF preview, and monochrome output.
+insets, source hierarchy, role sequence, and proof marks rather than shadows.
+The printed edition, Desk Sheet, and proof surfaces should survive home
+printers, PDF preview, and monochrome output.
 
 ### Shadow Vocabulary
 
@@ -211,6 +236,9 @@ glow.
 
 **The Flat Proof Rule.** A proof surface earns trust through hierarchy, source
 notes, and status, not floating cards.
+
+**The Backstage Depth Rule.** Role handoffs and run tickets may show sequence,
+status, and provenance. They still stay flat, printable, and quiet.
 
 ## 5. Components
 
@@ -238,6 +266,32 @@ notes, and status, not floating cards.
 - **Rule:** source notes must be honest and short. They do not replace the
   actual source material.
 
+### Desk Sheet
+
+- **Style:** spacious writing sheet, not a form-heavy settings page.
+- **Content:** keep, cut, more, visuals, sources to add, delivery, taste to
+  save, and tomorrow's assignment board.
+- **Rule:** this is the primary feedback ritual. It should feel easy to mark
+  with a pen and easy for an agent to route into durable newsroom files.
+
+### Role Handoffs
+
+- **Style:** compact markdown-native proof slips with YAML frontmatter when
+  shown in design surfaces.
+- **Content:** role, phase, status, inputs, findings, cuts, and next handoff.
+- **Rule:** make orchestration inspectable without making the reader manage
+  subagents. Handoffs are backstage unless the user is debugging or tuning the
+  newsroom.
+
+### Run Tickets
+
+- **Style:** ledger-like status sheet with current artifact paths, proof state,
+  and blocked or complete status.
+- **Content:** render result, review result, visual QA, final editor, producer
+  status, delivery status, and feedback route.
+- **Rule:** status earns space only when it helps the reader trust, repair, or
+  resume the run.
+
 ### Tweet / Social Cards
 
 - **Style:** tweet-first, variable-height, paper-native cards.
@@ -262,13 +316,20 @@ notes, and status, not floating cards.
   and product surface.
 - **Do** use newsroom language when it clarifies a real role, file, source
   state, or proof step.
+- **Do** treat the orchestrator and desks as backstage structure unless the
+  reader is operating, debugging, or tuning the newsroom.
+- **Do** make the Desk Sheet feel like the normal feedback loop, not an
+  advanced configuration surface.
 - **Do** keep color sparse, semantic, and monochrome-safe.
 - **Do** let old Mac software, small-run zines, Monologue, Sublime, Cosmos, and
   Are.na inform the atmosphere without copying their surfaces.
 - **Do** show source diversity, missing perspectives, prior mentions, and
   extraction limits when trust is the point.
-- **Do** use actual rendered pages, proof slips, ledgers, source desks, and
-  assignment boards as imagery before invented decoration.
+- **Do** use actual rendered pages, Desk Sheets, proof slips, ledgers, source
+  desks, role handoffs, run tickets, and assignment boards as imagery before
+  invented decoration.
+- **Do** keep `PRODUCT.md` and `DESIGN.md` focused on design surfaces while
+  operating contracts stay in friend-ready and roles documentation.
 
 ### Don't:
 
@@ -277,9 +338,12 @@ notes, and status, not floating cards.
   machinery.
 - **Don't** create cutesy agent roleplay unless the user explicitly asks for an
   optional experimental surface.
+- **Don't** make the reader supervise an agent-workflow chart before they see
+  the paper.
 - **Don't** use fake newspaper nostalgia: distressed paper, fake ink smudges,
   costume mastheads, or theatrical newsroom copy.
 - **Don't** build another beige productivity app.
+- **Don't** make productivity-maximalist throughput the point.
 - **Don't** turn Morning Paper into an infinite feed reader, social screenshot
   wall, or source scraper marketplace.
 - **Don't** use gradients, glassmorphism, ghost-card shadows, oversized rounded
