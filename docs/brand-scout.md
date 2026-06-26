@@ -17,21 +17,16 @@ Use this order when evolving the brand or a new surface:
 For this project, brand work should use subagents for scouting, but canonical
 context files should wait for user confirmation.
 
-## Product Hypothesis
+## Working Product Frame
 
 Morning Paper is a private newsroom for the reader's attention. The reader owns
 the sources, taste, memory, and delivery rules as files. Agents do editorial
 work. The CLI is the pressroom: deterministic proof, render, review, delivery,
 and feedback routing.
 
-The strongest first impression is probably one of:
-
-- Own your algorithm.
-- Your private newsroom.
-- A real paper every morning.
-
-Those are related but not identical. The brand should choose one as the lead
-promise before final design work begins.
+The public frame should keep these ideas in tension without forcing a premature
+tagline: the reader owns the algorithm, the newsroom is private, and the output
+is a real paper every morning.
 
 ## Current Confirmed Direction
 
@@ -45,8 +40,8 @@ The first canonical brand context now starts with:
   AI-style agent branding, cutesy roleplay, generic AI dashboards, fake
   newspaper nostalgia, productivity-maximalist software, and beige
   productivity apps;
-- framing remains open: "Own your algorithm", "private newsroom", and "real
-  paper every morning" are all useful, but Morning Paper is the anchor.
+- framing centers Morning Paper itself, with "own your algorithm", "private
+  newsroom", and "real paper every morning" as supporting ideas.
 
 The slow creative technology references matter: Sublime, Cosmos, and Are.na
 suggest collecting, taste, reflection, and cultural texture without becoming an
@@ -269,25 +264,3 @@ Potential future CLI:
 - `selection-rationale.json`
 - `section-budget.json`
 - `delivery-status.json`
-
-## Game-Style Agent World
-
-Keep the Game Boy or agent-world idea as an optional ambient wrapper. Tiny
-desks can light up as collectors run; the pressroom can animate after render;
-proof slips can appear as discoverable objects. The world should read existing
-artifacts and never become the state machine.
-
-Rule: the playful world visualizes state. It must not become the work.
-
-## Questions Before Canonical Context
-
-1. Should the brand feel most like pressroom proof, private library ledger, or
-   wire desk signal?
-2. Is the public brand selling "own your algorithm", "your private newsroom",
-   or "a real paper every morning" as the primary first impression?
-3. How strange should it get: quiet open-source tool, memorable cult object, or
-   somewhere between?
-4. Should the visual system optimize first for GitHub README trust, a future
-   website, or the printed PDF?
-5. Which named brands, products, publications, games, tools, or physical
-   objects should override these lanes?
