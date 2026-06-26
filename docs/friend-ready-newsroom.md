@@ -28,8 +28,8 @@ The paper promise stays narrow:
 
 ## Current Truth
 
-- This tree is prepared as release: 0.8.9; after tag/publish verification, the
-  repo carries one skill tree for Claude Code and Codex.
+- `morning-paper` 0.8.9 is live on PyPI and tagged as `v0.8.9`; the repo
+  carries one skill tree for Claude Code and Codex.
 - The plugin surface is structurally healthy: Claude validation, Codex
   validation, install-smoke, and isolated host install checks exist, and both
   host manifests carry the same 0.8.9 semver.

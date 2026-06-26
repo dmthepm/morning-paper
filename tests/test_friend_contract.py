@@ -117,7 +117,10 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert f"## [{version}]" in changelog
     assert "Friend-ready personal newsroom setup" in changelog
     assert f"release: {version}" in readiness
-    assert f"This tree is prepared as release: {version}" in readiness
+    assert (
+        f"This tree is prepared as release: {version}" in readiness
+        or f"`morning-paper` {version} is live on PyPI" in readiness
+    )
     assert f"`v{version}`" in release_readiness
     assert "Status: published and verified." in release_readiness or "Status: candidate, ready to tag." in release_readiness
     assert "Clean Python 3.13 venv installed" in release_readiness

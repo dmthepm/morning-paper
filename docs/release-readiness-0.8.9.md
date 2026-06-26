@@ -1,13 +1,13 @@
 # Morning Paper 0.8.9 Release Readiness
 
-Status: candidate, ready to tag.
+Status: published and verified.
 
 Date: 2026-06-26
 
 ## Release Line
 
 - Package version: `0.8.9`
-- Planned tag: `v0.8.9`
+- Published tag: `v0.8.9`
 
 0.8.9 is the newsroom role workflow release. It keeps the public skill surface
 small (`setup`, `edition`, `writing`) while making the edition workflow
@@ -49,10 +49,10 @@ Latest full local verification on 2026-06-26 on current `main` HEAD:
 - `morning-paper doctor --strict --json` reported `status: ok`.
 - Render self-test passed and demo PDFs rendered from both artifacts.
 
-After tag/publish, verify:
+Published artifact verification:
 
 - PyPI JSON reports `0.8.9`.
 - Clean Python 3.13 venv installs `morning-paper[pretty]==0.8.9` from PyPI.
 - Installed binary prints `0.8.9`.
-- `morning-paper doctor --strict --json` reports `status: ok`.
-- `morning-paper demo --output <tmp>/demo.pdf` renders a real PDF.
+- `morning-paper doctor --strict --json` reported `status: ok`.
+- `morning-paper demo --output <tmp>/demo.pdf` rendered a real PDF.
