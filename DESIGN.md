@@ -90,6 +90,8 @@ Morning Paper should feel like a serious personal machine for reading: tactile,
 intelligent, independent. The system sits between algorithmic and analog. It
 uses agents and source files to build a reader-owned algorithm, then lands the
 result as a finite edition that can be read, marked up, and improved tomorrow.
+The public visual order is: the paper, the desk sheet, the private newsroom,
+then the owned algorithm.
 
 The visual world borrows from proof sheets, old Mac software, small-run zines,
 local files, editorial tools, and slow creative technology. Monologue by Every,
@@ -103,9 +105,14 @@ Newsroom language is useful when it makes roles and proof clearer: desk, beat,
 edition, final editor, pressroom, ledger. Plain language wins when the metaphor
 gets in the way.
 
+The Desk Sheet is the primary human feedback surface. Assignment boards and
+source desks are important agent/operator infrastructure, but the first public
+visual should not look like a dashboard.
+
 **Key Characteristics:**
 
 - Print-first, with the PDF as the proof.
+- Desk-sheet-first as the feedback ritual.
 - Source-aware, finite, and skeptical of single-source truth.
 - Nostalgic through utility, not decoration.
 - Visual metaphors backed by durable newsroom files.

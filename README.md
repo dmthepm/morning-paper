@@ -205,6 +205,7 @@ use `--newsroom <path>` when checking from somewhere else.
 - [DESIGN.md](DESIGN.md) — canonical design context for colors, type, components, and guardrails
 - [docs/private-newsroom-operating-model.md](docs/private-newsroom-operating-model.md) — the owned-algorithm routine, multi-agent desk, budgets, memory, and delivery model
 - [docs/daily-run-contract.md](docs/daily-run-contract.md) — the unattended completion promise for routines and automations
+- [docs/public-visual-model.md](docs/public-visual-model.md) — the website/README visual contract for the paper, Desk Sheet, and private newsroom
 - [docs/newsroom-metaphor.md](docs/newsroom-metaphor.md) — the newsroom/pressroom product model, roles, data structures, and prototype surfaces
 - [docs/brand-scout.md](docs/brand-scout.md) — exploratory brand lanes behind the canonical `PRODUCT.md` / `DESIGN.md`
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into staged markdown
