@@ -32,10 +32,10 @@ For the public project, a run is **complete** when all of these are true:
     or the agent recorded a clear rationale for shipping despite a review flag.
 11. Memory and ledgers were updated enough to prevent obvious repeats in the
     next edition.
-12. `morning-paper edition status` wrote a current run ticket.
+12. `morning-paper edition status` wrote a current production record.
 13. The edition folder contains the durable artifacts another agent needs to
     resume: source inventory, collector report, Assignment Board, draft,
-    estimate, render result, review, visual QA, final-editor files, run ticket,
+    estimate, render result, review, visual QA, final-editor files, production record,
     feedback plan, and operator answers.
 14. Delivery was attempted only where configured, and the final handoff names
     the PDF path plus anything that needs attention.
@@ -53,14 +53,14 @@ The default status words are:
 ## Graceful Source Failure
 
 Source failure is usually not a blocker. A reader should still get a useful
-paper when one source is empty, stale, rate-limited, unauthenticated, or partly
-hydrated.
+paper when one source is empty, stale, rate-limited, unauthenticated, or
+incomplete.
 
 The agent should:
 
 - print "not configured" for absent sources;
 - write a source-health note for failed or skipped collectors;
-- route partial social/search results to `Needs Hydration` or `Source Health`,
+- route partial social/search results to `Needs Source Record` or `Source Health`,
   not to print-ready cards;
 - cut or hold candidates that cannot be sourced honestly;
 - include a short final note when an important desk was thin, unavailable, or
@@ -111,7 +111,7 @@ not the primary reader interface. It should help agents and interested operators
 see:
 
 - which desks produced material;
-- which candidates are collected, need hydration, ready, selected, cut, held,
+- which candidates are collected, need source records, ready, selected, cut, held,
   printed, or source-health only;
 - estimated pages and page budget remaining;
 - trust, sensitivity, freshness, extraction status, and repeat/staleness notes;

@@ -72,6 +72,7 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "visual-qa.json",
                 "final-editor.json",
                 "final-editor.md",
+                "delivery-result.json",
                 "run-ticket.json",
                 "run-ticket.md",
                 "operator-answers.md",
@@ -197,7 +198,7 @@ class EditionWorkspaceTest(unittest.TestCase):
                         "truncated": True,
                         "warning": "",
                         "extractor_note": "",
-                        "hydration_status": "snippet_only",
+                        "source_status": "snippet_only",
                     },
                 ],
                 "count": 3,
@@ -215,10 +216,10 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertEqual(rc, 0)
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["summary"]["ready_to_edit"], 1)
-            self.assertEqual(payload["summary"]["needs_hydration"], 1)
+            self.assertEqual(payload["summary"]["needs_source_record"], 1)
             self.assertEqual(payload["summary"]["needs_source_proof"], 1)
             self.assertEqual(payload["lanes"]["ready_to_edit"][0]["title"], "Clean Read")
-            self.assertEqual(payload["lanes"]["needs_hydration"][0]["title"], "Partial Tweet")
+            self.assertEqual(payload["lanes"]["needs_source_record"][0]["title"], "Partial Tweet")
             self.assertEqual(payload["lanes"]["needs_source_proof"][0]["title"], "Thin Read")
 
     def test_edition_prepare_respects_disabled_desk_sheet_preference(self) -> None:
@@ -379,6 +380,10 @@ class EditionWorkspaceTest(unittest.TestCase):
                     },
                     indent=2,
                 ),
+                encoding="utf-8",
+            )
+            (edition_dir / "delivery-result.json").write_text(
+                json.dumps({"status": "not_configured", "date": "2026-06-22"}, indent=2),
                 encoding="utf-8",
             )
             (edition_dir / "desks" / "03.1-x-reporter.md").write_text(
@@ -616,6 +621,10 @@ phase: "04"
             )
             (edition_dir / "final-editor.json").write_text(
                 json.dumps({"status": "clean", "summary": {"flag": 0, "nudge": 0, "info": 0}}, indent=2),
+                encoding="utf-8",
+            )
+            (edition_dir / "delivery-result.json").write_text(
+                json.dumps({"status": "not_configured", "date": "2026-06-22"}, indent=2),
                 encoding="utf-8",
             )
             (edition_dir / "desks" / "03.1-x-reporter.md").write_text(

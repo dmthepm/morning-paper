@@ -31,5 +31,5 @@ review, prove, deliver, and route feedback.
 ## Boundaries
 
 - Do not invent role handoffs.
-- Do not deliver without a readable PDF and a current run ticket.
+- Do not deliver without a readable PDF and a current production record.
 - Do not update private reader taste in the public engine repo.

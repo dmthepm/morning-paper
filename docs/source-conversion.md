@@ -148,7 +148,7 @@ Pattern:
 
 1. Treat this as taste/source intelligence, not an excuse to re-create a feed.
 2. Group by story, topic, creator, channel, or repeated interest.
-3. Separate discovery from hydration. Search results, rankings, and snippets
+3. Separate discovery from source verification. Search results, rankings, and snippets
    can find candidates; print-ready public social records need full text,
    author/date, canonical URL, metrics where available, media/artifact links,
    conversation context, and a route into the paper.
@@ -157,8 +157,8 @@ Pattern:
 5. Inspect images, screenshots, demos, and videos before deciding the layout.
    Route them to a small figure, annotated crop, data artifact, source-health
    note, or cut. Avoid ink-heavy visuals that do not improve judgment.
-6. If a reader-approved service such as an Apify-style actor hydrates the
-   source, record the service and extraction limits in the collector notes.
+6. If a reader-approved service such as an Apify-style actor completes the
+   source record, record the service and extraction limits in the collector notes.
 7. Prefer "what this says about the reader's algorithm" over raw chronology
    when mining private history; prefer the actual post text when printing
    public social items.

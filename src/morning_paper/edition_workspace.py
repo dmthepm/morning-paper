@@ -146,7 +146,7 @@ def _assignment_board(
     """
     lanes: dict[str, list[dict[str, object]]] = {
         "ready_to_edit": [],
-        "needs_hydration": [],
+        "needs_source_record": [],
         "needs_source_proof": [],
         "source_health": [],
         "selected": [],
@@ -175,22 +175,22 @@ def _assignment_board(
             for key in ("warning", "extractor_note")
             if str(item.get(key) or "").strip()
         ]
-        hydration_status = str(item.get("hydration_status") or "").strip().lower()
+        source_status = str(item.get("source_status") or item.get("hydration_status") or "").strip().lower()
         social_like = str(item.get("kind") or "").strip().lower() in {"social", "tweet", "thread", "x-post"}
-        if hydration_status in {"discovery", "snippet_only", "snippet-only", "needs_hydration", "partial"}:
-            board_item["route"] = "needs hydration"
+        if source_status in {"discovery", "snippet_only", "snippet-only", "needs_hydration", "partial", "incomplete"}:
+            board_item["route"] = "needs source record"
             board_item["reason"] = (
                 "; ".join(proof_notes)
-                or "social item is discovery/partial; hydrate full text, author/date, metrics, media, and thread context"
+                or "social item is discovery/partial; complete full text, author/date, metrics, media, and thread context"
             )
-            lanes["needs_hydration"].append(board_item)
+            lanes["needs_source_record"].append(board_item)
         elif social_like and item.get("truncated"):
-            board_item["route"] = "needs hydration"
+            board_item["route"] = "needs source record"
             board_item["reason"] = (
                 "; ".join(proof_notes)
-                or "social post is truncated; do not print until the real object is hydrated"
+                or "social post is truncated; do not print until the real source record is complete"
             )
-            lanes["needs_hydration"].append(board_item)
+            lanes["needs_source_record"].append(board_item)
         elif item.get("truncated") or proof_notes:
             board_item["route"] = "needs source proof"
             board_item["reason"] = "; ".join(proof_notes) or "source copy is incomplete"
@@ -259,7 +259,7 @@ def _render_assignment_board_markdown(board: dict[str, object]) -> str:
     lanes = board.get("lanes") if isinstance(board.get("lanes"), dict) else {}
     for lane in (
         "ready_to_edit",
-        "needs_hydration",
+        "needs_source_record",
         "needs_source_proof",
         "source_health",
         "selected",
@@ -522,6 +522,15 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     else:
         _add_ticket_check(checks, name="final editor", state="block", detail=f"final-editor status is `{final_status}`")
 
+    delivery = _load_json_object(edition_dir / "delivery-result.json")
+    delivery_status = str(delivery.get("status") or "missing")
+    if delivery_status in {"delivered", "not_configured", "skipped"}:
+        _add_ticket_check(checks, name="delivery proof", state="pass", detail=delivery_status)
+    elif delivery_status == "pending":
+        _add_ticket_check(checks, name="delivery proof", state="note", detail="delivery result is pending")
+    else:
+        _add_ticket_check(checks, name="delivery proof", state="note", detail="delivery result is missing")
+
     substantial_pages = _substantial_page_count(estimate, render)
     if substantial_pages >= SUBSTANTIAL_PAGE_THRESHOLD:
         missing = _missing_substantial_phases(roles)
@@ -710,7 +719,7 @@ def final_editor_pass(
             severity="nudge",
             issue=f"{len(role_invalid)} role handoff(s) need frontmatter repair.",
             why="Role artifacts are the run's memory; malformed handoffs are hard for fresh agents to trust.",
-            hint="Fix the YAML frontmatter so the run ticket can read the desk trail.",
+            hint="Fix the YAML frontmatter so the production record can read the desk trail.",
             measured={"invalid_roles": role_invalid},
         )
 
@@ -1662,6 +1671,13 @@ morning-paper edition final-editor {root} --date {date_str}
 ```
 """
     record("final-editor.md", _write(edition_dir / "final-editor.md", final_editor_markdown, force=force))
+    delivery_pending = {
+        "status": "pending",
+        "date": date_str,
+        "updated_at": _utc_stamp(),
+        "note": "Write delivery proof here after print, Telegram, email, or other private delivery. Use status delivered, skipped, or not_configured.",
+    }
+    record("delivery-result.json", _write_json(edition_dir / "delivery-result.json", delivery_pending, force=force))
     run_ticket_pending = _pending_run_ticket(root, date_str=date_str)
     record("run-ticket.json", _write_json(edition_dir / "run-ticket.json", run_ticket_pending, force=force))
     record("run-ticket.md", _write(edition_dir / "run-ticket.md", _render_run_ticket_markdown(run_ticket_pending), force=force))
@@ -1692,6 +1708,7 @@ morning-paper edition final-editor {root} --date {date_str}
             "visual_qa": str(edition_dir / "visual-qa.json"),
             "final_editor": str(edition_dir / "final-editor.json"),
             "final_editor_markdown": str(edition_dir / "final-editor.md"),
+            "delivery_result": str(edition_dir / "delivery-result.json"),
             "run_ticket": str(edition_dir / "run-ticket.json"),
             "run_ticket_markdown": str(edition_dir / "run-ticket.md"),
             "operator_answers": str(edition_dir / "operator-answers.md"),

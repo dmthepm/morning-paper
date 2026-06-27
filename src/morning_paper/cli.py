@@ -52,6 +52,8 @@ Commands:
   render <file.md>  Typeset any markdown file through a style pack
   stage <url|file>  Add source material to tomorrow's Assignment Board
                     (returns a page estimate)
+  stage-social <record.json>
+                    Add a complete social source record to tomorrow's Assignment Board
   inbox             Poll the contributor inbox: mail from your masthead becomes
                     source material for tomorrow's edition (--dry-run)
   queue             Show/list/read/remove Assignment Board items vs the page budget
@@ -73,8 +75,9 @@ Agents: every command prints JSON (`doctor` via `--json`; `--version` prints
 the bare version). `newsroom init` creates the private file contract; `edition
 prepare` creates compaction-safe edition files; `edition final-editor` proves
 the paper is ready to ship; `edition apply-feedback` records reader notes into
-durable taste; `sources` inventories the source stack; `stage` and `queue` are
-compatibility commands for adding source material to tomorrow's Assignment Board.
+durable taste; `sources` inventories configured sources; `stage`, `stage-social`,
+and `queue` are compatibility commands for adding source material to tomorrow's
+Assignment Board.
 See docs/composing.md.
 
 Config: {DEFAULT_CONFIG_PATH}
@@ -866,6 +869,7 @@ def render_command(args: list[str]) -> int:
     print(
         json.dumps(
             {
+                "status": "rendered",
                 "date": target_date,
                 "mode": "render",
                 "style": reported_style,
@@ -947,6 +951,47 @@ def stage_command(args: list[str]) -> int:
         )
     from dataclasses import asdict
 
+    payload = {"staged": True, "edition_date": date_str, **asdict(item)}
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def stage_social_command(args: list[str]) -> int:
+    from dataclasses import asdict
+
+    from .staging import default_edition_date, stage_social_record
+
+    usage = "usage: morning-paper stage-social <record.json> [--date YYYY-MM-DD] [--config PATH]"
+    parsed = _parse_common(args, usage)
+    if isinstance(parsed, int):
+        return parsed
+    config_path, date, rest = parsed
+    if len(rest) != 1:
+        print(usage, file=sys.stderr)
+        return 2
+    source = Path(rest[0]).expanduser()
+    if not source.is_file():
+        print(f"no such file: {source}", file=sys.stderr)
+        return 1
+    try:
+        config, _ = _load_print_config(config_path)
+    except ConfigError as exc:
+        print(f"invalid config: {exc}", file=sys.stderr)
+        return 1
+    try:
+        record = json.loads(source.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"invalid social source record: {exc}", file=sys.stderr)
+        return 1
+    if not isinstance(record, dict):
+        print("invalid social source record: root must be an object", file=sys.stderr)
+        return 1
+    date_str = date or default_edition_date(config)
+    try:
+        item = stage_social_record(config, record, date_str=date_str)
+    except ValueError as exc:
+        print(f"invalid social source record: {exc}", file=sys.stderr)
+        return 1
     payload = {"staged": True, "edition_date": date_str, **asdict(item)}
     print(json.dumps(payload, indent=2))
     return 0
@@ -1402,6 +1447,8 @@ def main(argv: list[str] | None = None) -> int:
         return render_command(extra)
     if command in {"stage", "add"}:
         return stage_command(extra)
+    if command == "stage-social":
+        return stage_social_command(extra)
     if command == "inbox":
         return inbox_command(extra)
     if command in {"queue", "status"}:

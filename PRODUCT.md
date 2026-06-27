@@ -118,7 +118,7 @@ public impression leads with the paper.
    read handoffs, and prove the run, but the reader should mostly see a paper,
    a path for notes, and clear status when something is blocked.
 7. **Show the work without making work.** Sources, desks, ledgers, assignment
-   boards, run tickets, and proof views should make the system more trustworthy
+   boards, production records, and proof views should make the system more trustworthy
    and easier to steer.
 8. **Nostalgia earns its place through utility.** Old software and print
    references should make the product feel personal and tangible, never merely

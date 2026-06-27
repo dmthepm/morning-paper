@@ -6,12 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.11] - 2026-06-27
+
+### Added
+- Added `morning-paper stage-social` for complete social source records with
+  full post text, author/date, metrics, source status, thread context, and
+  optional print-approved media.
+- Added print-native social cards so an edition can show actual posts and
+  threads instead of generic social summaries.
+- Added delivery proof placeholders to edition workspaces so unattended runs
+  have a clear slot for delivery evidence.
+
+### Changed
+- Renamed the social completion lane to `needs_source_record`, replacing
+  process language with newsroom-facing source-record language.
+- Expanded render output with an explicit `rendered` status and broadened
+  visual QA page selection for longer papers.
+- Tightened edition, collector, role, and review language so reader-facing
+  papers avoid developer terms and production filler.
+
+### Fixed
+- Prevented incomplete social snippets from printing as if they were complete
+  posts.
+- Reduced stale setup/readiness language in public docs and scaffolded newsroom
+  contracts.
+
 ## [0.8.10] - 2026-06-26
 
 ### Added
-- Added a `needs_hydration` Assignment Board lane so snippet-only social items
-  are routed for full text, author/date, metrics, media, and thread context
-  before they can print as posts.
+- Added a source-record Assignment Board lane so snippet-only social items are
+  routed for full text, author/date, metrics, media, and thread context before
+  they can print as posts.
 - Added scaffolded `preferences/source-budgets.yaml` with source/beat appetite,
   max pages about the paper, and cut-first rules.
 - Added a `process-density` review nudge for editions that spend too much
@@ -24,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - The edition skill and role references now treat page budgets as ceilings and
   appetite signals, not quotas, and tell agents to ship thin honest papers
   instead of adding filler.
-- Social/X guidance now centers hydrated posts, threads, native articles,
+- Social/X guidance now centers complete posts, threads, native articles,
   media, and linked artifacts rather than generic summaries or truncated
   snippets.
 - Retired an accidental standalone setup/readiness contract as a current public

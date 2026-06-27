@@ -90,7 +90,7 @@ broad/source-rich run) needs the late desks. Run and persist `04-editor.md`,
 `05-copy-desk.md`, `06-art-desk.md`, and, after final-editor/status,
 `07-producer.md`. Reporter handoffs alone are not enough. If a subagent returns
 richer findings than the current desk file, update the desk file before using
-that work. The run ticket will block substantial editions that skip these
+that work. The production record will hold substantial editions that skip these
 gates.
 
 ## The pass
@@ -153,10 +153,10 @@ gates.
      specific posts, threads, releases, artifacts, and disagreements. Do not
      flatten them into generic "people are talking about" summaries unless the
      concrete evidence is visible on the page.
-   - For X/social sections, show actual hydrated posts, threads, native
+   - For X/social sections, show actual complete posts, threads, native
      articles, media, and linked artifacts. Search results are discovery, not
      print-ready copy. If a social item is truncated or snippet-only, put it in
-     `needs_hydration` or Source Health instead of printing it as a tweet. See
+     `needs_source_record` or Source Health instead of printing it as a tweet. See
      `docs/roles/beat-reporter.md` for the required social handoff fields.
    - Keep consumption and ideation separate. Do not weave agent advice, next
      actions, post ideas, or reader-specific prompts into source cards unless
@@ -234,7 +234,7 @@ gates.
    - `notes` → deliver, but include the short final-editor note in the handoff.
    - `review` → revise, re-render, re-review, and run final-editor again; or
      record the explicit editorial rationale for shipping despite the flag.
-10. **Run ticket.** Run `morning-paper edition status . --date <edition-date>`
+10. **Production record.** Run `morning-paper edition status . --date <edition-date>`
    and save its JSON/markdown. It maps the whole edition run to `complete`,
    `complete_with_notes`, or `blocked`, and records whether desk role
    artifacts exist for the run. If the run is substantial and the ticket blocks

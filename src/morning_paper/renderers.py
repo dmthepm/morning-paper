@@ -452,7 +452,7 @@ def _staged_section(config: MorningPaperConfig, date_str: str) -> tuple[str, lis
         return "", [], warnings
     section = (
         '\n<div class="edition-divider"><div class="oxford"></div>'
-        '<div class="edition-divider-label">Assignment Board</div></div>\n\n'
+        '<div class="edition-divider-label">From The Desk</div></div>\n\n'
         + '\n<div class="dept-rule"></div>\n\n'.join(parts)
     )
     return section, included, warnings

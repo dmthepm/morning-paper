@@ -1,7 +1,7 @@
 # Collectors — bring your own sources
 
-Morning Paper works best when it starts from the reader's existing source
-stack: email and newsletters, Slack or Discord, GitHub, Linear, Main Branch,
+Morning Paper works best when it starts from the reader's existing sources:
+email and newsletters, Slack or Discord, GitHub, Linear, Main Branch,
 local folders, Obsidian vaults, social and video exports, podcast history,
 browser/API scrape outputs, saved articles, and files agents already produce.
 The built-in demo proves the paper path without credentials; the product is the
@@ -10,8 +10,8 @@ reader's own newsroom, not any one input type.
 A **collector** is how any of that enters the paper — a work digest, a saved
 thread, a local social export, a weekly research roundup, a folder of notes, or
 whatever else earns a place on your desk. This page is the contract a collector
-has to honor. Write to it and your source flows into the same edition queue,
-through the same renderer, under the same page budget.
+has to honor. Write to it and your source flows into the same Assignment
+Board, through the same renderer, under the same page budget.
 
 ## Start With A Source Experiment
 
@@ -34,7 +34,7 @@ For social sources, split collection into two phases when possible:
 
 1. **Discovery:** broad searches, watchlists, exports, or rankings find
    candidate URLs/IDs and rough metrics.
-2. **Hydration:** finalists get full text, author/date, canonical URL,
+2. **Source record:** finalists get full text, author/date, canonical URL,
    engagement metrics, media/artifact links, thread/reply/quote/article
    context, and a route into the paper.
 3. **Media/long-post triage:** images, screenshots, videos, demos, threads,
@@ -42,7 +42,7 @@ For social sources, split collection into two phases when possible:
    mini-read, full read, source health, or cut.
 
 Do not stage an ellipsis-truncated social search result as if it were the full
-post. Mark it as `snippet_only`, hydrate it, or cut it.
+post. Mark it as `snippet_only`, complete the source record, or cut it.
 
 ## What a collector is
 
@@ -55,7 +55,7 @@ material**: markdown the editor will read when it composes today's paper.
 Collectors are yours. They live in your private newsroom repo (the `setup`
 skill scaffolds a `collectors/` directory for exactly this), never in the
 public engine. The engine gives you a stable place to drop their output and a
-budget-aware queue to read it back — nothing about your sources, credentials,
+budget-aware Assignment Board to read it back — nothing about your sources, credentials,
 or scraping logic ever touches the engine repo.
 
 Reader-approved remote services can be collectors too. An Apify actor, browser
@@ -89,7 +89,7 @@ honesty flags. Your collector just calls the CLI once per item:
 
 ```bash
 # A URL — fetched and extracted exactly like `print`, with the same
-# truncation / extractor-fallback honesty notes recorded in the queue:
+# truncation / extractor-fallback honesty notes recorded with the item:
 morning-paper stage "https://example.com/some-article" --title "Optional title"
 
 # A local markdown file your collector already produced:
@@ -100,9 +100,80 @@ morning-paper stage report.md --date 2026-06-14
 ```
 
 Each call prints a JSON receipt — slug, word count, estimated pages, and any
-honesty flags — so an agent collector can report "that adds ~3 pages; it's in
-the queue." This is the same path the contributor inbox uses, so a staged item
+honesty flags — so an agent collector can report "that adds ~3 pages; it's on
+the Assignment Board." This is the same path the contributor inbox uses, so a staged item
 is identical no matter how it arrived.
+
+### Social source records: `morning-paper stage-social`
+
+Use `stage-social` when a private collector has already fetched the real post,
+thread, or native social article. This is the path for tools such as Apify,
+last30days, browser exports, or any other reader-approved source collector.
+The engine validates completeness, writes a printable source card, estimates
+pages, and preserves the metadata for editors.
+
+```bash
+morning-paper stage-social x-thread.json --date 2026-06-14
+```
+
+Minimum shape:
+
+```json
+{
+  "kind": "thread",
+  "source": "https://x.com/user/status/123",
+  "title": "Thread by @user: short human title",
+  "source_status": "complete",
+  "route": "thread",
+  "extractor_note": "completed by private collector: apify actor <name>",
+  "social": {
+    "platform": "x",
+    "canonical_url": "https://x.com/user/status/123",
+    "root_post_id": "123",
+    "fetched_at": "2026-06-14T07:30:00-04:00",
+    "author": {
+      "name": "Display Name",
+      "handle": "@user",
+      "profile_url": "https://x.com/user"
+    },
+    "metrics": {
+      "likes": 1200,
+      "reposts": 90,
+      "replies": 41,
+      "quotes": 5,
+      "views": 88000,
+      "captured_at": "2026-06-14T07:30:00-04:00"
+    },
+    "media": [
+      {
+        "type": "image",
+        "local_path": "/absolute/path/to/print-safe-thumbnail.jpg",
+        "thumbnail_url": "https://example.com/fallback.jpg",
+        "caption": "Optional short caption",
+        "print": false
+      }
+    ],
+    "thread": [
+      {
+        "post_id": "123",
+        "created_at": "2026-06-14T07:10:00-04:00",
+        "canonical_url": "https://x.com/user/status/123",
+        "full_text": "Complete post text. No clipped ellipsis.",
+        "truncated": false
+      }
+    ]
+  }
+}
+```
+
+`source_status: complete` means every printed post has `full_text`. If a
+collector only has search snippets, use `source_status: snippet_only`,
+`partial`, or `discovery`; the Assignment Board will route it to Needs Source
+Record instead of printing it as a tweet.
+
+The renderer prints media only when an item in `social.media` has
+`"print": true`. Prefer `local_path` for reliable PDF output; keep `print:
+false` for screenshots, videos, or images the visual editor has not chosen.
 
 ### The direct way: write the files yourself
 
@@ -139,9 +210,9 @@ engine's own fallback).
 `kind` is free-form metadata: `url`, `file`, or `note` are the conventions the
 built-in paths use.
 
-## Reading the queue back
+## Reading the Assignment Board
 
-Whatever wrote it, the editor reads the same queue:
+Whatever wrote it, the editor reads the same Assignment Board:
 
 ```bash
 morning-paper queue                  # what's staged vs the page budget (JSON)
@@ -151,10 +222,10 @@ morning-paper queue show <slug> --date 2026-06-14 --content
 morning-paper queue remove <slug> --date 2026-06-14
 ```
 
-`queue` reports the item list, total estimated pages, your `page_budget`, and
+`queue` reports the assigned source material, total estimated pages, your `page_budget`, and
 how many pages remain; `show` reads the staged markdown; `remove` drops an item
 and its staged file. The compose step can know what fits before it lays a
-single column. Anything in the queue was put there on purpose (by you, a
+single column. Anything on the Assignment Board was put there on purpose (by you, a
 collector, or a trusted contributor) and is treated as belonging in the paper
 unless the editor removes it.
 
@@ -176,8 +247,8 @@ consumes.
 ## Collectors run at compose time, outside the page budget
 
 A collector runs **before** composition, during the edition skill's "Collect"
-step. Running a collector does not, by itself, cost pages — it fills the queue.
-The page budget is enforced later, when the editor composes: it reads the queue
+step. Running a collector does not, by itself, cost pages — it fills the Assignment Board.
+The page budget is enforced later, when the editor composes: it reads the assigned material
 with `morning-paper queue`, weighs everything staged against `page_budget`, and
 cuts the weakest material to fit. So a collector can stage generously; the
 editor decides what survives to print. A collector that stages ten pages into a
@@ -219,8 +290,7 @@ editor decide whether it earns space.
 
 Use this when the reader already has files somewhere: an Obsidian export, a
 synced folder, a generated report directory, or source dumps from another
-agent. It does not move the source files; it stages copies into the edition
-queue.
+agent. It does not move the source files; it stages copies for the edition.
 
 ```bash
 #!/usr/bin/env bash
@@ -273,7 +343,7 @@ fi
 
 The `setup` skill scaffolds this exact pattern into your newsroom's
 `collectors/` directory — `_lib.sh` (the shared `stage`-based helpers),
-`run_all.sh` (run every collector, then print the queue), and worked examples
+`run_all.sh` (run every collector, then print the Assignment Board), and worked examples
 (`shipped.sh`, `read.sh`, and `local-drop.sh`). Start from those rather than
 from a blank file.
 

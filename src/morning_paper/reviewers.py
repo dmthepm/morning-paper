@@ -1232,7 +1232,7 @@ def check_process_density(ed: ParsedEdition, prefs: Preferences) -> list[Finding
             severity="nudge",
             location={"section": "", "kind": "edition", "ref": "run/process language"},
             issue="Reader-facing copy appears to spend too much space on production state.",
-            why="Run tickets, source-health details, and production proof belong mostly in handoffs; the paper should spend its pages on source material.",
+            why="Production records, source-health details, and production proof belong mostly in handoffs; the paper should spend its pages on source material.",
             measured={"words": words, "mentions": mention_count, "ratio": round(ratio, 4), "top_terms": hits},
             threshold={
                 "min_words": int(min_words),
@@ -1240,7 +1240,7 @@ def check_process_density(ed: ParsedEdition, prefs: Preferences) -> list[Finding
                 "max_ratio": float(max_ratio),
                 "source": words_src if words_src != "default" else mentions_src if mentions_src != "default" else ratio_src,
             },
-            hint="Move proof/status detail to the run ticket or back page; keep at most a small source-health note in the paper.",
+            hint="Move proof/status detail to the production record or back page; keep at most a small source-health note in the paper.",
         )
     ]
 

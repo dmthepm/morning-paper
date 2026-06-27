@@ -17,7 +17,7 @@ deterministic checks first, judgment where the checks cannot see.
 
 ## Job
 
-1. Confirm the run ticket is current.
+1. Confirm the production record is current.
 2. Confirm the PDF exists, opens, and matches the current draft.
 3. Confirm review, visual QA, and final editor are current.
 4. Decide whether the run is complete, complete with notes, or blocked.
@@ -25,7 +25,7 @@ deterministic checks first, judgment where the checks cannot see.
 6. For substantial editions, confirm `04-editor.md`, `05-copy-desk.md`, and
    `06-art-desk.md` exist before delivery.
 7. Check that reader-facing pages do not contain stale production truth such as
-   pending delivery, old run-ticket status, or unresolved source states that
+   pending delivery, old production status, or unresolved source states that
    were repaired before shipping.
 8. Check the final page is not filler or a stranded feedback/proof page.
 

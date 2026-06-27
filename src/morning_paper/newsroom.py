@@ -386,8 +386,8 @@ place, how often it should be checked, and what to do when it fails.
   and let `collectors/local-drop.sh` add them to the Assignment Board.
 - Social platforms, communities, and markets should become beats, not raw link
   dumps: define what the paper should notice, how often, and why it matters.
-- Social discovery is not the same as social printing. Snippet-only posts must
-  be hydrated before they appear as tweet/thread cards.
+- Social discovery is not the same as social printing. Snippet-only posts need
+  a complete source record before they appear as tweet/thread cards.
 - Source budgets live in `preferences/source-budgets.yaml`. They are ceilings
   and appetite signals, not quotas.
 
@@ -416,19 +416,19 @@ changes. It reports configured inputs, reader-owned collectors, the local drop
 folder, and suggested next actions. If a source fails, record the next action
 here instead of hiding the failure in chat.
 
-## Social Hydration
+## Social Source Records
 
 Print-ready social items should preserve:
 
-- full text or `hydration_status: snippet_only`;
+- full text or `source_status: snippet_only`;
 - author name, handle, date/time, canonical URL;
 - metrics such as likes, reposts, replies, views, and quotes when available;
 - thread, reply, quote-post, native-article, media, and linked-artifact context;
 - media paths or URLs plus whether the visual is printer-friendly;
 - route: `tweet card`, `thread`, `long read`, `visual`, `source health`, or `cut`.
 
-If a collector can only discover an item, stage it with a clear hydration note
-so the Assignment Board sends it to `needs_hydration`.
+If a collector can only discover an item, stage it with a clear source-completeness
+note so the Assignment Board sends it to `needs_source_record`.
 
 ## Feedback Routing
 
@@ -652,7 +652,7 @@ beats:
   x_social:
     target_pages: 2
     max_pages: 4
-    require_hydrated_posts: true
+    require_complete_source_records: true
     lanes:
       frontier_agents:
         target_pages: 1
@@ -665,7 +665,7 @@ beats:
     target_pages: 2
     max_pages: 4
 cut_first:
-  - process notes that belong in the run ticket
+  - process notes that belong in the production record
   - generic trend summaries without source objects
   - repeated stories unless the angle advanced
 """,
@@ -740,10 +740,10 @@ a partial digest, say so in the markdown.
 - Treat exports as private taste/source intelligence, not a new feed.
 - Group by story, creator, topic, repeated interest, or blind spot.
 - Separate discovery from print. A search hit or clipped export row can point
-  at something worth hydrating, but it is not yet a tweet/thread/article card.
+  at something worth completing, but it is not yet a tweet/thread/article card.
 - For print candidates, preserve full text, author, handle, date/time,
   canonical URL, metrics, media/artifact links, thread/reply/quote/article
-  context, and `hydration_status`.
+  context, and `source_status`.
 - Route each candidate as `tweet card`, `thread`, `long read`, `visual`,
   `source health`, or `cut`.
 - Mark sensitive analysis before printing it. Keep raw private taste analysis

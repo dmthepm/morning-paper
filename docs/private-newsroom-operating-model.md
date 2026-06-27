@@ -35,7 +35,7 @@ of hiding ranking in a service, it names the loop in files:
 
 1. **Candidate sourcing** - collectors, inboxes, staged URLs/files, exports,
    work systems, social scrapes, and agent research produce possible items.
-2. **Hydration** - collectors add enough context to judge an item: source,
+2. **Source records** - collectors add enough context to judge an item: source,
    date, author, body text, thread/reply context, artifact links, sensitivity,
    and extraction limits.
 3. **Memory filters** - ledgers and prior editions remove repeats, already-read
@@ -112,7 +112,7 @@ flatten it into generic summaries.
 
 Social discovery is not the same as social print. A search scraper may be good
 at finding candidates while still returning truncated snippets. Before a post
-prints, the source desk should hydrate finalists into records with full text,
+prints, the source desk should complete finalists into records with full text,
 author/date, canonical URL, engagement metrics when available, media/artifact
 links, thread/reply/quote context, article body for long native posts, and a
 route: compact card, thread card, long read, source health, or cut.

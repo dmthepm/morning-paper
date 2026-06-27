@@ -166,9 +166,9 @@
 - style x palette snapshot expansion in CI
 - palette-aware article image pipeline (color images on the color palette)
 - source plugins for YouTube transcripts and X/Twitter thread workflows
-- social-source hydration contract: discovery scrapers find candidate
-  URLs/IDs, then finalists hydrate into full text, metrics, media, thread/reply
-  context, and long-native-post routes before print
+- social source-record contract: discovery collectors find candidate
+  URLs/IDs, then finalists become complete records with full text, metrics,
+  media, thread/reply context, and long-native-post routes before print
 - social beat budgeting: let agents allocate pages across subtopics such as
   frontier agents, coding workflows, commerce, creative tools, and reader-owned
   projects, then use rendered proof pages to tune density

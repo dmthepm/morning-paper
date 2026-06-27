@@ -30,7 +30,7 @@ not enough for a real paper.
    clarity.
 6. `06-art-desk.md` - checks page shape, visual furniture, Desk Sheet, and
    print readability.
-7. `07-producer.md` - verifies the run can ship, using the run ticket and PDF
+7. `07-producer.md` - verifies the run can ship, using the production record and PDF
    proofs.
 8. `08-taste-editor.md` - after reader feedback, updates the smallest durable
    newsroom file.
@@ -86,7 +86,7 @@ did not run.
 - Page budgets are ceilings and appetite signals, not quotas. A thin honest
   paper is better than filler.
 - Keep process pages small. Unless the reader asks, source/run-status material
-  belongs in handoffs and the run ticket, not in the reader's pages.
+  belongs in handoffs and the production record, not in the reader's pages.
 - The art desk protects readability: printer-friendly, accessible, no gradient
   decoration, no feed chrome.
 - The producer does not make the paper better by adding prose. It makes the

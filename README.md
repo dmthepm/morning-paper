@@ -116,6 +116,10 @@ Examples:
 - folders, synced files, Obsidian vaults, saved articles, and local reports;
 - one-off URLs added to tomorrow's Assignment Board.
 
+For social posts and threads, private collectors can write complete social
+source records and add them with `morning-paper stage-social`; snippet-only
+discoveries stay off the printed page until their source record is complete.
+
 Article extraction is replaceable plumbing. The current engine has registered
 extractors, but the product promise is not "use this scraper." Local extraction
 keeps URL capture on your machine; remote readers or browser/API scrapes should

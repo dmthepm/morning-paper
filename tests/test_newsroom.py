@@ -128,8 +128,9 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("YouTube", sources)
             self.assertIn("experiments first", sources)
             self.assertIn("beats, not raw link", sources)
-            self.assertIn("Social Hydration", sources)
-            self.assertIn("needs_hydration", sources)
+            self.assertIn("Social Source Records", sources)
+            self.assertIn("complete source record", sources)
+            self.assertIn("needs_source_record", sources)
             self.assertNotIn("Hacker News", sources)
 
             source_budgets = (root / "preferences" / "source-budgets.yaml").read_text(encoding="utf-8")
@@ -137,7 +138,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("max_pages_about_the_paper: 3", source_budgets)
             self.assertIn("frontier_agents", source_budgets)
             self.assertIn("commerce_shopify", source_budgets)
-            self.assertIn("require_hydrated_posts: true", source_budgets)
+            self.assertIn("require_complete_source_records: true", source_budgets)
 
             inbox = (root / "inbox" / "README.md").read_text(encoding="utf-8")
             self.assertIn("Local Drop Inbox", inbox)
@@ -154,7 +155,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Obsidian", converters)
             self.assertIn("GitHub / Main Branch", converters)
             self.assertIn("Social / Video", converters)
-            self.assertIn("hydration_status", converters)
+            self.assertIn("source_status", converters)
             self.assertIn("tweet card", converters)
             self.assertIn("Do not move or mutate originals", converters)
 

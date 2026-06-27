@@ -5,7 +5,7 @@ import json
 import subprocess
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -265,6 +265,130 @@ class StageTruncationTest(unittest.TestCase):
             payload = json.loads(stdout.getvalue())
             self.assertTrue(payload["staged"])
             self.assertGreaterEqual(payload["est_pages"], 1)
+
+    def test_stage_social_record_preserves_complete_thread(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+            record = {
+                "kind": "thread",
+                "source": "https://x.com/reporter/status/123",
+                "title": "Thread by @reporter: agent workflow",
+                "source_status": "complete",
+                "route": "thread",
+                "social": {
+                    "platform": "x",
+                    "canonical_url": "https://x.com/reporter/status/123",
+                    "root_post_id": "123",
+                    "fetched_at": "2026-06-26T08:00:00-07:00",
+                    "author": {
+                        "name": "Reporter Name",
+                        "handle": "@reporter",
+                        "profile_url": "https://x.com/reporter",
+                    },
+                    "metrics": {
+                        "likes": 1200,
+                        "reposts": 90,
+                        "replies": 41,
+                        "views": 88000,
+                        "captured_at": "2026-06-26T08:00:00-07:00",
+                    },
+                    "media": [
+                        {
+                            "type": "image",
+                            "local_path": "/tmp/social-thumbnail.jpg",
+                            "caption": "print-safe thumbnail",
+                            "print": True,
+                        }
+                    ],
+                    "thread": [
+                        {
+                            "post_id": "123",
+                            "created_at": "2026-06-26T07:30:00-07:00",
+                            "canonical_url": "https://x.com/reporter/status/123",
+                            "full_text": "Here is the complete first post. No clipped ellipsis.",
+                            "truncated": False,
+                        },
+                        {
+                            "post_id": "124",
+                            "created_at": "2026-06-26T07:31:00-07:00",
+                            "canonical_url": "https://x.com/reporter/status/124",
+                            "full_text": "Second complete post with the useful detail the paper should print.",
+                            "truncated": False,
+                        },
+                    ],
+                },
+            }
+            source = tmp_path / "social.json"
+            source.write_text(json.dumps(record), encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "stage-social",
+                        str(source),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-12",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["kind"], "thread")
+            self.assertEqual(payload["source_status"], "complete")
+            self.assertFalse(payload["truncated"])
+            self.assertEqual(payload["social"]["author"]["handle"], "@reporter")
+
+            markdown = (
+                tmp_path
+                / "out"
+                / "staging"
+                / "2026-06-12"
+                / f"{payload['slug']}.md"
+            ).read_text(encoding="utf-8")
+            self.assertIn("mp-social-thread", markdown)
+            self.assertIn("Here is the complete first post", markdown)
+            self.assertIn("Second complete post", markdown)
+            self.assertIn("mp-social-media", markdown)
+            self.assertIn("/tmp/social-thumbnail.jpg", markdown)
+            self.assertIn("print-safe thumbnail", markdown)
+
+    def test_stage_social_record_rejects_complete_record_missing_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._config_path(tmp_path)
+            record = {
+                "kind": "tweet",
+                "source": "https://x.com/reporter/status/123",
+                "title": "Broken tweet",
+                "source_status": "complete",
+                "social": {
+                    "platform": "x",
+                    "canonical_url": "https://x.com/reporter/status/123",
+                    "author": {"handle": "@reporter"},
+                    "thread": [{"post_id": "123", "full_text": ""}],
+                },
+            }
+            source = tmp_path / "social.json"
+            source.write_text(json.dumps(record), encoding="utf-8")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                rc = cli.main(
+                    [
+                        "stage-social",
+                        str(source),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-12",
+                    ]
+                )
+            self.assertEqual(rc, 1)
+            self.assertIn("posts without `full_text`", stderr.getvalue())
 
 
 if __name__ == "__main__":

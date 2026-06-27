@@ -38,7 +38,7 @@ context to decide what earns ink.
 
 Required social handoff fields when available:
 
-- `full_text` or a clear `hydration_status: snippet_only`.
+- `full_text` or a clear `source_status: snippet_only`.
 - author name, handle, date/time, canonical URL.
 - public metrics such as likes, reposts, replies, views, and quote count.
 - thread, reply, quote-post, native-article, media, and linked-artifact context.
@@ -47,6 +47,6 @@ Required social handoff fields when available:
 - route: `tweet card`, `thread`, `long read`, `visual`, `source health`, or
   `cut`.
 
-If the reporter cannot hydrate the full object, send it to the Assignment
-Board's `needs_hydration` lane or Source Health. Do not let snippet-only social
-items print as if they were whole tweets.
+If the reporter cannot complete the full source record, send it to the
+Assignment Board's `needs_source_record` lane or Source Health. Do not let
+snippet-only social items print as if they were whole tweets.

@@ -121,9 +121,11 @@ def _markdown_visual_markers(markdown_path: Path | None) -> dict[str, object]:
 def _select_pages(page_count: int, *, has_visuals: bool) -> list[int]:
     if page_count <= 0:
         return []
+    if page_count <= 12:
+        return list(range(1, page_count + 1))
     if has_visuals:
-        return list(range(1, min(page_count, 5) + 1))
-    return sorted({1, page_count})
+        return sorted({1, 2, 3, 4, 5, (page_count + 1) // 2, page_count})
+    return sorted({1, (page_count + 1) // 2, page_count})
 
 
 def _pdf_text_glyph_findings(pdf_path: Path) -> list[dict[str, object]]:

@@ -296,7 +296,7 @@ status, and provenance. They still stay flat, printable, and quiet.
 ### Tweet / Social Cards
 
 - **Style:** tweet-first, variable-height, paper-native cards.
-- **Content:** handle, date, full hydrated text when it fits, quiet engagement
+- **Content:** handle, date, full source text when it fits, quiet engagement
   tokens, and small context tags.
 - **Rule:** do not translate every post into agent-written claim/context copy.
   Selection is the editorial act.

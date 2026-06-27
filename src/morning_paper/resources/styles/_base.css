@@ -95,6 +95,86 @@ figcaption, .mp-caption, .mp-source-note {
   min-width: 0;
 }
 
+/* Social source records: literal posts, compact enough for print. */
+.mp-social-thread {
+  break-inside: auto;
+  page-break-inside: auto;
+  margin: 0.1in 0 0.14in;
+}
+.mp-social-head {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+.mp-social-head + .mp-social-post {
+  break-before: avoid;
+  page-break-before: avoid;
+}
+.mp-social-kicker,
+.mp-social-post-meta {
+  font-family: var(--mp-sans, 'MP Sans', Helvetica, Arial, sans-serif);
+  font-size: 6.6pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mp-muted);
+}
+.mp-social-title {
+  font-size: 13pt;
+  line-height: 1.1;
+  margin: 0.025in 0 0.04in;
+}
+.mp-social-meta,
+.mp-social-source {
+  font-family: var(--mp-sans, 'MP Sans', Helvetica, Arial, sans-serif);
+  font-size: 7.4pt;
+  line-height: 1.35;
+  color: var(--mp-muted);
+}
+.mp-social-source {
+  overflow-wrap: anywhere;
+  margin-top: 0.02in;
+}
+.mp-social-post {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  border-top: 0.5pt solid var(--mp-track);
+  padding-top: 0.055in;
+  margin-top: 0.07in;
+}
+.mp-social-post blockquote {
+  margin: 0.035in 0 0;
+  padding-left: 0.1in;
+  border-left: 1.4pt solid var(--mp-rule);
+  font-style: normal;
+}
+.mp-social-media {
+  break-before: avoid;
+  page-break-before: avoid;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0.08in 0 0;
+}
+.mp-social-media img {
+  display: block;
+  max-width: 68%;
+  max-height: 1.25in;
+  object-fit: contain;
+  border: 0.5pt solid var(--mp-track);
+  filter: grayscale(100%);
+}
+.mp-social-media figcaption {
+  margin-top: 0.03in;
+  font-family: var(--mp-sans, 'MP Sans', Helvetica, Arial, sans-serif);
+  font-size: 6.6pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--mp-muted);
+}
+
 /* 5. Split blocks look finished: when a ruled callout / card / pull-quote is
  *    genuinely too tall to keep whole and must split, redraw its border and
  *    padding on both fragments instead of amputating one edge. WeasyPrint 69.x
