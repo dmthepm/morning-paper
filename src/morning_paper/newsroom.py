@@ -410,6 +410,11 @@ The email should still feel like one edition, not a feed.
 This is the source taste system: what the paper reads, why each source earns a
 place, how often it should be checked, and what to do when it fails.
 
+This file is an editorial ledger and backlog. It is not an executable source
+registry. Recurring intake lives in `collectors/`, `inbox/`, staged markdown,
+and the edition queue; `morning-paper sources check --newsroom .` reports both
+the executable collectors and this ledger separately.
+
 ## Source Principles
 
 - Start from what the reader already has. Do not force sources to move.
@@ -428,7 +433,7 @@ place, how often it should be checked, and what to do when it fails.
 - Source budgets live in `preferences/source-budgets.yaml`. They are ceilings
   and appetite signals, not quotas.
 
-## Registry
+## Editorial Ledger
 
 | Source | Type | Purpose | Cadence | Trust | Section | Status |
 |---|---|---|---|---|---|---|

@@ -86,14 +86,15 @@ The right path is:
 
 1. inventory likely sources;
 2. inspect the shape of each source;
-3. write a source ledger in `SOURCES.md`;
+3. write an editorial source ledger/backlog entry in `SOURCES.md`;
 4. test one small collector or converter;
 5. stage markdown through `morning-paper stage`;
 6. decide whether the source earns a recurring role.
 
-Do not turn every possible input into an engine integration. Source-specific
-scraping belongs in private collectors until a pattern has been proven across
-readers.
+Do not turn every possible input into an engine integration. `SOURCES.md`
+records editorial judgment and backlog; it is not an executable source
+registry. Source-specific scraping belongs in private collectors until a
+pattern has been proven across readers.
 
 Some readers want one or two articles every day. Others want a beat: what is
 happening on X, YouTube, GitHub, a market, a community, or inside their own

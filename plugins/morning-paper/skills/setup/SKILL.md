@@ -128,12 +128,12 @@ See
 for the contract.
 
 For any unfamiliar source, use this sequence before writing a collector:
-inspect the source shape, write a small source ledger, ask the reader what
-should influence the paper, then create the smallest private converter or
-collector. The ledger should name structure, useful lanes, sensitivity,
-conversion needs, and reader questions. Do not build a hosted scraper/OAuth
-registry or source-specific engine integration just because one reader has one
-tool.
+inspect the source shape, write a small editorial source ledger/backlog entry
+in `SOURCES.md`, ask the reader what should influence the paper, then create
+the smallest private converter or collector. The ledger should name structure,
+useful lanes, sensitivity, conversion needs, and reader questions; it is not an
+executable registry. Do not build a hosted scraper/OAuth registry or
+source-specific engine integration just because one reader has one tool.
 
 - **Social/export tools**: local Twitter/X exports, browser/API scrapes, or
   services the reader already trusts. Treat these as reader-owned source
@@ -219,7 +219,7 @@ newsroom/
   CLAUDE.md                  # same constitution for Claude Code
   EDITORIAL.md               # what earns ink, gets cut, and becomes The Read
   VISUALS.md                 # the visual desk: charts, images, PDF/email rules
-  SOURCES.md                 # source purpose, trust, cadence, health, backlog
+  SOURCES.md                 # editorial source ledger/backlog, not executable intake
   DELIVERY.md                # PDF, print, email/article, archive preferences
   TASTELOG.md                # accepted/rejected durable taste changes
   specs/

@@ -50,7 +50,8 @@ then compose.
 Required durable artifacts:
 
 - `source-inventory.json` — `morning-paper sources list/check --newsroom .`
-  result, including built-in feeds and local collector scripts.
+  result, separating executable configured collectors/local drop from the
+  editorial `SOURCES.md` ledger/backlog.
 - `collector-report.md` — commands run, status lines, failures, and skips.
 - `queue-snapshot.json` — compatibility snapshot from
   `morning-paper queue list --date <date>` after collectors and any pruning.
@@ -74,6 +75,9 @@ Required durable artifacts:
   answer in chat.
 - `desk-sheet.md` — optional print feedback sheet, created only when
   `preferences/desk-sheet.yaml` enables it.
+- `desk-sheet-result.json` — Desk Sheet render proof from
+  `morning-paper edition desk-sheet . --date <date>` when the Desk Sheet is
+  enabled.
 - `feedback-plan.md` — the route from reader notes to durable newsroom files.
 
 Role model: the host agent is the orchestrator. It owns the run, calls the CLI,
@@ -213,7 +217,7 @@ gates.
    `review.json`. It reads the composed artifacts and returns editorial
    findings (long/label headlines, lopsided or dead sections, duplicate
    stories, stale leads, unfurnished visuals) with `location` + `hint`. It
-   never fails the build — exit is always 0; the JSON `status` is the signal:
+   never fails the run by exit code — exit is always 0; the JSON `status` is the signal:
    - `clean` → ship.
    - `notes` (only info/nudge) → ship; you may fold the one-line nudge summary
      into the delivery note.
@@ -246,11 +250,11 @@ gates.
    producer handoff. Then deliver using their saved print command (duplex flag
    and all), or just hand
    back the PDF path. If `preferences/desk-sheet.yaml` enables the separate
-   desk sheet, render or hand back `desk-sheet.md` with the edition; the
-   default is a No. 10-style writing sheet with generous note space, a small
-   concrete asks band, and a tomorrow picker. Archive markdown + html into
-   `editions/<date>/`. End by pointing at
-   `operator-answers.md`, optional `desk-sheet.md`, and `feedback-plan.md`,
+   desk sheet, run `morning-paper edition desk-sheet . --date <edition-date>`
+   and hand back the rendered Desk Sheet PDF with the edition; the command
+   writes `desk-sheet-result.json`, which status/final-editor treat as required
+   proof. Archive markdown + html into `editions/<date>/`. End by pointing at
+   `operator-answers.md`, optional rendered Desk Sheet, and `feedback-plan.md`,
    then asking for natural-language feedback: what to keep, cut, expand,
    change visually, add as a source, change about delivery, save as taste, or
    print tomorrow. Then stop. Do not run `morning-paper edition prepare` for
@@ -258,8 +262,10 @@ gates.
 
 Default done status:
 
-- `complete` — sources checked, edition rendered, review/visual QA/final-editor
-  ran, ledgers updated, and configured delivery succeeded or was not configured.
+- `complete` — sources checked, edition and enabled Desk Sheet rendered,
+  review/visual QA/final-editor ran, printed reads were verified in
+  `memory/reads-ledger.md` or explicitly marked as none with rationale, and
+  configured delivery succeeded or was not configured.
 - `complete_with_notes` — the PDF is readable and delivered or handed back, but
   source gaps, review nudges, visual notes, or delivery attempts need attention.
 - `blocked` — no readable, honest edition can be produced without reader action

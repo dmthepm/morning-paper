@@ -138,6 +138,38 @@ def _collector_inventory(newsroom: Path, *, check: bool = False) -> dict[str, ob
     }
 
 
+def _source_ledger_inventory(newsroom: Path) -> dict[str, object]:
+    path = newsroom.expanduser().resolve() / "SOURCES.md"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "status": "not_found",
+            "role": "editorial_source_ledger",
+            "executable": False,
+            "row_count": 0,
+            "meaning": "SOURCES.md is a source judgment ledger/backlog, not an executable source registry.",
+        }
+    text = path.read_text(encoding="utf-8", errors="replace")
+    table_rows = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or not stripped.endswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if not cells or all(set(cell) <= {"-", ":"} for cell in cells):
+            continue
+        table_rows.append(cells)
+    row_count = max(0, len(table_rows) - 1) if table_rows else 0
+    return {
+        "path": str(path),
+        "status": "present",
+        "role": "editorial_source_ledger",
+        "executable": False,
+        "row_count": row_count,
+        "meaning": "SOURCES.md is not an executable source registry; it records source purpose, trust, cadence, health, and backlog while collectors and staging are executable intake.",
+    }
+
+
 def _source_next_actions(sources: list[dict[str, object]], newsroom_info: dict[str, object] | None) -> list[str]:
     actions: list[str] = []
     enabled_rss = [item for item in sources if item.get("type") == "rss" and item.get("enabled")]
@@ -216,6 +248,7 @@ def source_inventory(
         sources.append(item)
 
     newsroom_info = _collector_inventory(newsroom, check=check) if newsroom is not None else None
+    source_ledger = _source_ledger_inventory(newsroom) if newsroom is not None else None
     payload: dict[str, object] = {
         "sources": sources,
         "count": len(sources),
@@ -245,4 +278,12 @@ def source_inventory(
     }
     if newsroom_info is not None:
         payload["newsroom"] = newsroom_info
+        collectors = newsroom_info.get("collectors") if isinstance(newsroom_info.get("collectors"), list) else []
+        payload["configured_collectors"] = {
+            "count": len(collectors),
+            "ids": [str(item.get("id")) for item in collectors if isinstance(item, dict) and item.get("id")],
+            "meaning": "collector scripts are executable private newsroom intake",
+        }
+    if source_ledger is not None:
+        payload["editorial_source_ledger"] = source_ledger
     return payload

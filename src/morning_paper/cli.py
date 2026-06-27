@@ -1070,6 +1070,7 @@ def edition_command(args: list[str]) -> int:
         FEEDBACK_ROUTES,
         assignment_board_edition_workspace,
         apply_feedback,
+        desk_sheet_edition_workspace,
         estimate_edition_workspace,
         final_editor_pass,
         prepare_edition_workspace,
@@ -1083,6 +1084,8 @@ def edition_command(args: list[str]) -> int:
         "       morning-paper edition assignment-board <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition estimate <newsroom-path> "
+        "[--date YYYY-MM-DD] [--config PATH]\n"
+        "       morning-paper edition desk-sheet <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition visual-qa <newsroom-path> "
         "[--date YYYY-MM-DD] [--config PATH]\n"
@@ -1147,6 +1150,7 @@ def edition_command(args: list[str]) -> int:
         "prepare",
         "assignment-board",
         "estimate",
+        "desk-sheet",
         "visual-qa",
         "final-editor",
         "status",
@@ -1175,6 +1179,8 @@ def edition_command(args: list[str]) -> int:
             payload = assignment_board_edition_workspace(Path(rest[1]), config, date_str=date_str)
         elif rest[0] == "estimate":
             payload = estimate_edition_workspace(Path(rest[1]), config, date_str=date_str)
+        elif rest[0] == "desk-sheet":
+            payload = desk_sheet_edition_workspace(Path(rest[1]), config, date_str=date_str)
         elif rest[0] == "visual-qa":
             payload = visual_qa_edition_workspace(Path(rest[1]), date_str=date_str)
         elif rest[0] == "final-editor":

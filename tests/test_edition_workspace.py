@@ -19,6 +19,7 @@ class EditionWorkspaceTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
         config["outputs"]["directory"] = str(tmp_path / "out")
+        config["outputs"]["renderer"] = "portable"
         config["sources"]["rss"] = []
         config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
         return config_path
@@ -76,6 +77,7 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "run-ticket.md",
                 "operator-answers.md",
                 "desk-sheet.md",
+                "desk-sheet-result.json",
                 "feedback-plan.md",
             }
             self.assertEqual(set(payload["written"]), expected)
@@ -106,6 +108,10 @@ class EditionWorkspaceTest(unittest.TestCase):
             render_result = json.loads((edition_dir / "render-result.json").read_text(encoding="utf-8"))
             self.assertEqual(render_result["status"], "pending")
             self.assertIn("morning-paper render", render_result["command"])
+            draft_text = (edition_dir / "draft.md").read_text(encoding="utf-8")
+            self.assertIn("Write a Headline With a Verb", draft_text)
+            self.assertIn("2026-06-22 - Daily Edition", draft_text)
+            self.assertNotIn("Not composed yet.", draft_text)
             review = json.loads((edition_dir / "review.json").read_text(encoding="utf-8"))
             self.assertEqual(review["status"], "pending")
             self.assertIn("morning-paper review", review["command"])
@@ -131,6 +137,8 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("The Desk Sheet", desk_sheet)
             self.assertIn("Tomorrow's deep read", desk_sheet)
             self.assertIn("Notes - 14", desk_sheet)
+            desk_sheet_result = json.loads((edition_dir / "desk-sheet-result.json").read_text(encoding="utf-8"))
+            self.assertEqual(desk_sheet_result["status"], "pending")
             feedback_plan = (edition_dir / "feedback-plan.md").read_text(encoding="utf-8")
             self.assertIn("Feedback Plan", feedback_plan)
             self.assertIn("operator-answers.md", feedback_plan)
@@ -144,11 +152,36 @@ class EditionWorkspaceTest(unittest.TestCase):
             self.assertIn("YAML targets", feedback_plan)
             self.assertEqual(payload["artifacts"]["feedback_plan"], str((edition_dir / "feedback-plan.md").resolve()))
             self.assertEqual(payload["artifacts"]["desk_sheet"], str((edition_dir / "desk-sheet.md").resolve()))
+            self.assertEqual(payload["artifacts"]["desk_sheet_result"], str((edition_dir / "desk-sheet-result.json").resolve()))
             self.assertEqual(payload["artifacts"]["desks_readme"], str((edition_dir / "desks" / "README.md").resolve()))
             self.assertEqual(payload["artifacts"]["final_editor"], str((edition_dir / "final-editor.json").resolve()))
             self.assertEqual(payload["artifacts"]["assignment_board"], str((edition_dir / "assignment-board.json").resolve()))
             self.assertEqual(payload["artifacts"]["run_ticket"], str((edition_dir / "run-ticket.json").resolve()))
             self.assertIn("final-editor", payload["next_action"])
+
+    def test_edition_desk_sheet_renders_enabled_sheet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(["edition", "desk-sheet", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["status"], "rendered")
+            self.assertGreaterEqual(payload["pages"], 1)
+            self.assertTrue(Path(payload["outputs"]["pdf"]).is_file())
+            self.assertEqual(
+                json.loads((newsroom / "editions" / "2026-06-22" / "desk-sheet-result.json").read_text(encoding="utf-8"))["status"],
+                "rendered",
+            )
 
     def test_assignment_board_projects_queue_items_into_lanes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -387,16 +420,33 @@ class EditionWorkspaceTest(unittest.TestCase):
                 json.dumps({"status": "not_configured", "date": "2026-06-22"}, indent=2),
                 encoding="utf-8",
             )
+            self.assertEqual(
+                cli.main(["edition", "desk-sheet", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
             (edition_dir / "desks" / "03.1-x-reporter.md").write_text(
                 """---
 role: x-reporter
 phase: "03.1"
 status: ready
 date: 2026-06-22
+inputs:
+  - source-inventory.json
+  - assignment-board.json
+handoff:
+  candidates: 1
+  repeats_cut: 0
+  needs_followup: false
 ---
 
+## What I Checked
+- Source inventory and Assignment Board for the edition date.
+
+## Findings
+- One source-backed candidate was available and did not repeat the ledger.
+
 ## Handoff
-- One valid role handoff.
+- One valid role handoff for the next editor.
 """,
                 encoding="utf-8",
             )
@@ -478,7 +528,7 @@ date: 2026-06-22
             self.assertEqual(rc, 0)
             ticket = json.loads(stdout.getvalue())
             self.assertEqual(ticket["status"], "blocked")
-            self.assertIn("reads-ledger update is not proven", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+            self.assertIn("printed reads are not present in reads-ledger", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
 
             (edition_dir / "delivery-result.json").write_text(
                 json.dumps(
@@ -490,6 +540,10 @@ date: 2026-06-22
                     },
                     indent=2,
                 ),
+                encoding="utf-8",
+            )
+            (newsroom / "memory" / "reads-ledger.md").write_text(
+                "# Reads ledger\n\n- 2026-06-22 - A composed edition\n",
                 encoding="utf-8",
             )
             stdout = io.StringIO()
@@ -536,10 +590,23 @@ role: assignment-editor
 phase: "02"
 status: blocked
 date: 2026-06-22
+inputs:
+  - source-inventory.json
+  - assignment-board.json
+handoff:
+  candidates: 0
+  repeats_cut: 0
+  needs_followup: true
 ---
 
+## What I Checked
+- Source inventory, collector report, and assignment board.
+
+## Findings
+- Source access failed, so no candidates could be assigned honestly.
+
 ## Handoff
-- Source access failed.
+- Source access failed and needs reader credentials before this desk can proceed.
 """,
                 encoding="utf-8",
             )
@@ -612,8 +679,54 @@ phase: "04"
             self.assertEqual(rc, 0)
             ticket = json.loads(stdout.getvalue())
             self.assertEqual(ticket["roles"]["invalid"][0]["file"], "04-editor.md")
-            self.assertIn("missing status", ticket["roles"]["invalid"][0]["issue"])
+            self.assertIn("status", ticket["roles"]["invalid"][0]["issue"])
             self.assertIn("Needs repair", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+    def test_run_ticket_rejects_skeletal_role_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            (edition_dir / "desks" / "04-editor.md").write_text(
+                """---
+role: editor
+phase: "04"
+status: ready
+date: 2026-06-22
+inputs:
+  - draft.md
+handoff:
+  candidates: 1
+---
+
+## What I Checked
+- Draft.
+
+## Findings
+- Fine.
+
+## Handoff
+- Ready.
+""",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["edition", "status", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "blocked")
+            self.assertEqual(ticket["roles"]["invalid"][0]["file"], "04-editor.md")
+            self.assertIn("too skeletal", ticket["roles"]["invalid"][0]["issue"])
 
     def test_substantial_run_requires_late_desks_and_producer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -691,19 +804,36 @@ phase: "04"
                 json.dumps({"status": "not_configured", "date": "2026-06-22"}, indent=2),
                 encoding="utf-8",
             )
+            self.assertEqual(
+                cli.main(["edition", "desk-sheet", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
             (edition_dir / "desks" / "03.1-x-reporter.md").write_text(
                 """---
 role: x-reporter
 phase: "03.1"
 status: ready
 date: 2026-06-22
+inputs:
+  - source-inventory.json
+  - assignment-board.json
+handoff:
+  candidates: 2
+  repeats_cut: 0
+  needs_followup: false
 ---
 
+## What I Checked
+- Assignment Board and source inventory for the broad run.
+
+## Findings
+- Candidate tweets found with enough source context for the editor.
+
 ## Handoff
-- Candidate tweets found.
+- Candidate tweets found; late desks still need to shape the substantial edition.
 """,
-                encoding="utf-8",
-            )
+                    encoding="utf-8",
+                )
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
@@ -742,13 +872,26 @@ role: {role}
 phase: "{phase}"
 status: ready
 date: 2026-06-22
+inputs:
+  - draft.md
+  - render-result.json
+handoff:
+  candidates: 1
+  repeats_cut: 0
+  needs_followup: false
 ---
 
+## What I Checked
+- Draft, render result, review result, and production notes for this desk.
+
+## Findings
+- The desk found no blocker and left the next role enough context to proceed.
+
 ## Handoff
-- Ready.
+- Ready for the next desk with no unresolved production blocker.
 """,
-                    encoding="utf-8",
-                )
+                        encoding="utf-8",
+                    )
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):

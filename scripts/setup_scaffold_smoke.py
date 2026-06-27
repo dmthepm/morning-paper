@@ -263,6 +263,9 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
     if not pdf_path.is_file():
         raise RuntimeError(f"rendered PDF missing: {pdf_path}")
 
+    desk_sheet = run_cli(["edition", "desk-sheet", str(newsroom), "--date", DATE], env=env)
+    require_ok(desk_sheet, "desk-sheet")
+
     review = run_cli(["review", str(render_payload["output_dir"]), "--json"], env=env)
     require_ok(review, "review")
     review_payload = json.loads(review.stdout)
@@ -286,6 +289,7 @@ def simulate(base: Path, *, keep: bool) -> dict[str, object]:
         "estimate-result.json",
         "draft.md",
         "render-result.json",
+        "desk-sheet-result.json",
         "review.json",
         "visual-qa.json",
         "final-editor.json",

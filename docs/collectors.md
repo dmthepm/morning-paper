@@ -22,8 +22,10 @@ just because it worked once in chat. Start with a source experiment:
 1. Name the source and the beat it should support.
 2. Inspect the source shape: files, API responses, browser output, rate limits,
    credentials, freshness, and privacy.
-3. Write a short ledger entry in `SOURCES.md`: what exists, what is useful,
-   what is sensitive, what should be skipped, and which tool was tested.
+3. Write a short editorial ledger/backlog entry in `SOURCES.md`: what exists,
+   what is useful, what is sensitive, what should be skipped, and which tool
+   was tested. This is not executable intake; collectors, local drop, staged
+   markdown, and the edition queue are.
 4. Run the smallest collector or converter once and stage markdown.
 5. Decide whether it becomes recurring, stays ad hoc, or gets rejected.
 

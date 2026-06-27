@@ -45,6 +45,7 @@ EXPECTED_MODULES = (
     "morning_paper/edition_workspace.py",
     "morning_paper/proofs.py",
     "morning_paper/config.py",
+    "morning_paper/sources.py",
     "morning_paper/article_print.py",
     "morning_paper/page_count_worker.py",
 )
@@ -57,6 +58,9 @@ EXPECTED_SNIPPETS = {
         "final-editor.json",
         "estimate-result.json",
         "visual-qa.json",
+        "desk_sheet_edition_workspace",
+        "desk-sheet-result.json",
+        "memory-proof",
         "def apply_feedback",
     ),
     "morning_paper/proofs.py": (
@@ -67,6 +71,7 @@ EXPECTED_SNIPPETS = {
     ),
     "morning_paper/newsroom.py": ("Work streams", "Personal feeds", "feedback-plan.md", "CONVERTERS.md"),
     "morning_paper/config.py": ("remote_extractor_fallback", "remote_extractor_fallback: false"),
+    "morning_paper/sources.py": ("editorial_source_ledger", "configured_collectors", "not an executable source registry"),
     "morning_paper/article_print.py": ("allow_remote_fallback", "Remote fallback is opt-in"),
 }
 STALE_RESOURCE_MARKERS = ("typewriter.md", "typewriter-v5.md")
@@ -320,6 +325,7 @@ def _run_user_journey_smokes(repo: Path) -> list[dict[str, object]]:
         ["scripts/setup_scaffold_smoke.py", "--isolated"],
         ["scripts/new_user_smoke.py"],
         ["scripts/dogfood_newsroom_smoke.py"],
+        ["scripts/fresh_agent_acceptance_smoke.py"],
         ["scripts/five_edition_loop_smoke.py"],
     ]
     results: list[dict[str, object]] = []

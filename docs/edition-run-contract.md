@@ -22,7 +22,8 @@ For the public project, a run is **complete** when all of these are true:
 3. Candidates were assigned, cut, held, or recorded as absent.
 4. The edition was composed from the newsroom's files and current Assignment
    Board.
-5. The desk sheet was included when `preferences/desk-sheet.yaml` enables it.
+5. The Desk Sheet was rendered and proved when `preferences/desk-sheet.yaml`
+   enables it.
 6. `morning-paper edition estimate` ran against the current draft.
 7. The PDF rendered successfully.
 8. `morning-paper review` ran and was either clean, notes-only, or explicitly
@@ -30,20 +31,22 @@ For the public project, a run is **complete** when all of these are true:
 9. `morning-paper edition visual-qa` ran.
 10. `morning-paper edition final-editor` ran and returned `clean` or `notes`,
     or the agent recorded a clear rationale for shipping despite a review flag.
-11. Memory and ledgers were updated enough to prevent obvious repeats in the
-    next edition.
+11. `delivery-result.json` proves printed reads were appended to
+    `memory/reads-ledger.md`, or explicitly records that no reads printed with
+    a short rationale.
 12. `morning-paper edition status` wrote a current production record.
 13. The edition folder contains the durable artifacts another agent needs to
     resume: source inventory, collector report, Assignment Board, draft,
-    estimate, render result, review, visual QA, final-editor files, production record,
-    feedback plan, and operator answers.
+    estimate, render result, Desk Sheet proof when enabled, review, visual QA,
+    final-editor files, production record, feedback plan, and operator answers.
 14. Delivery was attempted only where configured, and the final handoff names
     the PDF path plus anything that needs attention.
 
 The default status words are:
 
-- **complete** - the paper rendered, checks ran, ledgers updated, and configured
-  delivery succeeded or was not configured.
+- **complete** - the paper and enabled Desk Sheet rendered, checks ran,
+  printed reads were verified in `memory/reads-ledger.md` or marked as none
+  with rationale, and configured delivery succeeded or was not configured.
 - **complete_with_notes** - the paper rendered and can be read, but one or more
   sources, collectors, review nudges, visual checks, or delivery attempts need
   attention.
@@ -91,7 +94,9 @@ the reader the smallest repair step. Do not pretend delivery happened.
 Different readers need different definitions of done. Public defaults live
 here; private overrides live in the reader's newsroom, usually in
 `DELIVERY.md`, `preferences/desk-sheet.yaml`, `preferences/checks.yaml`,
-`SOURCES.md`, and source-specific ledgers.
+`SOURCES.md`, and source-specific ledgers. `SOURCES.md` is the reader's
+editorial source ledger/backlog; executable intake lives in configured
+collectors, local drops, staged markdown, and the edition queue.
 
 Examples:
 

@@ -217,6 +217,9 @@ def main() -> int:
         render_payload = json.loads(render.stdout)
         (edition_dir / "render-result.json").write_text(json.dumps(render_payload, indent=2), encoding="utf-8")
 
+        desk_sheet = run_cli(["edition", "desk-sheet", str(newsroom), "--config", str(config_path), "--date", DATE], env=env)
+        require_ok(desk_sheet, "desk-sheet")
+
         review = run_cli(["review", str(render_payload["output_dir"]), "--json", "--config", str(config_path)], env=env)
         require_ok(review, "review")
         review_payload = json.loads(review.stdout)

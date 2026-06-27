@@ -8,6 +8,7 @@ import yaml
 
 from .config import MorningPaperConfig
 from .proofs import estimate_markdown, pdf_basic_proof, visual_qa_from_render, write_json
+from .renderers import write_custom_markdown
 from .sources import source_inventory
 from .staging import queue_status
 
@@ -69,6 +70,10 @@ PLACEHOLDER_DRAFT_MARKERS = (
     "Draft starts here",
     "Replace this placeholder",
     "Not composed yet",
+    "Replace with",
+    "Write a Headline With a Verb",
+    "Sources checked | 0",
+    "Full reads assigned | 0",
 )
 INCOMPLETE_SOURCE_STATUSES = {
     "discovery",
@@ -161,6 +166,132 @@ def _int_or_zero(value: object) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _read_proof_text(value: object) -> str:
+    if isinstance(value, dict):
+        for key in ("ledger_entry", "title", "url", "id", "source"):
+            text = str(value.get(key) or "").strip()
+            if text:
+                return text
+        return " ".join(str(part).strip() for part in value.values() if str(part).strip())
+    return str(value or "").strip()
+
+
+def _delivery_memory_proof(root: Path, edition_dir: Path) -> dict[str, object]:
+    delivery = _load_json_object(edition_dir / "delivery-result.json")
+    status = str(delivery.get("status") or "").strip().lower()
+    complete_statuses = {"delivered", "complete", "complete_with_notes"}
+    if status not in complete_statuses:
+        return {"required": False, "state": "skip", "detail": "delivery is not complete"}
+
+    printed_reads = delivery.get("printed_reads")
+    reads = printed_reads if isinstance(printed_reads, list) else []
+    no_printed_reads = bool(delivery.get("no_printed_reads"))
+    rationale = str(
+        delivery.get("no_printed_reads_reason")
+        or delivery.get("memory_note")
+        or delivery.get("note")
+        or ""
+    ).strip()
+    ledger_path = Path(str(delivery.get("reads_ledger") or root / "memory" / "reads-ledger.md")).expanduser()
+
+    if reads:
+        explicit_entries = delivery.get("reads_ledger_entries")
+        proof_entries = explicit_entries if isinstance(explicit_entries, list) and explicit_entries else reads
+        needles = [_read_proof_text(item) for item in proof_entries]
+        needles = [needle for needle in needles if needle]
+        if not ledger_path.is_file():
+            return {
+                "required": True,
+                "state": "block",
+                "detail": f"`{ledger_path}` is missing",
+                "printed_reads": reads,
+                "missing": needles,
+                "reads_ledger": str(ledger_path),
+            }
+        ledger_text = ledger_path.read_text(encoding="utf-8", errors="replace")
+        missing = [needle for needle in needles if needle not in ledger_text]
+        if missing:
+            return {
+                "required": True,
+                "state": "block",
+                "detail": "printed reads are not present in reads-ledger",
+                "printed_reads": reads,
+                "missing": missing,
+                "reads_ledger": str(ledger_path),
+            }
+        return {
+            "required": True,
+            "state": "pass",
+            "detail": "printed reads found in reads-ledger",
+            "printed_reads": reads,
+            "verified_entries": needles,
+            "reads_ledger": str(ledger_path),
+        }
+
+    if no_printed_reads:
+        if rationale:
+            return {
+                "required": True,
+                "state": "pass",
+                "detail": "no printed reads",
+                "no_printed_reads": True,
+                "rationale": rationale,
+                "reads_ledger": str(ledger_path),
+            }
+        return {
+            "required": True,
+            "state": "block",
+            "detail": "`no_printed_reads` needs a rationale",
+            "no_printed_reads": True,
+            "reads_ledger": str(ledger_path),
+        }
+
+    return {
+        "required": True,
+        "state": "block",
+        "detail": "delivery did not prove reads-ledger update or no printed reads",
+        "reads_ledger": str(ledger_path),
+    }
+
+
+def _desk_sheet_render_proof(root: Path, edition_dir: Path) -> dict[str, object]:
+    if not _desk_sheet_enabled(root):
+        return {"required": False, "state": "skip", "detail": "desk sheet disabled"}
+    source = edition_dir / "desk-sheet.md"
+    result = _load_json_object(edition_dir / "desk-sheet-result.json")
+    if not source.is_file():
+        return {"required": True, "state": "block", "detail": "`desk-sheet.md` is missing"}
+    if result.get("status") != "rendered":
+        return {
+            "required": True,
+            "state": "block",
+            "detail": f"desk-sheet-result status is `{result.get('status') or 'missing'}`",
+        }
+    outputs = result.get("outputs") if isinstance(result.get("outputs"), dict) else {}
+    pdf_path = Path(str(outputs.get("pdf") or "")).expanduser()
+    proof = pdf_basic_proof(pdf_path) if str(pdf_path) else {"ok": False, "error": "missing pdf output"}
+    if not proof.get("ok"):
+        return {
+            "required": True,
+            "state": "block",
+            "detail": "desk-sheet PDF is missing or unreadable",
+            "pdf": str(pdf_path),
+            "proof": proof,
+        }
+    pages = _int_or_zero(proof.get("pages"))
+    state = "note" if pages > 2 else "pass"
+    detail = f"{pages} page desk-sheet PDF"
+    if pages > 2:
+        detail += " (longer than expected)"
+    return {
+        "required": True,
+        "state": state,
+        "detail": detail,
+        "pdf": str(pdf_path),
+        "proof": proof,
+    }
 
 
 def _final_finding(
@@ -436,7 +567,7 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
     invalid: list[dict[str, str]] = []
     blocked: list[dict[str, str]] = []
     phases: dict[str, dict[str, str]] = {}
-    required = {"role", "phase", "status"}
+    required = {"role", "phase", "status", "date", "inputs", "handoff"}
     allowed_statuses = {"ready", "notes", "blocked"}
     for path in paths:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -462,6 +593,29 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
         status = str(frontmatter.get("status", "")).strip().lower()
         if status not in allowed_statuses:
             invalid.append({"file": path.name, "issue": "status must be ready, notes, or blocked"})
+            continue
+        inputs = frontmatter.get("inputs")
+        if not isinstance(inputs, list) or not [item for item in inputs if str(item).strip()]:
+            invalid.append({"file": path.name, "issue": "inputs must name at least one artifact"})
+            continue
+        handoff = frontmatter.get("handoff")
+        if not isinstance(handoff, dict) or not handoff:
+            invalid.append({"file": path.name, "issue": "handoff must be a non-empty mapping"})
+            continue
+        body = text[marker + len("\n---") :].strip()
+        missing_sections = [
+            section
+            for section in ("## What I Checked", "## Handoff")
+            if section not in body
+        ]
+        if "## Findings" not in body and "## Candidates" not in body:
+            missing_sections.append("## Findings or ## Candidates")
+        if missing_sections:
+            invalid.append({"file": path.name, "issue": "missing body section(s): " + ", ".join(missing_sections)})
+            continue
+        body_words = [word for word in body.replace("#", " ").split() if word.strip()]
+        if len(body_words) < 24:
+            invalid.append({"file": path.name, "issue": "handoff body is too skeletal"})
             continue
         phase = str(frontmatter.get("phase", "")).strip()
         role = str(frontmatter.get("role", "")).strip()
@@ -514,7 +668,8 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     require_file("feedback-plan.md", "feedback route")
     require_file("operator-answers.md", "reader feedback sheet", block=False)
     if _desk_sheet_enabled(root):
-        require_file("desk-sheet.md", "Desk Sheet", block=False)
+        require_file("desk-sheet.md", "Desk Sheet markdown")
+        require_file("desk-sheet-result.json", "Desk Sheet render proof")
 
     roles = _role_artifacts(edition_dir)
     role_count = int(roles.get("count") or 0)
@@ -606,28 +761,22 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     else:
         _add_ticket_check(checks, name="delivery proof", state="note", detail="delivery result is missing")
     if delivery_status in {"delivered", "complete", "complete_with_notes"}:
-        printed_reads = delivery.get("printed_reads")
-        ledger_updated = bool(delivery.get("reads_ledger_updated") or delivery.get("ledger_updated"))
-        no_printed_reads = bool(delivery.get("no_printed_reads"))
-        if isinstance(printed_reads, list) and printed_reads:
-            if ledger_updated:
-                _add_ticket_check(checks, name="memory proof", state="pass", detail="printed reads logged")
-            else:
-                _add_ticket_check(
-                    checks,
-                    name="memory proof",
-                    state="block",
-                    detail="printed reads are listed but reads-ledger update is not proven",
-                )
-        elif no_printed_reads:
-            _add_ticket_check(checks, name="memory proof", state="pass", detail="no printed reads")
-        else:
-            _add_ticket_check(
-                checks,
-                name="memory proof",
-                state="block",
-                detail="delivery did not prove reads-ledger update or no printed reads",
-            )
+        memory_proof = _delivery_memory_proof(root, edition_dir)
+        _add_ticket_check(
+            checks,
+            name="memory proof",
+            state=str(memory_proof.get("state") or "block"),
+            detail=str(memory_proof.get("detail") or "missing memory proof"),
+        )
+
+    desk_sheet_proof = _desk_sheet_render_proof(root, edition_dir)
+    if desk_sheet_proof.get("required"):
+        _add_ticket_check(
+            checks,
+            name="Desk Sheet render",
+            state=str(desk_sheet_proof.get("state") or "block"),
+            detail=str(desk_sheet_proof.get("detail") or "missing Desk Sheet proof"),
+        )
 
     substantial_pages = _substantial_page_count(estimate, render)
     if substantial_pages >= SUBSTANTIAL_PAGE_THRESHOLD:
@@ -768,6 +917,7 @@ def final_editor_pass(
     contract_files[10:10] = spec_files
     if _desk_sheet_enabled(root):
         contract_files.append(edition_dir / "desk-sheet.md")
+        contract_files.append(edition_dir / "desk-sheet-result.json")
     findings: list[dict[str, object]] = []
     files_read: list[str] = []
     if not spec_files:
@@ -1231,29 +1381,39 @@ def final_editor_pass(
     delivery_result = _load_json_object(edition_dir / "delivery-result.json")
     if reads_ledger.is_file():
         files_read.append(str(reads_ledger))
-    delivery_status = str(delivery_result.get("status") or "").strip().lower()
-    printed_reads = delivery_result.get("printed_reads")
-    ledger_updated = bool(delivery_result.get("reads_ledger_updated") or delivery_result.get("ledger_updated"))
-    no_printed_reads = bool(delivery_result.get("no_printed_reads"))
-    if delivery_status in {"delivered", "complete", "complete_with_notes"}:
-        if isinstance(printed_reads, list) and printed_reads:
-            if not ledger_updated:
-                _final_finding(
-                    findings,
-                    check="memory-proof",
-                    severity="flag",
-                    issue="Delivery says reads printed, but does not prove the reads ledger was updated.",
-                    why="The next edition depends on memory to prevent repeats.",
-                    hint="Append printed reads to `memory/reads-ledger.md` and set `reads_ledger_updated: true` in `delivery-result.json`.",
-                )
-        elif not no_printed_reads:
+    memory_proof = _delivery_memory_proof(root, edition_dir)
+    if memory_proof.get("required") and memory_proof.get("state") == "block":
+        _final_finding(
+            findings,
+            check="memory-proof",
+            severity="flag",
+            issue=str(memory_proof.get("detail") or "Delivery did not prove reads-ledger memory."),
+            why="The next edition depends on memory to prevent repeats.",
+            hint="Append printed reads to `memory/reads-ledger.md`, or set `no_printed_reads: true` with a short rationale.",
+            measured={key: value for key, value in memory_proof.items() if key not in {"state", "detail"}},
+        )
+
+    desk_sheet_proof = _desk_sheet_render_proof(root, edition_dir)
+    if desk_sheet_proof.get("required"):
+        if desk_sheet_proof.get("state") == "block":
             _final_finding(
                 findings,
-                check="memory-proof",
+                check="desk-sheet-render",
                 severity="flag",
-                issue="Delivery result does not say whether printed reads were logged.",
-                why="A completed run must either update repeat-prevention memory or state that no reads printed.",
-                hint="Set `printed_reads` with `reads_ledger_updated: true`, or set `no_printed_reads: true` with a short rationale.",
+                issue=str(desk_sheet_proof.get("detail") or "Desk Sheet render proof is missing."),
+                why="The Desk Sheet is part of the reader feedback loop when enabled.",
+                hint="Run `morning-paper edition desk-sheet <newsroom> --date <date>` before final-editor.",
+                measured={key: value for key, value in desk_sheet_proof.items() if key not in {"state", "detail"}},
+            )
+        elif desk_sheet_proof.get("state") == "note":
+            _final_finding(
+                findings,
+                check="desk-sheet-render",
+                severity="nudge",
+                issue=str(desk_sheet_proof.get("detail") or "Desk Sheet render has notes."),
+                why="The Desk Sheet should be quick to print and mark up.",
+                hint="Shorten the Desk Sheet or record the intentional longer sheet.",
+                measured={key: value for key, value in desk_sheet_proof.items() if key not in {"state", "detail"}},
             )
 
     feedback_plan = edition_dir / "feedback-plan.md"
@@ -1570,6 +1730,10 @@ Never add filler or extra process pages to hit a target.
 
 Each role leaves one markdown file with YAML frontmatter and a short body.
 Do not split the handoff into separate JSON and markdown files.
+`morning-paper edition status` rejects skeletal handoffs: include `inputs`, a
+non-empty `handoff` map, `## What I Checked`, `## Handoff`, and either
+`## Findings` or `## Candidates` with enough detail for the next agent to
+resume.
 
 ```markdown
 ---
@@ -1609,7 +1773,16 @@ role you are running. The orchestrator owns the loop; roles own their handoff.
 """
 
 
-def draft_template(date_str: str, paper_name: str) -> str:
+def draft_template(root: Path, date_str: str, paper_name: str) -> str:
+    skeleton = root / "examples" / "edition-skeleton.md"
+    if skeleton.is_file():
+        text = skeleton.read_text(encoding="utf-8")
+        return (
+            text.replace("{DATE}", date_str)
+            .replace("{{DATE}}", date_str)
+            .replace("{PAPER_NAME}", paper_name)
+            .replace("{{PAPER_NAME}}", paper_name)
+        )
     return f"""# {paper_name} - {date_str}
 
 <!-- Draft starts here. Compose against EDITORIAL.md, VISUALS.md, SOURCES.md,
@@ -1767,6 +1940,58 @@ def run_ticket_edition_workspace(
     return ticket
 
 
+def desk_sheet_edition_workspace(
+    newsroom: Path,
+    config: MorningPaperConfig,
+    *,
+    date_str: str,
+) -> dict[str, object]:
+    root = newsroom.expanduser().resolve()
+    edition_dir = root / "editions" / date_str
+    if not edition_dir.is_dir():
+        raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    if not _desk_sheet_enabled(root):
+        payload = {
+            "status": "skipped",
+            "date": date_str,
+            "reason": "preferences/desk-sheet.yaml disables the Desk Sheet",
+            "updated_at": _utc_stamp(),
+        }
+        write_json(edition_dir / "desk-sheet-result.json", payload)
+        return payload
+    source = edition_dir / "desk-sheet.md"
+    if not source.is_file():
+        raise FileNotFoundError(f"missing Desk Sheet markdown: {source}")
+    markdown = source.read_text(encoding="utf-8")
+    config.outputs.markdown = True
+    config.outputs.html = True
+    config.outputs.pdf = True
+    config.outputs.json = True
+    paths, warnings, pages = write_custom_markdown(
+        config,
+        markdown,
+        date_str=date_str,
+        slug="desk-sheet",
+        metadata={"kind": "desk_sheet", "source": str(source)},
+    )
+    outputs = {key: str(value) for key, value in paths.items() if key != "dir"}
+    proof = pdf_basic_proof(paths["pdf"]) if config.outputs.pdf else {"ok": False, "error": "pdf disabled"}
+    status = "rendered" if proof.get("ok") else "error"
+    payload = {
+        "status": status,
+        "date": date_str,
+        "source": str(source),
+        "output_dir": str(paths["dir"]),
+        "outputs": outputs,
+        "pages": pages,
+        "warnings": warnings,
+        "pdf": proof,
+        "updated_at": _utc_stamp(),
+    }
+    write_json(edition_dir / "desk-sheet-result.json", payload)
+    return payload
+
+
 def prepare_edition_workspace(
     newsroom: Path,
     config: MorningPaperConfig,
@@ -1815,7 +2040,7 @@ must be reported as "not configured"; never invent source data.
     record("assignment-board.json", _write_json(edition_dir / "assignment-board.json", board, force=force))
     record("assignment-board.md", _write(edition_dir / "assignment-board.md", _render_assignment_board_markdown(board), force=force))
     record("desks/README.md", _write(edition_dir / "desks" / "README.md", desks_readme_template(date_str), force=force))
-    record("draft.md", _write(edition_dir / "draft.md", draft_template(date_str, config.name), force=force))
+    record("draft.md", _write(edition_dir / "draft.md", draft_template(root, date_str, config.name), force=force))
 
     render_pending = {
         "status": "pending",
@@ -1882,6 +2107,13 @@ morning-paper edition final-editor {root} --date {date_str}
     desk_sheet_path = edition_dir / "desk-sheet.md"
     if desk_sheet_prefs.get("enabled"):
         record("desk-sheet.md", _write(desk_sheet_path, desk_sheet_template(date_str, config.name, desk_sheet_prefs), force=force))
+        desk_sheet_pending = {
+            "status": "pending",
+            "date": date_str,
+            "command": f"morning-paper edition desk-sheet {root} --date {date_str}",
+            "updated_at": _utc_stamp(),
+        }
+        record("desk-sheet-result.json", _write_json(edition_dir / "desk-sheet-result.json", desk_sheet_pending, force=force))
     record("feedback-plan.md", _write(edition_dir / "feedback-plan.md", feedback_plan_template(date_str), force=force))
 
     payload = {
@@ -1909,10 +2141,11 @@ morning-paper edition final-editor {root} --date {date_str}
             "operator_answers": str(edition_dir / "operator-answers.md"),
             "feedback_plan": str(edition_dir / "feedback-plan.md"),
         },
-        "next_action": "run collectors, refresh queue-snapshot.json and assignment-board.json, compose draft.md, render desk-sheet.md if enabled, estimate, render, review, visual-qa, final-editor, run edition status, then ask for feedback and route it through feedback-plan.md",
+        "next_action": "run collectors, refresh queue-snapshot.json and assignment-board.json, compose draft.md, render the Desk Sheet if enabled, estimate, render, review, visual-qa, final-editor, run edition status, then ask for feedback and route it through feedback-plan.md",
     }
     if desk_sheet_prefs.get("enabled"):
         payload["artifacts"]["desk_sheet"] = str(desk_sheet_path)
+        payload["artifacts"]["desk_sheet_result"] = str(edition_dir / "desk-sheet-result.json")
     return payload
 
 

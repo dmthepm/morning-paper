@@ -73,7 +73,10 @@ handoff:
 
 Use `status: ready`, `status: notes`, or `status: blocked`. If a role blocks,
 say what is missing and what would unblock it. Do not pretend a role ran if it
-did not run.
+did not run. `morning-paper edition status` rejects skeletal handoffs: include
+`inputs`, a non-empty `handoff` map, `## What I Checked`, `## Handoff`, and
+either `## Findings` or `## Candidates` with enough body detail for the next
+agent to resume.
 
 ## Shared Rules
 
