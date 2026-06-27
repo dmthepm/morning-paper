@@ -292,13 +292,7 @@ matters, and makes one printed or readable edition that lands once and ends.
 - Repeated reads.
 - Summary that does not lead to a decision, question, or next move.
 """,
-        "VISUALS.md": f"""# Visual Desk
-
-This is the newsroom's visual taste system. It borrows the useful part of
-agent-readable design files - durable structured context - but it is not a
-product UI spec. It is a visual desk for a personal newspaper.
-
-```yaml
+        "VISUALS.md": f"""---
 version: 1
 surfaces:
   primary: pdf
@@ -328,7 +322,13 @@ preferred_primitives:
     - annotated_image
     - timeline
     - map
-```
+---
+
+# Visual Desk
+
+This is the newsroom's visual taste system. It borrows the useful part of
+agent-readable design files - durable structured context - but it is not a
+product UI spec. It is a visual desk for a personal newspaper.
 
 ## North Star
 

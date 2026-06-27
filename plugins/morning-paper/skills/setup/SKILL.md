@@ -326,47 +326,11 @@ Write these first, then keep them current.
 
 ### The contracts to write
 
-**`AGENTS.md` and `CLAUDE.md`** — the operating constitution. Write the same
-contents to both files so Codex, Claude Code, and future hosts obey the newsroom
-instead of improvising:
-
-```markdown
-# Newsroom — operating constitution
-
-The engine renders; this repo decides. The Morning Paper engine lays out and
-prints faithfully. *What* runs, in *what order*, in *whose voice* is decided
-here, in files I own.
-
-## The law (read in this precedence, top wins)
-
-1. `specs/*` — the section contracts. The Read leads.
-2. `EDITORIAL.md` — what earns ink, what gets cut, and what makes The Read.
-3. `VISUALS.md` — the visual desk: charts, images, illustrations, PDF/email.
-4. `SOURCES.md` — source purpose, trust, cadence, health, and backlog.
-5. `DELIVERY.md` — PDF, print, email/article, archive preferences.
-6. `preferences/voice.md` — how the paper talks. Overrides any engine default.
-7. `preferences/interests.yaml` — standing interests (absent = ignore).
-8. `preferences/source-budgets.yaml` — source/beat appetite and cut-first rules.
-9. `preferences/checks.yaml` — review thresholds and muted findings.
-10. `preferences/desk-sheet.yaml` — whether to print the No. 10-style feedback sheet and its small knobs.
-11. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
-12. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
-13. `TASTELOG.md` — accepted and rejected taste changes over time.
-14. `memory/MEMORY.md` + `memory/threads/` — running threads (load on item-id/title match).
-15. `collectors/` — my sources. What they don't return prints "not configured".
-
-## The honesty rule
-
-A missing source prints "not configured" — never a fabricated number, headline,
-or quote. If a collector returns nothing, say so plainly. The paper is allowed
-to notice that yesterday's open question is still open.
-
-## Delivery
-
-<!-- Your print command goes here, duplex flag and all, e.g.
-     lp -o sides=two-sided-long-edge -d YourPrinter <pdf>
-     or "hand me the PDF path" if you read on screen. -->
-```
+**`AGENTS.md` and `CLAUDE.md`** — the operating constitution. The CLI scaffold
+writes the same generated constitution to both files; do not maintain a second
+hand-written copy in this skill. If you personalize it during setup, keep the
+two files identical and preserve the precedence law, role context map, honesty
+rule, delivery placeholder, done contract, and feedback loop.
 
 **`specs/_template.md`** — the five-field contract, so the reader can write
 their own sections:

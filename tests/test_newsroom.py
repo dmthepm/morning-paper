@@ -114,7 +114,9 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Feedback Routing", editorial)
 
             visuals = (root / "VISUALS.md").read_text(encoding="utf-8")
+            self.assertTrue(visuals.startswith("---\n"))
             self.assertIn("Visual Desk", visuals)
+            self.assertIn("default_visual_budget:", visuals)
             self.assertIn("major_visuals_per_edition", visuals)
             self.assertIn("substantial_edition_minimum", visuals)
             self.assertIn("Do not leave a visual floating narrower", visuals)
