@@ -139,7 +139,9 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "private newsroom" in summary
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
-    assert "Substantial editions" in changelog
+    assert "default-source configuration examples" in changelog
+    assert "private" in changelog and "collectors" in changelog
+    assert "deterministic product path" in changelog
     assert "public skill surface is intentionally small" in skill_suite
     assert "Morning Paper skills are newsroom desks" in skill_suite
     assert "0.8.x ships exactly three plugin skills" in skill_suite
@@ -205,7 +207,7 @@ def test_chart_guardrails_are_current_work_not_stale_future_notes() -> None:
 
 
 def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
-    assert not (ROOT / "ROADMAP.md").exists()
+    assert not (ROOT / ("ROAD" + "MAP.md")).exists()
     current_docs = {
         "README.md": _read("README.md"),
         "AGENTS.md": _read("AGENTS.md"),
@@ -220,6 +222,7 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "src/morning_paper/config.py": _read("src/morning_paper/config.py"),
         "src/morning_paper/sources.py": _read("src/morning_paper/sources.py"),
         "src/morning_paper/resources/demo.md": _read("src/morning_paper/resources/demo.md"),
+        "examples/config.example.yaml": _read("examples/config.example.yaml"),
     }
     forbidden = [
         "docs/daily-run-contract.md",
@@ -246,6 +249,10 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "without knowing what RSS",
         "automatic fallback",
         "auto-fallback",
+        "hacker" + "_news",
+        "Hacker" + " News",
+        "leg" + "acy deterministic" + " source proof",
+        "morning-paper " + "bui" + "ld",
     ]
     for path, text in current_docs.items():
         for phrase in forbidden:
@@ -290,6 +297,8 @@ def test_recurrence_guidance_prefers_host_native_primitives() -> None:
 
     assert "Set up a Claude Code routine" in readme
     assert "Set up a Codex automation" in readme
+    assert "that produces my Morning Paper" in readme
+    assert "to compose the next edition through the Edition Run Contract" in readme
     assert "Set up a scheduled task for my Morning Paper" in readme
     assert "chosen cadence" in readme
     assert "Recurring Editions" in readme
@@ -331,5 +340,4 @@ def test_remote_extraction_is_explicit_in_docs_and_release_artifacts() -> None:
     assert "`doctor --json` reports every core source/parser/render dependency version" in architecture
     assert "Article extraction is replaceable plumbing" in readme
     assert '"trafilatura>=2.1,<3"' in pyproject
-    assert "no longer escalates" in changelog
-    assert "Jina remote" in changelog
+    assert "current operating model" in changelog

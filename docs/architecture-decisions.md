@@ -260,7 +260,7 @@ We keep the typewriter stylesheet lightweight, but all primary visual controls s
 
 Reason:
 - WeasyPrint supports CSS custom properties directly.
-- This keeps layout tuning coherent without introducing Sass, Tailwind, or a build step.
+- This keeps layout tuning coherent without introducing Sass, Tailwind, or a compilation step.
 - New styles can inherit the same token model later instead of duplicating hard-coded values.
 
 Rule:
@@ -270,7 +270,7 @@ Rule:
 
 Decision date: 2026-04-14; superseded by section 12 on 2026-06-22
 
-Keep the extractor registry. Do not build renderer branches around specific
+Keep the extractor registry. Do not add renderer branches around specific
 source sites or reader services. The current backend list is an implementation
 detail; the durable contract is normalized article content plus honest notes
 for partial or remote extraction.

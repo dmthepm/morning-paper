@@ -23,7 +23,7 @@ Clone the repo and install in development mode:
 
 ## Good Contributions
 
-- New source plugins that keep the default install simple
+- Collector examples or source-conversion docs that keep the engine generic
 - Article extraction improvements
 - PDF rendering fixes
 - Documentation improvements
@@ -36,7 +36,8 @@ Clone the repo and install in development mode:
 - Architectural changes
 - Anything that adds complexity
 
-Open an issue before starting large work so we can align on direction.
+Open a discussion or draft pull request before starting large work so we can
+align on direction without creating a stale issue backlog.
 
 ## Code Style
 
@@ -56,7 +57,7 @@ Use clear, descriptive commit messages:
 ## Running Tests
 
     python -m pytest tests/
-    python -m pytest tests/test_build.py
+    python -m pytest tests/test_cli.py
     morning-paper --version
     morning-paper doctor
 
@@ -67,5 +68,5 @@ By participating in this project, you agree to follow
 
 ## Questions?
 
-- Open an issue for bugs or feature discussion
+- Open a discussion or focused pull request for bugs or feature discussion
 - Join the community at [Main Branch](https://skool.com/main) for broader discussion

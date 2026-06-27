@@ -101,7 +101,7 @@ components:
 Morning Paper should feel like a serious personal machine for reading: tactile,
 intelligent, independent. The system sits between algorithmic and analog. It
 uses a private newsroom, a host-agent orchestrator, and durable source files to
-build a reader-owned algorithm, then lands the result as a finite edition that
+shape a reader-owned algorithm, then lands the result as a finite edition that
 can be read, marked up, and improved tomorrow. The public visual order is: a
 real paper every morning, the Desk Sheet feedback ritual, the private newsroom,
 then the owned algorithm.
@@ -344,7 +344,7 @@ status, and provenance. They still stay flat, printable, and quiet.
   the paper.
 - **Don't** use fake newspaper nostalgia: distressed paper, fake ink smudges,
   costume mastheads, or theatrical newsroom copy.
-- **Don't** build another beige productivity app.
+- **Don't** make another beige productivity app.
 - **Don't** make productivity-maximalist throughput the point.
 - **Don't** turn Morning Paper into an infinite feed reader, social screenshot
   wall, or source scraper marketplace.

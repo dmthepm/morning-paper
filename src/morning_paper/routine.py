@@ -345,10 +345,10 @@ def _install_darwin(time_str: str, command: str, workdir: str | None = None) -> 
     if bootstrap.returncode == 0:
         loaded = True
     else:
-        legacy = _run(["launchctl", "load", str(plist_file)])
-        if legacy.returncode == 0:
+        fallback = _run(["launchctl", "load", str(plist_file)])
+        if fallback.returncode == 0:
             loaded = True
-            note = "loaded via legacy `launchctl load` (bootstrap unavailable)"
+            note = "loaded via `launchctl load` fallback (bootstrap unavailable)"
         else:
             note = (
                 "plist written but launchctl could not load it now; "

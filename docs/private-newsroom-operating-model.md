@@ -12,7 +12,7 @@ lands in the surface the reader will actually use.
 
 ## The Four Layers
 
-1. **Skills** tell agents how to work: set up the newsroom, build an edition,
+1. **Skills** tell agents how to work: set up the newsroom, compose an edition,
    revise the writing, and assign newsroom roles when a run needs separate
    context windows.
 2. **The CLI** does repeatable work: install checks, source inventory,

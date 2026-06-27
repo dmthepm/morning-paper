@@ -164,7 +164,7 @@ Pattern:
    public social items.
 8. Mark private or sensitive analysis plainly before printing.
 
-## What Not To Build Yet
+## What Not To Add Yet
 
 - No hosted OAuth registry inside the engine.
 - No scraper marketplace as product identity.

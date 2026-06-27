@@ -37,7 +37,7 @@ PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
 SUPPORTED_WEASYPRINT_RANGE = ">=69.0,<70"
 _SUPPORTED_WEASYPRINT_MIN = (69, 0, 0)
 _SUPPORTED_WEASYPRINT_MAX = (70, 0, 0)
-HELP_TEXT = f"""Morning Paper — your morning newspaper, built from your own sources.
+HELP_TEXT = f"""Morning Paper — your morning newspaper, made from your own sources.
 
 Commands:
   demo              Print a sample edition right now — no config, no network
@@ -54,8 +54,8 @@ Commands:
                     source material for tomorrow's edition (--dry-run)
   queue             Show/list/read/remove Assignment Board items
   edition           Prepare/proof/apply durable edition files
-                    (prepare|assignment-board|estimate|visual-qa|final-editor|
-                    status|apply-feedback)
+                    (prepare|assignment-board|estimate|desk-sheet|visual-qa|
+                    final-editor|status|apply-feedback)
   estimate <file>   Page count for a markdown file, nothing written
   review <edition>  Editorial QC on a finished edition — warnings, never fails
                     (--json, --strict, --verbose, --explain CHECK)

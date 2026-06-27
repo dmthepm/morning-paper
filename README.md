@@ -141,7 +141,7 @@ local fallback.
 Copy one of these into the host:
 
 ```text
-Set up a Claude Code routine that builds my Morning Paper on my chosen cadence
+Set up a Claude Code routine that produces my Morning Paper on my chosen cadence
 (weekday mornings by default unless I say otherwise). Use my private newsroom
 to make the next edition and follow the Edition Run Contract: check sources,
 compose, render the PDF, review, run final-editor, update memory, open or
@@ -151,9 +151,9 @@ the routine.
 ```
 
 ```text
-Set up a Codex automation that builds my Morning Paper on my chosen cadence
+Set up a Codex automation that produces my Morning Paper on my chosen cadence
 (weekday mornings by default unless I say otherwise). Use this project/newsroom
-to build the next edition through the Edition Run Contract, render the PDF,
+to compose the next edition through the Edition Run Contract, render the PDF,
 update memory, and report the PDF path plus anything that needs my attention.
 ```
 

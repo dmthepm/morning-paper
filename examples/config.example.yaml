@@ -10,11 +10,8 @@ profile: |
 article_extractor: local
 
 sources:
-  # Legacy built-in public feed sample. Leave this off unless you explicitly
-  # want it; most papers should start from the reader's own source stack.
-  hacker_news:
-    enabled: false
-    limit: 20
+  # Add reader-owned feeds when they already follow them. Source-specific
+  # scraping and enrichment belongs in private newsroom collectors first.
   rss:
     - name: Simon Willison
       url: https://simonwillison.net/atom/everything/

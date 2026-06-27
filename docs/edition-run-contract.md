@@ -138,5 +138,5 @@ render, review, archive, deliver configured artifacts, and update newsroom
 memory. It should not publish posts, send replies, draft outbound emails, edit
 Shopify, or run work loops unless a future explicit extension says so.
 
-Future action-oriented desks can build on the same newsroom model, but they are
+Future action-oriented desks can extend the same newsroom model, but they are
 not part of the default edition run contract.

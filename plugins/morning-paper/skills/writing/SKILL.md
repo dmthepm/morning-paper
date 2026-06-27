@@ -40,7 +40,7 @@ From *The Elements of Style* (1918), rules cited by number.
    stays, padding dies. Make every word tell.
 5. **Vary the sentence shape (14).** A page of clause—dash—elaboration
    sentences goes sing-song no matter how good each one is. Recast every
-   third: a plain short sentence, a semicolon pair, a periodic build.
+   third: a plain short sentence, a semicolon pair, a periodic turn.
 6. **Parallel ideas, parallel form (15).** "First, the measure is unjust;
    second, it is unconstitutional." Matching content gets matching shape.
 7. **Related words together (16).** Subject beside verb. An interpolation
@@ -122,7 +122,7 @@ Cutting gets the paper read. These get it remembered.
 - **Sentence music** (Provost). Vary length on purpose. Short sentences
   punch. A medium sentence carries the fact to where it lands. And once in
   a while, when the material has earned it, a long sentence gathers its
-  clauses, builds, and sets the point down at the end, where the emphasis
+  clauses, gathers force, and sets the point down at the end, where the emphasis
   lives. Then stop.
 - **Concrete detail is credibility** (Zinsser; Strunk 12). The odd specific
   fact rescues a passage no styling can. Collect more detail than you

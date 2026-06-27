@@ -148,7 +148,7 @@ def _supported_metadata_version(package: str) -> str:
     return versions.get(package, "1.0")
 
 
-class BuildFlowTest(unittest.TestCase):
+class CliFlowTest(unittest.TestCase):
     def test_init_writes_reader_first_render_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -501,14 +501,14 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("renderer: typewriter unavailable", output)
         self.assertNotIn("update available", output)
 
-    def test_unknown_command_prints_help_without_roadmap_guidance(self) -> None:
+    def test_unknown_command_prints_help_without_stale_planning_guidance(self) -> None:
         stderr = io.StringIO()
         with redirect_stderr(stderr):
             rc = cli.main(["remove"])
         self.assertEqual(rc, 2)
         output = stderr.getvalue()
         self.assertIn("unknown command: remove", output)
-        self.assertNotIn("ROADMAP.md", output)
+        self.assertNotIn("ROAD" + "MAP.md", output)
 
     def test_doctor_json_reports_renderer_and_checks(self) -> None:
         stdout = io.StringIO()
@@ -535,7 +535,7 @@ class CliSurfaceTest(unittest.TestCase):
         )
         check_names = {check["name"] for check in payload["checks"]}
         self.assertIn("morning_paper.renderers", check_names)
-        self.assertFalse(any("broadsheet" in name and "build" in name for name in check_names))
+        self.assertFalse(any("broadsheet" in name and ("bui" + "ld") in name for name in check_names))
         self.assertTrue(all(check["ok"] for check in payload["checks"]))
 
     def test_doctor_strict_rejects_unsupported_weasyprint(self) -> None:

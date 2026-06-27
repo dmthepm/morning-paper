@@ -4,9 +4,7 @@
 
 ## Why
 
-<!-- What problem does this solve? Link to issue if applicable. -->
-
-Fixes #
+<!-- What problem does this solve? Link to the discussion or prior context if applicable. -->
 
 ## Type
 
@@ -19,5 +17,5 @@ Fixes #
 ## Checklist
 
 - [ ] Tests pass (`python -m pytest tests/`)
-- [ ] No new dependencies added (or discussed in issue first)
+- [ ] No new dependencies added (or discussed first)
 - [ ] README updated if user-facing behavior changed

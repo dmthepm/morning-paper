@@ -118,7 +118,7 @@ def _resource_text(relative: str) -> str:
 #                      (SIL OFL 1.1, resources/fonts/LICENSE-Arimo.txt)
 #   Courier Prime    — SIL OFL 1.1 (resources/fonts/OFL.txt)
 #   Permanent Marker — Apache 2.0 (resources/fonts/LICENSE-PermanentMarker.txt)
-# MP Serif/MP Sans are the body faces every pack leads with; the legacy system
+# MP Serif/MP Sans are the body faces every pack leads with; the older system
 # names (Palatino, Helvetica Neue) stay in the CSS chains as fallback so a
 # font-stripped install still renders, just not pixel-identically.
 _VENDORED_FONT_FACES: tuple[tuple[str, str, int, str], ...] = (

@@ -29,7 +29,7 @@ The CLI renders, estimates, reviews, validates, stages, and records
 deterministic artifacts.
 
 The project sits between algorithmic and analog: it uses agents and durable
-files to build a reader-owned algorithm, then lands that intelligence as a real
+files to shape a reader-owned algorithm, then lands that intelligence as a real
 paper. The public promise should read in this order: a real paper every
 morning, a private newsroom behind it, and an algorithm the reader owns.
 

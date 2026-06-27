@@ -121,7 +121,7 @@ agent workflow can write to. Everything below is a **collector**: a small source
 bridge the operator authors and runs at compose time, adding markdown to the
 Assignment Board. A collector might summarize a work system, add saved reading, digest a
 local folder, or turn a personal export into something the editor can judge.
-None of these ship in the engine; they are recipes to build in the newsroom's
+None of these ship in the engine; they are recipes to create in the newsroom's
 `collectors/` (which §5 scaffolds with the contract and three worked examples).
 See
 [docs/collectors.md](https://github.com/dmthepm/morning-paper/blob/main/docs/collectors.md)
@@ -132,7 +132,7 @@ inspect the source shape, write a small editorial source ledger/backlog entry
 in `SOURCES.md`, ask the reader what should influence the paper, then create
 the smallest private converter or collector. The ledger should name structure,
 useful lanes, sensitivity, conversion needs, and reader questions; it is not an
-executable registry. Do not build a hosted scraper/OAuth registry or
+executable registry. Do not create a hosted scraper/OAuth registry or
 source-specific engine integration just because one reader has one tool.
 
 - **Social/export tools**: local Twitter/X exports, browser/API scrapes, or
@@ -748,7 +748,7 @@ that fallback.
 Offer the matching prompt:
 
 ```text
-Set up a Claude Code routine with a schedule trigger that builds my Morning
+Set up a Claude Code routine with a schedule trigger that produces my Morning
 Paper on my chosen cadence (weekday mornings by default unless I say
 otherwise). Use this private newsroom to make the next edition, render the PDF,
 open or deliver it according to DELIVERY.md, and tell me only if the run failed
@@ -757,9 +757,9 @@ create the routine.
 ```
 
 ```text
-Set up a Codex automation that builds my Morning Paper on my chosen cadence
+Set up a Codex automation that produces my Morning Paper on my chosen cadence
 (weekday mornings by default unless I say otherwise). Use this private
-newsroom/project to build the next edition, render the PDF, and report the PDF
+newsroom/project to compose the next edition, render the PDF, and report the PDF
 path plus anything that needs my attention. Use a Codex automation environment
 that can actually see this newsroom.
 ```

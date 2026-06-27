@@ -256,13 +256,13 @@ class InstallDarwinTests(RoutineHomeTestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(json.loads(out)["schedule"]["time"], "06:45")
 
-    def test_install_falls_back_to_legacy_load(self) -> None:
+    def test_install_falls_back_to_launchctl_load(self) -> None:
         fake = FakeRun(fail_prefixes=(("launchctl", "bootstrap"),))
         rc, out, _ = self._install(["routine", "install"], fake)
         self.assertEqual(rc, 0)
         payload = json.loads(out)
         self.assertTrue(payload["loaded"])
-        self.assertIn("legacy", payload["note"])
+        self.assertIn("fallback", payload["note"])
         self.assertIn(["launchctl", "load", str(routine.launchd_plist_path())], fake.calls)
 
     def test_install_bad_time_exits_2(self) -> None:
