@@ -10,9 +10,8 @@ description: >
 
 # Morning Paper — The Writing Pass
 
-Twenty pages a day, and the reader pays for every word in minutes. This
-skill is the second pass: the editor's pen, not the writer's. It assumes
-a draft exists.
+The reader pays for every word in minutes. This skill is the second pass:
+the editor's pen, not the writer's. It assumes a draft exists.
 
 ## Compose, then revise
 

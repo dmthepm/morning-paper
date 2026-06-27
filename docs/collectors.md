@@ -11,7 +11,8 @@ A **collector** is how any of that enters the paper — a work digest, a saved
 thread, a local social export, a weekly research roundup, a folder of notes, or
 whatever else earns a place on your desk. This page is the contract a collector
 has to honor. Write to it and your source flows into the same Assignment
-Board, through the same renderer, under the same page budget.
+Board and through the same renderer. Edition budgets live in the private
+newsroom's `preferences/source-budgets.yaml`.
 
 ## Start With A Source Experiment
 
@@ -215,17 +216,18 @@ built-in paths use.
 Whatever wrote it, the editor reads the same Assignment Board:
 
 ```bash
-morning-paper queue                  # what's staged vs the page budget (JSON)
+morning-paper queue                  # what's staged (JSON)
 morning-paper queue --date 2026-06-14
 morning-paper queue list --date 2026-06-14
 morning-paper queue show <slug> --date 2026-06-14 --content
 morning-paper queue remove <slug> --date 2026-06-14
 ```
 
-`queue` reports the assigned source material, total estimated pages, your `page_budget`, and
-how many pages remain; `show` reads the staged markdown; `remove` drops an item
-and its staged file. The compose step can know what fits before it lays a
-single column. Anything on the Assignment Board was put there on purpose (by you, a
+`queue` reports the assigned source material and total estimated pages. During
+an edition run, the newsroom's `preferences/source-budgets.yaml` adds target
+and max-page context so the compose step can know what fits before it lays a
+single column. `show` reads the staged markdown; `remove` drops an item and its
+staged file. Anything on the Assignment Board was put there on purpose (by you, a
 collector, or a trusted contributor) and is treated as belonging in the paper
 unless the editor removes it.
 
@@ -249,7 +251,7 @@ consumes.
 A collector runs **before** composition, during the edition skill's "Collect"
 step. Running a collector does not, by itself, cost pages — it fills the Assignment Board.
 The page budget is enforced later, when the editor composes: it reads the assigned material
-with `morning-paper queue`, weighs everything staged against `page_budget`, and
+with `morning-paper queue`, weighs everything staged against `preferences/source-budgets.yaml`, and
 cuts the weakest material to fit. So a collector can stage generously; the
 editor decides what survives to print. A collector that stages ten pages into a
 twelve-page budget has not broken anything — it has given the editor choices.

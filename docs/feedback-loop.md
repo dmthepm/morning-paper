@@ -34,7 +34,8 @@ current edition skill already has the contract.
 | "That wide chart worked." | `visuals` |
 | "Add my GitHub/Main Branch pulse." | `sources` |
 | "Email me the article view too." | `delivery` |
-| "Dampen pure viral stories." | `prior` |
+| "Dampen pure viral stories." | `interests` |
+| "Give Shopify one page when it has real source records." | `budgets` |
 | "Stop warning about this Field Notes headline style." | `checks` |
 | "The Read should connect work and personal sources." | `the-read` |
 | "The front page needs one verb headline." | `front-page` |
@@ -113,6 +114,6 @@ idea remains visible without bloating tomorrow's editorial rules.
 
 ### YAML Preferences
 
-For `prior` and `checks`, feedback is appended as YAML comments first. The file
-stays parseable. Promote the comment into real YAML only when the exact setting
-is clear.
+For `interests`, `budgets`, and `checks`, feedback is appended as YAML comments
+first. The file stays parseable. Promote the comment into real YAML only when
+the exact setting is clear.

@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from morning_paper.cli import HELP_TEXT
+from morning_paper.edition_workspace import FEEDBACK_ROUTES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -76,9 +77,25 @@ def test_personal_newsroom_primitives_are_the_canonical_taste_files() -> None:
     assert "edition final-editor" in cli_text
     assert "def apply_feedback" in edition_workspace
     assert "def final_editor_pass" in edition_workspace
-    for route in ("voice", "prior", "checks", "the-read", "front-page", "reading"):
+    for route in (
+        "editorial",
+        "voice",
+        "visuals",
+        "sources",
+        "interests",
+        "budgets",
+        "delivery",
+        "checks",
+        "the-read",
+        "front-page",
+        "reading",
+        "taste",
+    ):
         assert route in edition_workspace
-        assert route in cli_text
+        assert route in FEEDBACK_ROUTES
+    assert "FEEDBACK_ROUTES" in cli_text
+    assert "`prior`" not in _read("AGENTS.md")
+    assert '"prior"' not in edition_workspace
 
 
 def test_edition_skill_resumes_from_artifacts_and_stops_after_delivery() -> None:

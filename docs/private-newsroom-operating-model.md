@@ -41,10 +41,12 @@ of hiding ranking in a service, it names the loop in files:
 3. **Memory filters** - ledgers and prior editions remove repeats, already-read
    articles, stale story angles, muted topics, and low-trust sources.
 4. **Scoring** - the editor weighs candidates against `EDITORIAL.md`,
-   `SOURCES.md`, `preferences/algorithm-prior.yaml`, section specs, the current
-   day, and the reader's recent feedback.
+   `SOURCES.md`, section specs, the current day, the reader's recent feedback,
+   and `preferences/interests.yaml` when the reader has added standing
+   interests or dampeners there.
 5. **Diversity and budget** - the edition balances source mix, novelty, page
    budget, visual budget, full-read budget, and business/world/personal lanes.
+   Durable appetite changes belong in `preferences/source-budgets.yaml`.
 6. **Selection and print** - the agent composes the finite paper; the CLI
    estimates, renders, reviews, and records artifacts.
 7. **Feedback** - desk-sheet marks, chat notes, and delivery reactions update

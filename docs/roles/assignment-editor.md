@@ -10,7 +10,8 @@ written.
 - `collector-report.md`
 - `queue-snapshot.json`
 - `assignment-board.json`
-- `SOURCES.md`, `EDITORIAL.md`, `preferences/algorithm-prior.yaml`
+- `SOURCES.md`, `EDITORIAL.md`, `preferences/interests.yaml`,
+  `preferences/source-budgets.yaml`
 - ledgers in `memory/`
 
 ## Writes

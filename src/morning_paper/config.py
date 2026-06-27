@@ -88,7 +88,6 @@ class MorningPaperConfig:
     profile: str = ""
     article_extractor: str = "local"
     remote_extractor_fallback: bool = False
-    page_budget: int = 20
     sources: SourcesConfig = field(default_factory=SourcesConfig)
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
     inbox: InboxConfig = field(default_factory=InboxConfig)
@@ -237,16 +236,12 @@ def load_config(path: Path) -> MorningPaperConfig:
         for feed in (sources.get("rss") or [])
         if feed.get("name") and feed.get("url")
     ]
-    page_budget = int(data.get("page_budget", 20))
-    if not 1 <= page_budget <= 200:
-        raise ConfigError("page_budget must be between 1 and 200")
     return MorningPaperConfig(
         name=str(data.get("name", "Morning Paper")),
         timezone=_validate_timezone(str(data.get("timezone", "America/Los_Angeles"))),
         profile=str(data.get("profile", "")).strip(),
         article_extractor=_validate_article_extractor(str(data.get("article_extractor", "local"))),
         remote_extractor_fallback=_parse_bool(data.get("remote_extractor_fallback"), default=False),
-        page_budget=page_budget,
         sources=SourcesConfig(
             hacker_news=HackerNewsConfig(
                 enabled=bool(hn.get("enabled", True)),
@@ -307,8 +302,6 @@ profile: |
 # when a page comes up short, set `remote_extractor_fallback: true`.
 article_extractor: local
 remote_extractor_fallback: false
-# target length for a full edition; `morning-paper queue` reports against this
-page_budget: 20
 
 sources:
   hacker_news:

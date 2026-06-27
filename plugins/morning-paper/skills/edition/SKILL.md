@@ -121,8 +121,8 @@ gates.
 2. **Read the newsroom.** `specs/*` (section contracts), `EDITORIAL.md`
    (what earns ink), `VISUALS.md` (charts/images/layout), `SOURCES.md`
    (source purpose and cadence), `DELIVERY.md` (how the paper lands), and
-   `preferences/*` (voice, reading weights, review tuning, desk-sheet
-   preference). These outrank your taste. Also read, when present:
+   `preferences/*` (voice, standing interests, source/beat budgets, review
+   tuning, desk-sheet preference). These outrank your taste. Also read, when present:
    `memory/reads-ledger.md` — the cumulative record of everything already
    printed; repeating a read the owner already got is a hard fail, and when
    today's paper ships, append today's reads to it. Read source-specific
@@ -166,9 +166,9 @@ gates.
      chart, figure, diagram, or deliberately visual page from `VISUALS.md` and
      the collected data. If no visual earns ink, say why in the handoff.
    Keep process/self-reference small: unless the reader explicitly asks, no
-   more than about three pages of a 20-page paper should be about the paper,
-   run status, source health, or production notes. Put proof details in the run
-   ticket and desk handoffs.
+   more than about 15% of the edition should be about the paper, run status,
+   source health, or production notes. Put proof details in the run ticket and
+   desk handoffs.
    For substantial editions, stop here and run `04-editor.md`: the Editor
    chooses the lead, page/source budgets, cuts, holds, repeats, and any extra
    reporting needed before draft lock.
@@ -183,8 +183,9 @@ gates.
 
 5. **Budget.** Run
    `morning-paper edition estimate . --date <edition-date>` and keep its JSON
-   in `estimate-result.json`. Treat `page_budget` as a ceiling and appetite
-   signal, not a quota. Cut the weakest material when over budget; do not shrink
+   in `estimate-result.json`. Treat `preferences/source-budgets.yaml` as
+   ceilings and appetite signals, not quotas. Cut the weakest material when
+   over budget; do not shrink
    type, add filler, or add process pages when under budget. Track page budget,
    source budget, beat/topic budget, full-read budget, visual budget, and
    research budget. For new or changing source layouts, render a small proof
@@ -309,7 +310,7 @@ If the user dictates or replies with reactions ("more like this", "cut
 section X", "that chart worked", "email this too", "print <url> tomorrow"):
 read `feedback-plan.md`, choose the smallest durable route, then use
 `morning-paper edition apply-feedback . --date <edition-date> --route
-editorial|voice|visuals|sources|prior|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
+editorial|voice|visuals|sources|interests|budgets|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
 "<why it should change tomorrow>"` for stable feedback. It updates the target
 durable file, appends `TASTELOG.md`, and writes the "Applied Feedback" note.
 Use `morning-paper stage <url>` for anything they asked to read tomorrow; it

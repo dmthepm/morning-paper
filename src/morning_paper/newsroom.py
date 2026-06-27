@@ -131,27 +131,7 @@ def _refresh_setup_doc(path: Path, state: dict[str, object]) -> None:
 
 def _files(root: Path, *, name: str, state: dict[str, object] | None = None) -> dict[str, str]:
     state = state or _state(root, name=name)
-    return {
-        "README.md": f"""# {name} Newsroom
-
-This is your private Morning Paper newsroom: preferences, source contracts,
-memory, and edition archives. The engine renders; this repo decides.
-
-Start here after setup resumes:
-
-1. Read `setup-state.json`.
-2. Read `SETUP.md`.
-3. Read `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`,
-   `TASTELOG.md`, and `preferences/source-budgets.yaml`.
-4. Run `morning-paper sources check` from this newsroom root.
-5. Run `collectors/run_all.sh $(date +%F)`.
-6. Compose today's edition into `editions/<date>/draft.md`.
-7. Render, review, deliver the PDF, then ask for feedback in
-   `editions/<date>/operator-answers.md` and route durable changes through
-   `editions/<date>/feedback-plan.md`.
-""",
-        "SETUP.md": _setup_doc(state),
-        "CLAUDE.md": """# Newsroom - operating constitution
+    constitution = """# Newsroom - operating constitution
 
 The engine renders; this repo decides. The Morning Paper engine lays out and
 prints faithfully. What runs, in what order, and in whose voice is decided here,
@@ -165,14 +145,36 @@ in files I own.
 4. `SOURCES.md` - source purpose, trust, cadence, and backlog.
 5. `DELIVERY.md` - PDF, print, and email delivery preferences.
 6. `preferences/voice.md` - how the paper talks. Overrides engine defaults.
-7. `preferences/algorithm-prior.yaml` - standing interests. Empty means ignore.
+7. `preferences/interests.yaml` - standing interests. Empty means ignore.
 8. `preferences/source-budgets.yaml` - source/beat appetite and cut-first rules.
-9. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
-10. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
-11. `editions/<latest>/feedback-plan.md` - route feedback to durable files.
-12. `TASTELOG.md` - accepted/rejected taste changes over time.
-13. `memory/MEMORY.md` and `memory/threads/` - running threads.
-14. `collectors/` - source adapters. Empty sources print "not configured".
+9. `preferences/checks.yaml` - review thresholds and muted findings.
+10. `preferences/desk-sheet.yaml` - optional printed feedback sheet settings.
+11. `memory/reads-ledger.md` - reads already printed. Never reprint a read.
+12. `editions/<latest>/operator-answers.md` - reader feedback. Honor it exactly.
+13. `editions/<latest>/feedback-plan.md` - route feedback to durable files.
+14. `TASTELOG.md` - accepted/rejected taste changes over time.
+15. `memory/MEMORY.md` and `memory/threads/` - running threads.
+16. `collectors/` - source adapters. Empty sources print "not configured".
+
+## Role Context
+
+- Orchestrator: read this file, `ROLES.md`, all durable newsroom files,
+  `preferences/`, `memory/`, and the current `editions/<date>/` artifacts.
+- Assignment editor: read source inventory, collector report, queue snapshot,
+  Assignment Board, `SOURCES.md`, `EDITORIAL.md`, `preferences/interests.yaml`,
+  `preferences/source-budgets.yaml`, and ledgers.
+- Beat reporter: read the assignment, relevant source contracts, raw collector
+  output, queued items, ledgers, and the source/page appetite for that beat.
+- Editor: read all reporter handoffs, Assignment Board, `EDITORIAL.md`,
+  `VISUALS.md`, `specs/*`, `preferences/interests.yaml`,
+  `preferences/source-budgets.yaml`, ledgers, and recent `TASTELOG.md`.
+- Copy desk: read `draft.md`, `preferences/voice.md`, and review output.
+- Art desk: read `draft.md`, `VISUALS.md`, `preferences/desk-sheet.yaml`,
+  `preferences/source-budgets.yaml`, review, visual QA, and rendered proof pages.
+- Producer/final editor: read render/review/visual-QA/final-editor outputs,
+  production record, role handoffs, and the current PDF proof.
+- Taste editor: read reader feedback, `feedback-plan.md`, role handoffs, and the
+  smallest durable file that should carry the change.
 
 ## Honesty
 
@@ -200,14 +202,49 @@ update the smallest durable file that will make tomorrow better:
 - editorial preference -> `EDITORIAL.md`, `preferences/voice.md`, or a section
   file in `specs/`
 - visual/layout preference -> `VISUALS.md`
-- source preference -> `SOURCES.md`, `preferences/algorithm-prior.yaml`,
+- source preference -> `SOURCES.md`, `preferences/interests.yaml`,
   `preferences/source-budgets.yaml`, `collectors/`, or `memory/reads-ledger.md`
 - delivery preference -> `DELIVERY.md`
 - a durable decision or rejected idea -> `TASTELOG.md`
 
 After applying feedback, add an "Applied Feedback" note to `feedback-plan.md`
 with the paths changed so the next agent can resume from evidence.
+"""
+    return {
+        ".gitignore": """# Local source drops and machine secrets stay out of git.
+.env
+.env.*
+env.sh
+*.pem
+*.key
+*.token
+setup-state.local.json
+
+inbox/*
+!inbox/README.md
+!inbox/.gitkeep
 """,
+        "README.md": f"""# {name} Newsroom
+
+This is your private Morning Paper newsroom: preferences, source contracts,
+memory, and edition archives. The engine renders; this repo decides.
+
+Start here after setup resumes:
+
+1. Read `setup-state.json`.
+2. Read `SETUP.md`.
+3. Read `EDITORIAL.md`, `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`,
+   `TASTELOG.md`, and `preferences/source-budgets.yaml`.
+4. Run `morning-paper sources check` from this newsroom root.
+5. Run `collectors/run_all.sh $(date +%F)`.
+6. Compose today's edition into `editions/<date>/draft.md`.
+7. Render, review, deliver the PDF, then ask for feedback in
+   `editions/<date>/operator-answers.md` and route durable changes through
+	   `editions/<date>/feedback-plan.md`.
+""",
+        "SETUP.md": _setup_doc(state),
+        "AGENTS.md": constitution,
+        "CLAUDE.md": constitution,
         "EDITORIAL.md": """# Editorial System
 
 This is the paper's durable editorial taste. It is the answer to "what makes
@@ -435,7 +472,7 @@ note so the Assignment Board sends it to `needs_source_record`.
 - "Add this source" -> add it to Registry or Backlog, then create/adjust a
   collector or config entry.
 - "This source is noisy" -> lower cadence, map it to a smaller section, or add
-  it to dampeners in `preferences/algorithm-prior.yaml`.
+  it to dampeners in `preferences/interests.yaml`.
 - "This source is important" -> map it to a section and say what job it does.
 """,
         "DELIVERY.md": """# Delivery
@@ -522,7 +559,7 @@ YYYY-MM-DD - accepted/rejected - feedback - file changed - why
 ## Entries
 
 <!-- Example:
-2026-06-22 - accepted - "source mix should feel like my whole life, not one feed" - SOURCES.md + algorithm-prior.yaml - Balance work streams, personal feeds, local knowledge, and intentional reading.
+2026-06-22 - accepted - "source mix should feel like my whole life, not one feed" - SOURCES.md + interests.yaml - Balance work streams, personal feeds, local knowledge, and intentional reading.
 -->
 """,
         "specs/_template.md": """# Section: <name>
@@ -542,7 +579,7 @@ for.
 
 - **Pages**: 1, leading the edition.
 - **Source**: everything collected today, read against standing interests
-  (`preferences/algorithm-prior.yaml`) and running threads.
+  (`preferences/interests.yaml`) and running threads.
 - **Voice**: judgment first. Lead with the single thing that matters, stated as
   a claim I can act on - not "here is what happened."
 - **Failure mode**: a quiet morning is honest. Never inflate.
@@ -609,10 +646,11 @@ Choose one active register and edit it freely:
 
 If a section is thin, say so instead of padding.
 """,
-        "preferences/algorithm-prior.yaml": """# algorithm-prior.yaml - your standing interests, in a file you can read.
-# This is the "own your algorithm" artifact: the editor amplifies what you say
-# you care about. It never amplifies pure velocity; a thing being loud is not
-# a reason to print it.
+        "preferences/interests.yaml": """# interests.yaml - your standing interests, in a file you can read.
+# Use this for weights, not laws: what to notice more, what to dampen, and
+# which questions to keep checking. EDITORIAL.md still decides what earns ink.
+# This file never amplifies pure velocity; a thing being loud is not a reason
+# to print it.
 #
 # Everything here is optional. Absent or empty means the editor ignores it.
 #
@@ -645,23 +683,22 @@ If a section is thin, say so instead of padding.
 
 version: 1
 edition:
-  target_pages: 20
-  max_pages: 25
+  target_pages: 12
+  max_pages: 20
   max_pages_about_the_paper: 3
 beats:
-  x_social:
+  work_streams:
     target_pages: 2
     max_pages: 4
     require_complete_source_records: true
-    lanes:
-      frontier_agents:
-        target_pages: 1
-      commerce_shopify:
-        target_pages: 1
-  articles:
+  personal_feeds:
+    target_pages: 2
+    max_pages: 4
+    require_complete_source_records: true
+  reading:
     target_pages: 4
     max_pages: 8
-  work:
+  local_knowledge:
     target_pages: 2
     max_pages: 4
 cut_first:
@@ -911,8 +948,18 @@ Read the paper with a pen. Reply in chat or mark this file up.
 ## More
 - What should get more pages, deeper reporting, or a recurring section?
 
+## Visuals
+- What chart, image, diagram, illustration, or layout choice helped or hurt?
+
 ## Sources To Add
 - Feeds, folders, newsletters, repos, people, searches, exports, or tools.
+
+## Delivery
+- Did the PDF, printout, or email/article format land the way it should?
+
+## Taste To Save
+- Which note should become a durable rule in EDITORIAL.md, VISUALS.md,
+  SOURCES.md, DELIVERY.md, specs/, preferences/, or TASTELOG.md?
 
 ## Tomorrow's Assignment Board
 - URLs or files to add to tomorrow's Assignment Board.

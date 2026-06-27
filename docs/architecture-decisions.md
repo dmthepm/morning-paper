@@ -137,7 +137,7 @@ Stable public commands:
 - `morning-paper print <url...>`
 - `morning-paper render <file.md>` — typeset any markdown through a style pack
 - `morning-paper stage <url|file>` (alias `add`) — queue material for tomorrow
-- `morning-paper queue` (alias `status`) — staged items vs the page budget
+- `morning-paper queue` (alias `status`) — staged Assignment Board items
 - `morning-paper estimate <file.md>` — page count, nothing written
 - `morning-paper inbox` — poll the contributor inbox
 - `morning-paper review <edition>` — editorial QC on a finished edition

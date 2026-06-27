@@ -23,9 +23,10 @@ configured" — never an invented headline, number, or quote.
   preferences as files (the operating constitution, section specs, editorial
   taste, visual desk, source desk, delivery preferences, voice, collectors,
   memory, and taste log). The durable taste files are `EDITORIAL.md`,
-  `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, and `TASTELOG.md`; update the
-  smallest one that captures the reader's feedback. You write there freely on
-  the reader's behalf. Nothing from a newsroom ever belongs in this public repo.
+  `VISUALS.md`, `SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`, and focused
+  `preferences/*` files; update the smallest one that captures the reader's
+  feedback. You write there freely on the reader's behalf. Nothing from a
+  newsroom ever belongs in this public repo.
 
 ## Skills
 
@@ -56,8 +57,8 @@ anyway, so check each step against reality:
 
 The CLI speaks JSON. `morning-paper doctor --json` reports install status;
 `newsroom`, `edition`, `sources`, `stage`, `queue`, `estimate`, `render`,
-`review`, and local-fallback `routine` are the verbs the edition skill drives. `newsroom init
-<path>` scaffolds the private repo; `newsroom state <path> --set key=value`
+`review`, and local-fallback `routine` are the verbs the edition skill drives.
+`newsroom init <path>` scaffolds the private repo; `newsroom state <path> --set key=value`
 keeps setup-state/SETUP current; `edition prepare <path>` creates the durable
 files an agent can resume from; `edition final-editor <path>` writes the
 pre-delivery ship rule after render/review; `sources check` inventories
@@ -66,12 +67,24 @@ configured sources and auto-detects a scaffolded newsroom when run from its root
 `queue list|show|remove` inspects and prunes staged material; `edition
 apply-feedback <path> --route ROUTE --note ...` records stable reader feedback
 into the smallest durable file, TASTELOG, and that edition's feedback plan.
-Use `editorial`, `voice`, `visuals`, `sources`, `prior`, `delivery`, `checks`,
-`the-read`, `front-page`, `reading`, or `taste`. `stage` takes a real file
-path, never `/dev/stdin` — write a temp file first. Unsupported local-drop
-files become private converter collectors from `collectors/CONVERTERS.md` or
-`docs/source-conversion.md`; do not add a hosted scraper/OAuth registry to the
-engine without an explicit scope change.
+Use `editorial`, `voice`, `visuals`, `sources`, `interests`, `budgets`,
+`delivery`, `checks`, `the-read`, `front-page`, `reading`, or `taste`. `stage`
+takes a real file path, never `/dev/stdin` — write a temp file first.
+Unsupported local-drop files become private converter collectors from
+`collectors/CONVERTERS.md` or `docs/source-conversion.md`; do not add a hosted
+scraper/OAuth registry to the engine without an explicit scope change.
+
+## Resource Map
+
+- `ROLES.md` and `docs/roles/` - role order, role inputs, and subagent handoffs.
+- `docs/edition-run-contract.md` - what a complete edition run must prove.
+- `docs/private-newsroom-operating-model.md` - public/private repo boundary.
+- `docs/feedback-loop.md` - how reader feedback routes to durable files.
+- `docs/collectors.md` and `docs/source-conversion.md` - source and converter
+  rules.
+- `docs/composing.md` - renderable Markdown, review, and visual conventions.
+- `docs/newsroom-skill-suite.md` - skill surface and when not to split skills.
+- `docs/archive/` - historical notes only; do not treat it as current contract.
 
 ## The single-source rule (hold it forever)
 

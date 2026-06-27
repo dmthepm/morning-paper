@@ -8,6 +8,8 @@ checks the page as an object, not only as markdown.
 - `draft.md`
 - rendered PDF and rasterized proof pages when available
 - `VISUALS.md`
+- `preferences/desk-sheet.yaml`
+- `preferences/source-budgets.yaml`
 - review and visual QA output
 
 ## Writes

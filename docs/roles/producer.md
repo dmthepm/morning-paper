@@ -10,6 +10,8 @@ deterministic checks first, judgment where the checks cannot see.
 - `render-result.json`, `review.json`, `visual-qa.json`
 - PDF path and proof output
 - role artifacts in `desks/`
+- `preferences/checks.yaml` and `preferences/source-budgets.yaml` when judging
+  muted findings or intentional budget exceptions
 
 ## Writes
 

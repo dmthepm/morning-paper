@@ -56,7 +56,7 @@ Commands:
                     Add a complete social source record to tomorrow's Assignment Board
   inbox             Poll the contributor inbox: mail from your masthead becomes
                     source material for tomorrow's edition (--dry-run)
-  queue             Show/list/read/remove Assignment Board items vs the page budget
+  queue             Show/list/read/remove Assignment Board items
   edition           Prepare/proof/apply durable edition files
                     (prepare|assignment-board|estimate|visual-qa|final-editor|
                     status|apply-feedback)
@@ -1118,6 +1118,7 @@ def sources_command(args: list[str]) -> int:
 
 def edition_command(args: list[str]) -> int:
     from .edition_workspace import (
+        FEEDBACK_ROUTES,
         assignment_board_edition_workspace,
         apply_feedback,
         estimate_edition_workspace,
@@ -1142,8 +1143,7 @@ def edition_command(args: list[str]) -> int:
         "[--date YYYY-MM-DD] [--config PATH]\n"
         "       morning-paper edition apply-feedback <newsroom-path> --route ROUTE --note TEXT "
         "[--decision accepted|rejected] [--why TEXT] [--date YYYY-MM-DD]\n"
-        "       routes: editorial, voice, visuals, sources, prior, delivery, checks, "
-        "the-read, front-page, reading, taste"
+        f"       routes: {', '.join(FEEDBACK_ROUTES)}"
     )
     config_path = DEFAULT_CONFIG_PATH
     date: str | None = None

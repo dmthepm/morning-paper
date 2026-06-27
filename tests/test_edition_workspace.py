@@ -399,6 +399,10 @@ date: 2026-06-22
 """,
                 encoding="utf-8",
             )
+            (newsroom / "specs" / "custom-beat.md").write_text(
+                "# Section: Custom Beat\n\nCustom section contract.\n",
+                encoding="utf-8",
+            )
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
@@ -421,6 +425,7 @@ date: 2026-06-22
             self.assertTrue((edition_dir / "final-editor.json").is_file())
             self.assertTrue((edition_dir / "final-editor.md").is_file())
             self.assertIn(str((newsroom / "EDITORIAL.md").resolve()), payload["files_read"])
+            self.assertIn(str((newsroom / "specs" / "custom-beat.md").resolve()), payload["files_read"])
             self.assertIn("Ship rule: deliver", (edition_dir / "final-editor.md").read_text(encoding="utf-8"))
 
             stdout = io.StringIO()
@@ -1023,6 +1028,8 @@ date: 2026-06-22
             tastelog = (newsroom / "TASTELOG.md").read_text(encoding="utf-8")
             self.assertIn("preferences/voice.md", tastelog)
             self.assertIn("specs/the-read.md", tastelog)
+            self.assertIn("## Entries", tastelog)
+            self.assertNotIn("## Log", tastelog)
             feedback_plan = (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(
                 encoding="utf-8"
             )
@@ -1053,7 +1060,8 @@ date: 2026-06-22
             )
 
             for route, phrase in (
-                ("prior", "Dampen pure viral velocity."),
+                ("interests", "Dampen pure viral velocity."),
+                ("budgets", "Give Shopify one page when it has complete source records."),
                 ("checks", "Mute headline-length nudges for the Field Notes section."),
             ):
                 stdout = io.StringIO()
@@ -1075,19 +1083,24 @@ date: 2026-06-22
                     )
                 self.assertEqual(rc, 0)
 
-            prior = newsroom / "preferences" / "algorithm-prior.yaml"
+            interests = newsroom / "preferences" / "interests.yaml"
+            budgets = newsroom / "preferences" / "source-budgets.yaml"
             checks = newsroom / "preferences" / "checks.yaml"
-            self.assertIsNone(yaml.safe_load(prior.read_text(encoding="utf-8")))
+            self.assertIsNone(yaml.safe_load(interests.read_text(encoding="utf-8")))
+            self.assertIsInstance(yaml.safe_load(budgets.read_text(encoding="utf-8")), dict)
             self.assertIsNone(yaml.safe_load(checks.read_text(encoding="utf-8")))
-            self.assertIn("# Feedback Notes", prior.read_text(encoding="utf-8"))
-            self.assertIn("# -", prior.read_text(encoding="utf-8"))
-            self.assertIn("Dampen pure viral velocity.", prior.read_text(encoding="utf-8"))
+            self.assertIn("# Feedback Notes", interests.read_text(encoding="utf-8"))
+            self.assertIn("# -", interests.read_text(encoding="utf-8"))
+            self.assertIn("Dampen pure viral velocity.", interests.read_text(encoding="utf-8"))
+            self.assertIn("# Feedback Notes", budgets.read_text(encoding="utf-8"))
+            self.assertIn("Give Shopify one page", budgets.read_text(encoding="utf-8"))
             self.assertIn("# Feedback Notes", checks.read_text(encoding="utf-8"))
             self.assertIn("Mute headline-length nudges", checks.read_text(encoding="utf-8"))
             feedback_plan = (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(
                 encoding="utf-8"
             )
-            self.assertIn("preferences/algorithm-prior.yaml", feedback_plan)
+            self.assertIn("preferences/interests.yaml", feedback_plan)
+            self.assertIn("preferences/source-budgets.yaml", feedback_plan)
             self.assertIn("preferences/checks.yaml", feedback_plan)
 
     def test_apply_feedback_examples_cover_every_durable_route(self) -> None:
@@ -1113,6 +1126,7 @@ date: 2026-06-22
             examples = [
                 ("editorial", "More judgment, less roundup.", "EDITORIAL.md", "accepted"),
                 ("sources", "GitHub/Main Branch pulses outrank casual reads when there are open asks.", "SOURCES.md", "accepted"),
+                ("budgets", "Keep process notes under 15 percent of the edition.", "preferences/source-budgets.yaml", "accepted"),
                 ("delivery", "Email the article view after the PDF lands.", "DELIVERY.md", "accepted"),
                 ("front-page", "Front page headlines need a verb and a point of view.", "specs/front-page.md", "accepted"),
                 ("reading", "Do not reprint reads I already got.", "specs/reading.md", "accepted"),
@@ -1148,17 +1162,19 @@ date: 2026-06-22
             for target in (
                 "EDITORIAL.md",
                 "SOURCES.md",
+                "preferences/source-budgets.yaml",
                 "DELIVERY.md",
                 "specs/front-page.md",
                 "specs/reading.md",
             ):
                 text = (newsroom / target).read_text(encoding="utf-8")
-                self.assertIn("## Feedback Notes", text, target)
+                self.assertTrue("## Feedback Notes" in text or "# Feedback Notes" in text, target)
                 self.assertIn("feedback-loop eval", text, target)
 
             tastelog = (newsroom / "TASTELOG.md").read_text(encoding="utf-8")
             self.assertIn("More judgment, less roundup.", tastelog)
             self.assertIn("GitHub/Main Branch pulses", tastelog)
+            self.assertIn("process notes under 15 percent", tastelog)
             self.assertIn("rejected - Make the default edition forty pages.", tastelog)
             self.assertNotIn("## Feedback Notes", tastelog)
 

@@ -111,8 +111,10 @@ not the primary reader interface. It should help agents and interested operators
 see:
 
 - which desks produced material;
-- which candidates are collected, need source records, ready, selected, cut, held,
-  printed, or source-health only;
+- which candidates are collected, need source records, ready, or source-health
+  only;
+- when editor/producer handoffs record it, which candidates were selected, cut,
+  held, or printed;
 - estimated pages and page budget remaining;
 - trust, sensitivity, freshness, extraction status, and repeat/staleness notes;
 - why a candidate moved lanes or was cut.

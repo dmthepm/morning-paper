@@ -24,8 +24,10 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertEqual(payload["newsroom_path"], str(root.resolve()))
 
             required = [
+                ".gitignore",
                 "SETUP.md",
                 "setup-state.json",
+                "AGENTS.md",
                 "CLAUDE.md",
                 "README.md",
                 "EDITORIAL.md",
@@ -38,7 +40,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
                 "specs/front-page.md",
                 "specs/reading.md",
                 "preferences/voice.md",
-                "preferences/algorithm-prior.yaml",
+                "preferences/interests.yaml",
                 "preferences/source-budgets.yaml",
                 "preferences/checks.yaml",
                 "collectors/CONVERTERS.md",
@@ -88,15 +90,24 @@ class NewsroomScaffoldTest(unittest.TestCase):
             readme = (root / "README.md").read_text(encoding="utf-8")
             self.assertIn("Run `morning-paper sources check` from this newsroom root", readme)
 
+            agents_constitution = (root / "AGENTS.md").read_text(encoding="utf-8")
             constitution = (root / "CLAUDE.md").read_text(encoding="utf-8")
+            self.assertEqual(agents_constitution, constitution)
             self.assertIn("The Read leads", constitution)
             self.assertIn('Empty sources print "not configured"', constitution)
             self.assertIn("EDITORIAL.md", constitution)
             self.assertIn("VISUALS.md", constitution)
             self.assertIn("SOURCES.md", constitution)
             self.assertIn("TASTELOG.md", constitution)
+            self.assertIn("Role Context", constitution)
+            self.assertIn("preferences/source-budgets.yaml", constitution)
             self.assertIn("feedback-plan.md", constitution)
             self.assertIn("Applied Feedback", constitution)
+
+            gitignore = (root / ".gitignore").read_text(encoding="utf-8")
+            self.assertIn("inbox/*", gitignore)
+            self.assertIn("!inbox/README.md", gitignore)
+            self.assertIn(".env.*", gitignore)
 
             editorial = (root / "EDITORIAL.md").read_text(encoding="utf-8")
             self.assertIn("what makes", editorial)
@@ -136,8 +147,9 @@ class NewsroomScaffoldTest(unittest.TestCase):
             source_budgets = (root / "preferences" / "source-budgets.yaml").read_text(encoding="utf-8")
             self.assertIn("source-budgets.yaml", source_budgets)
             self.assertIn("max_pages_about_the_paper: 3", source_budgets)
-            self.assertIn("frontier_agents", source_budgets)
-            self.assertIn("commerce_shopify", source_budgets)
+            self.assertIn("work_streams", source_budgets)
+            self.assertIn("personal_feeds", source_budgets)
+            self.assertIn("local_knowledge", source_budgets)
             self.assertIn("require_complete_source_records: true", source_budgets)
 
             inbox = (root / "inbox" / "README.md").read_text(encoding="utf-8")
@@ -166,6 +178,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("mobile-friendly", delivery)
 
             tastelog = (root / "TASTELOG.md").read_text(encoding="utf-8")
+            self.assertIn("## Entries", tastelog)
             self.assertIn("durable taste decision", tastelog)
             self.assertNotIn("Hacker News", tastelog)
 
@@ -181,9 +194,10 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Source mix", reading)
             self.assertIn("Fresh vs repeat", reading)
 
-            prior = (root / "preferences" / "algorithm-prior.yaml").read_text(encoding="utf-8")
-            self.assertIn("own your algorithm", prior)
-            self.assertIn("pure velocity", prior)
+            interests = (root / "preferences" / "interests.yaml").read_text(encoding="utf-8")
+            self.assertIn("Use this for weights, not laws", interests)
+            self.assertIn("EDITORIAL.md still decides what earns ink", interests)
+            self.assertIn("pure velocity", interests)
 
             skeleton = (root / "examples" / "edition-skeleton.md").read_text(encoding="utf-8")
             self.assertIn("mp-stats", skeleton)

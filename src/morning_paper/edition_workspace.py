@@ -19,7 +19,8 @@ FEEDBACK_ROUTES = {
     "delivery": "DELIVERY.md",
     "taste": "TASTELOG.md",
     "voice": "preferences/voice.md",
-    "prior": "preferences/algorithm-prior.yaml",
+    "interests": "preferences/interests.yaml",
+    "budgets": "preferences/source-budgets.yaml",
     "checks": "preferences/checks.yaml",
     "the-read": "specs/the-read.md",
     "front-page": "specs/front-page.md",
@@ -81,6 +82,45 @@ def _load_desk_sheet_preferences(root: Path) -> dict[str, object]:
 
 def _desk_sheet_enabled(root: Path) -> bool:
     return bool(_load_desk_sheet_preferences(root).get("enabled"))
+
+
+def _positive_int(value: object) -> int | None:
+    try:
+        parsed = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _page_budget_policy(root: Path) -> dict[str, object]:
+    fallback_target = 12
+    fallback_max = 20
+    policy: dict[str, object] = {
+        "target_pages": fallback_target,
+        "max_pages": fallback_max,
+        "source": "default",
+    }
+    path = root / "preferences" / "source-budgets.yaml"
+    if not path.is_file():
+        return policy
+    try:
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError:
+        return policy
+    if not isinstance(loaded, dict):
+        return policy
+    edition = loaded.get("edition")
+    if not isinstance(edition, dict):
+        return policy
+    target = _positive_int(edition.get("target_pages")) or fallback_target
+    max_pages = _positive_int(edition.get("max_pages")) or max(target, fallback_max)
+    if max_pages < target:
+        max_pages = target
+    return {
+        "target_pages": target,
+        "max_pages": max_pages,
+        "source": "preferences/source-budgets.yaml",
+    }
 
 
 def _int_or_zero(value: object) -> int:
@@ -149,6 +189,7 @@ def _assignment_board(
         "needs_source_record": [],
         "needs_source_proof": [],
         "source_health": [],
+        # Reserved for editor/producer handoffs; the CLI does not infer selection.
         "selected": [],
         "cut": [],
         "held": [],
@@ -421,6 +462,7 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     edition_dir = root / "editions" / date_str
     if not edition_dir.is_dir():
         raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    budget_policy = _page_budget_policy(root)
     checks: list[dict[str, object]] = []
 
     def require_file(name: str, label: str, *, block: bool = True) -> bool:
@@ -579,7 +621,7 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
             "block": sum(1 for check in checks if check.get("state") == "block"),
         },
         "roles": roles,
-        "page_budget": config.page_budget,
+        "page_budget": budget_policy,
         "next_action": next_action,
         "artifacts": {
             "json": str(edition_dir / "run-ticket.json"),
@@ -639,16 +681,20 @@ def final_editor_pass(
     edition_dir = root / "editions" / date_str
     if not edition_dir.is_dir():
         raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    budget_policy = _page_budget_policy(root)
 
+    spec_files = sorted((root / "specs").glob("*.md")) if (root / "specs").is_dir() else []
     contract_files = [
         root / "EDITORIAL.md",
         root / "VISUALS.md",
         root / "SOURCES.md",
         root / "DELIVERY.md",
         root / "TASTELOG.md",
-        root / "specs" / "the-read.md",
-        root / "specs" / "front-page.md",
-        root / "specs" / "reading.md",
+        root / "preferences" / "voice.md",
+        root / "preferences" / "interests.yaml",
+        root / "preferences" / "source-budgets.yaml",
+        root / "preferences" / "checks.yaml",
+        root / "preferences" / "desk-sheet.yaml",
         edition_dir / "source-inventory.json",
         edition_dir / "collector-report.md",
         edition_dir / "queue-snapshot.json",
@@ -663,10 +709,21 @@ def final_editor_pass(
         edition_dir / "operator-answers.md",
         edition_dir / "feedback-plan.md",
     ]
+    contract_files[10:10] = spec_files
     if _desk_sheet_enabled(root):
         contract_files.append(edition_dir / "desk-sheet.md")
     findings: list[dict[str, object]] = []
     files_read: list[str] = []
+    if not spec_files:
+        _final_finding(
+            findings,
+            check="section-specs",
+            severity="flag",
+            location=str(root / "specs"),
+            issue="No section specs were found.",
+            why="The final editor needs the section contracts that govern the paper.",
+            hint="Run setup or restore at least one `specs/*.md` file before delivery.",
+        )
     for path in contract_files:
         if path.is_file():
             files_read.append(str(path))
@@ -794,25 +851,37 @@ def final_editor_pass(
             why="A paper with no proven pages is not ready to hand to the reader.",
             hint="Re-render and confirm the PDF exists.",
         )
-    elif pages > config.page_budget + 2:
+    target_pages = int(budget_policy["target_pages"])
+    max_pages = int(budget_policy["max_pages"])
+    if pages > max_pages:
         _final_finding(
             findings,
             check="page-budget",
             severity="flag",
-            issue=f"Rendered paper is {pages} pages against a {config.page_budget}-page budget.",
-            why="The reader asked for a finite paper; overshooting by more than two pages should be an explicit editorial decision.",
-            hint="Cut or compress the weakest material, or record the intentional exception in DELIVERY.md.",
-            measured={"pages": pages, "page_budget": config.page_budget},
+            issue=f"Rendered paper is {pages} pages against a {max_pages}-page max.",
+            why="The reader asked for a finite paper; overshooting the max should be an explicit editorial decision.",
+            hint="Cut or compress the weakest material, or record the intentional exception in DELIVERY.md or preferences/source-budgets.yaml.",
+            measured={
+                "pages": pages,
+                "target_pages": target_pages,
+                "max_pages": max_pages,
+                "budget_source": budget_policy["source"],
+            },
         )
-    elif pages > config.page_budget:
+    elif pages > target_pages:
         _final_finding(
             findings,
             check="page-budget",
             severity="nudge",
-            issue=f"Rendered paper is {pages} pages against a {config.page_budget}-page budget.",
+            issue=f"Rendered paper is {pages} pages against a {target_pages}-page target.",
             why="A small overage can ship, but the editor should name the tradeoff.",
             hint="Mention the overage in the handoff or cut a weak item.",
-            measured={"pages": pages, "page_budget": config.page_budget},
+            measured={
+                "pages": pages,
+                "target_pages": target_pages,
+                "max_pages": max_pages,
+                "budget_source": budget_policy["source"],
+            },
         )
     if pages >= SUBSTANTIAL_PAGE_THRESHOLD:
         missing = _missing_substantial_phases(roles)
@@ -1315,16 +1384,17 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
 
 | Reader note | Durable target |
 |---|---|
-| Keep / cut / more / less / page budget / what earns ink | `EDITORIAL.md` (`--route editorial`) |
+| Keep / cut / more / less / what earns ink | `EDITORIAL.md` (`--route editorial`) |
 | Voice, density, register, tone, AI tells | `preferences/voice.md` (`--route voice`) |
 | Section-specific taste | `specs/the-read.md`, `specs/front-page.md`, or `specs/reading.md` (`--route the-read|front-page|reading`) |
-| Visuals, charts, illustrations, layout, print readability | `VISUALS.md` |
+| Visuals, charts, illustrations, layout, print readability | `VISUALS.md` (`--route visuals`) |
 | Add, demote, remove, distrust, or change cadence of a source | `SOURCES.md` (`--route sources`) |
-| Standing interests, source weighting, dampeners | `preferences/algorithm-prior.yaml` (`--route prior`) |
+| Standing interests and topic dampeners | `preferences/interests.yaml` (`--route interests`) |
+| Page, source, beat, full-read, visual, or process budget | `preferences/source-budgets.yaml` (`--route budgets`) |
 | Review thresholds or muted copy-desk findings | `preferences/checks.yaml` (`--route checks`) |
-| PDF, print, email/article view, archive, routine/automation behavior | `DELIVERY.md` |
+| PDF, print, email/article view, archive, routine/automation behavior | `DELIVERY.md` (`--route delivery`) |
 | One-off URL or file to read tomorrow | `morning-paper stage <url-or-file>` adds it to the Assignment Board |
-| Stable accepted/rejected taste decision | `TASTELOG.md` |
+| Stable accepted/rejected taste decision | `TASTELOG.md` (`--route taste`) |
 
 ## Guardrails
 
@@ -1335,9 +1405,10 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
   action in `SOURCES.md`.
 - If feedback conflicts with an existing rule, update `TASTELOG.md` with the
   decision and why the older rule changed.
-- YAML targets (`preferences/algorithm-prior.yaml`, `preferences/checks.yaml`)
-  receive feedback as comments so the file stays parseable. Promote the note
-  into real YAML only when the exact setting is clear.
+- YAML targets (`preferences/interests.yaml`,
+  `preferences/source-budgets.yaml`, `preferences/checks.yaml`) receive feedback
+  as comments so the file stays parseable. Promote the note into real YAML only
+  when the exact setting is clear.
 
 ## Applied Feedback
 
@@ -1518,7 +1589,7 @@ def apply_feedback(
     if not taste_log.exists():
         raise FileNotFoundError(f"missing newsroom file: {taste_log}")
     taste_line = f"{stamp} - {decision_key} - {clean_note} - {target_relative} - {clean_why}"
-    _append_section_note(taste_log, heading="## Log", note=taste_line)
+    _append_section_note(taste_log, heading="## Entries", note=taste_line)
     changed_paths.append(str(taste_log))
 
     feedback_plan = root / "editions" / date_str / "feedback-plan.md"
@@ -1556,7 +1627,13 @@ def assignment_board_edition_workspace(
         write_json(edition_dir / "source-inventory.json", source_payload)
     queue_snapshot = _load_json_object(edition_dir / "queue-snapshot.json")
     if not queue_snapshot:
-        queue_snapshot = queue_status(config, date_str)
+        budget_policy = _page_budget_policy(root)
+        queue_snapshot = queue_status(
+            config,
+            date_str,
+            page_budget=int(budget_policy["target_pages"]),
+            max_pages=int(budget_policy["max_pages"]),
+        )
         write_json(edition_dir / "queue-snapshot.json", queue_snapshot)
     board = _assignment_board(source_payload, queue_snapshot, date_str=date_str, edition_dir=edition_dir)
     write_json(edition_dir / "assignment-board.json", board)
@@ -1614,7 +1691,13 @@ must be reported as "not configured"; never invent source data.
 """
     record("collector-report.md", _write(edition_dir / "collector-report.md", collector_report, force=force))
 
-    queue_payload = queue_status(config, date_str)
+    budget_policy = _page_budget_policy(root)
+    queue_payload = queue_status(
+        config,
+        date_str,
+        page_budget=int(budget_policy["target_pages"]),
+        max_pages=int(budget_policy["max_pages"]),
+    )
     record("queue-snapshot.json", _write_json(edition_dir / "queue-snapshot.json", queue_payload, force=force))
     board = _assignment_board(source_payload, queue_payload, date_str=date_str, edition_dir=edition_dir)
     record("assignment-board.json", _write_json(edition_dir / "assignment-board.json", board, force=force))
@@ -1732,6 +1815,7 @@ def estimate_edition_workspace(
     if not edition_dir.is_dir():
         raise FileNotFoundError(f"missing edition directory: {edition_dir}")
     payload = estimate_markdown(edition_dir / "draft.md", config, date_str=date_str)
+    payload["page_budget"] = _page_budget_policy(root)
     write_json(edition_dir / "estimate-result.json", payload)
     return payload
 

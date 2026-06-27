@@ -17,12 +17,12 @@ contracts the edition skill obeys** (not four empty directories), and
 honestly at every step — a paper with two sources beats a broken setup with ten.
 
 The keystone of this skill is §5: setup must **write** the newsroom's
-contracts. A reader who finishes setup has a `CLAUDE.md`, section specs led by
-The Read, newsroom-native taste files (`EDITORIAL.md`, `VISUALS.md`,
+contracts. A reader who finishes setup has matching `AGENTS.md` and
+`CLAUDE.md` constitutions, section specs led by The Read, newsroom-native taste files (`EDITORIAL.md`, `VISUALS.md`,
 `SOURCES.md`, `DELIVERY.md`, `TASTELOG.md`), an empty reads-ledger, voice and
-desk-sheet preferences, an editions dir, and a collector contract with worked
-examples — everything the `edition` skill reads. A scaffold of empty folders
-is a failed setup.
+source-budget and desk-sheet preferences, an editions dir, and a collector
+contract with worked examples — everything the `edition` skill reads. A
+scaffold of empty folders is a failed setup.
 
 The product vision is the private newsroom operating model in
 `docs/private-newsroom-operating-model.md`: the reader owns their algorithm in
@@ -86,7 +86,8 @@ Ask in 2-3 messages, not twenty. Capture:
   notice daily or weekly, how many pages each beat might deserve when it is
   hot, and which tools/exports should be tested before that source becomes
   recurring?
-- **Shape** — `page_budget` (suggest 12-20), how many full reads per edition,
+- **Shape** — page appetite (suggest 12-16 for a first paper; readers can
+  choose a longer edition once sources are strong), how many full reads per edition,
   style (`morning-paper styles` lists the family of four — broadsheet,
   brief, field-card, zine; `broadsheet` is the default recommendation),
   palette (`color` for inkjets, `mono` for laser), and whether they want a
@@ -105,7 +106,13 @@ Ask in 2-3 messages, not twenty. Capture:
 - **Printer** — CUPS name (`lpstat -p`), duplex capable? Save the print
   command in the newsroom README and in `CLAUDE.md`'s delivery placeholder.
 
-Write their answers into `~/.config/morning-paper/config.yaml`.
+Write runtime answers into `~/.config/morning-paper/config.yaml`: timezone,
+output directory/style/palette, extractor behavior, inbox/feed plumbing, and
+other machine-facing settings. Write taste answers into the private newsroom:
+voice to `preferences/voice.md`, page/source appetite to
+`preferences/source-budgets.yaml`, standing interests to
+`preferences/interests.yaml`, visual taste to `VISUALS.md`, source judgment to
+`SOURCES.md`, and delivery preferences to `DELIVERY.md`.
 
 ## 3. Optional unlocks (collector recipes they write, not engine features)
 
@@ -208,7 +215,8 @@ when you want the path to be unambiguous in logs.
 newsroom/
   SETUP.md                   # resumable setup journal for humans and agents
   setup-state.json           # resumable setup state, updated after each step
-  CLAUDE.md                  # the operating constitution (the keystone)
+  AGENTS.md                  # the operating constitution (host-neutral)
+  CLAUDE.md                  # same constitution for Claude Code
   EDITORIAL.md               # what earns ink, gets cut, and becomes The Read
   VISUALS.md                 # the visual desk: charts, images, PDF/email rules
   SOURCES.md                 # source purpose, trust, cadence, health, backlog
@@ -221,7 +229,8 @@ newsroom/
     reading.md               # full reads + menu, source-mix + freshness law
   preferences/
     voice.md                 # the three-register voice template (from §2)
-    algorithm-prior.yaml     # the owned-algorithm artifact (commented stub)
+    interests.yaml           # standing interests and dampeners (commented stub)
+    source-budgets.yaml      # page/source/beat appetite and cut-first rules
     checks.yaml              # review thresholds/mutes (commented stub)
     desk-sheet.yaml          # optional printed feedback sheet settings
   collectors/
@@ -317,8 +326,9 @@ Write these first, then keep them current.
 
 ### The contracts to write
 
-**`CLAUDE.md`** — the operating constitution. This is what makes the `edition`
-skill obey the newsroom instead of improvising:
+**`AGENTS.md` and `CLAUDE.md`** — the operating constitution. Write the same
+contents to both files so Codex, Claude Code, and future hosts obey the newsroom
+instead of improvising:
 
 ```markdown
 # Newsroom — operating constitution
@@ -335,13 +345,15 @@ here, in files I own.
 4. `SOURCES.md` — source purpose, trust, cadence, health, and backlog.
 5. `DELIVERY.md` — PDF, print, email/article, archive preferences.
 6. `preferences/voice.md` — how the paper talks. Overrides any engine default.
-7. `preferences/algorithm-prior.yaml` — my standing interests (absent = ignore).
-8. `preferences/desk-sheet.yaml` — whether to print the No. 10-style feedback sheet and its small knobs.
-9. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
-10. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
-11. `TASTELOG.md` — accepted and rejected taste changes over time.
-12. `memory/MEMORY.md` + `memory/threads/` — running threads (load on item-id/title match).
-13. `collectors/` — my sources. What they don't return prints "not configured".
+7. `preferences/interests.yaml` — standing interests (absent = ignore).
+8. `preferences/source-budgets.yaml` — source/beat appetite and cut-first rules.
+9. `preferences/checks.yaml` — review thresholds and muted findings.
+10. `preferences/desk-sheet.yaml` — whether to print the No. 10-style feedback sheet and its small knobs.
+11. `memory/reads-ledger.md` — everything already printed. Never reprint a read.
+12. `editions/<latest>/operator-answers.md` — my triaged ink. Honor it exactly.
+13. `TASTELOG.md` — accepted and rejected taste changes over time.
+14. `memory/MEMORY.md` + `memory/threads/` — running threads (load on item-id/title match).
+15. `collectors/` — my sources. What they don't return prints "not configured".
 
 ## The honesty rule
 
@@ -382,7 +394,7 @@ front-of-mind synthesis, not a link dump:
 
 - **Pages**: 1, leading the edition.
 - **Source**: everything collected today, read against my standing interests
-  (`preferences/algorithm-prior.yaml`) and yesterday's threads.
+  (`preferences/interests.yaml`) and yesterday's threads.
 - **Voice**: judgment first. Lead with the single thing that matters, stated as
   a claim I can act on — not "here is what happened."
 - **Failure mode**: a thin news day is honest. Say "quiet morning" and move on;
@@ -454,15 +466,18 @@ Read measures the day against.
 **`preferences/voice.md`** — write the three-register template, with the
 reader's chosen register marked as active (from §2). Keep it generic.
 
-**`preferences/algorithm-prior.yaml`** — the owned-algorithm artifact. Ship a
-commented stub; the editor treats absent/empty as "ignore", so this is safe to
-ship blank:
+**`preferences/interests.yaml`** — standing interests and dampeners. Ship
+a commented stub; the editor treats absent/empty as "ignore", so this is safe to
+ship blank. This file does not replace `EDITORIAL.md`, `SOURCES.md`, or section
+specs. It is only the reader's lightweight interests file: what to weight up, what to
+weight down, and what questions to keep checking.
 
 ```yaml
-# algorithm-prior.yaml — your standing interests, in a file you can read.
-# This is the "own your algorithm" artifact: the editor amplifies what you
-# say you care about. It NEVER amplifies pure velocity (a thing being loud is
-# not a reason to print it) — only revealed intent.
+# interests.yaml — your standing interests, in a file you can read.
+# Use this for weights, not laws: what to notice more, what to dampen, and
+# which questions to keep checking. EDITORIAL.md still decides what earns ink.
+# This file NEVER amplifies pure velocity (a thing being loud is not a reason
+# to print it) — only revealed intent.
 #
 # Everything here is OPTIONAL. Absent or empty → the editor ignores it.
 #
@@ -477,6 +492,42 @@ ship blank:
 #
 # Boundary: amplify intent, never amplify pure-velocity formats. A trending
 # format is not an interest.
+```
+
+**`preferences/source-budgets.yaml`** — page, source, beat, full-read, visual,
+and process appetite. These are ceilings and planning signals, not quotas.
+Ship a modest first-run default; the reader can make their private paper longer
+once sources are strong:
+
+```yaml
+# source-budgets.yaml — appetite by source family and beat.
+# Budgets are ceilings and planning signals, not quotas. A source can earn
+# zero pages on a quiet day. Never add filler to satisfy this file.
+
+version: 1
+edition:
+  target_pages: 12
+  max_pages: 20
+  max_pages_about_the_paper: 3
+beats:
+  work_streams:
+    target_pages: 2
+    max_pages: 4
+    require_complete_source_records: true
+  personal_feeds:
+    target_pages: 2
+    max_pages: 4
+    require_complete_source_records: true
+  reading:
+    target_pages: 4
+    max_pages: 8
+  local_knowledge:
+    target_pages: 2
+    max_pages: 4
+cut_first:
+  - process notes that belong in the production record
+  - generic trend summaries without source objects
+  - repeated stories unless the angle advanced
 ```
 
 **`preferences/checks.yaml`** — commented stub; `review` reads it when present,
@@ -770,7 +821,7 @@ recent `editions/<date>/operator-answers.md` and honors it. So if they reply
 "more like this", "cut section X", or "print `<url>` tomorrow", the editor
 chooses the smallest durable route and records stable notes with
 `morning-paper edition apply-feedback . --date <edition-date> --route
-editorial|voice|visuals|sources|prior|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
+editorial|voice|visuals|sources|interests|budgets|delivery|checks|the-read|front-page|reading|taste --note "<reader note>" --why
 "<why it should change tomorrow>"`. That writes the target file, `TASTELOG.md`,
 and the edition's `feedback-plan.md`. Then it stages anything they asked to
 read. The newsroom is a loop: what they write today shapes tomorrow's paper.

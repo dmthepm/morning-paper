@@ -8,7 +8,8 @@ reader's taste.
 
 - all relevant role artifacts in `desks/`
 - `assignment-board.json`
-- `EDITORIAL.md`, section specs, `VISUALS.md`, ledgers, and recent `TASTELOG.md`
+- `EDITORIAL.md`, section specs, `VISUALS.md`, `preferences/interests.yaml`,
+  `preferences/source-budgets.yaml`, ledgers, and recent `TASTELOG.md`
 
 ## Writes
 

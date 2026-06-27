@@ -367,20 +367,23 @@ def stage_social_record(
     )
 
 
-def queue_status(config: MorningPaperConfig, date_str: str) -> dict:
+def queue_status(config: MorningPaperConfig, date_str: str, *, page_budget: int | None = None, max_pages: int | None = None) -> dict:
     sdir = staging_dir(config, date_str)
     items = _load_queue(sdir)
     total = sum(int(item.get("est_pages", 0)) for item in items)
-    budget = config.page_budget
-    return {
+    payload = {
         "date": date_str,
         "items": items,
         "count": len(items),
         "est_pages_total": total,
-        "page_budget": budget,
-        "budget_remaining": (budget - total) if budget else None,
         "staging_dir": str(sdir),
     }
+    if page_budget:
+        payload["page_budget"] = page_budget
+        payload["budget_remaining"] = page_budget - total
+    if max_pages:
+        payload["max_pages"] = max_pages
+    return payload
 
 
 def queue_item(config: MorningPaperConfig, date_str: str, slug: str) -> dict:

@@ -419,7 +419,8 @@ the build warns loudly instead of letting the material vanish.
 When composing a custom edition by hand (an agent writing tomorrow's brief
 through `render`), read the same seam:
 
-1. `morning-paper queue --date YYYY-MM-DD` for the metadata and page budget.
+1. `morning-paper queue --date YYYY-MM-DD` for staged source metadata; in an
+   edition workspace, compare it with `preferences/source-budgets.yaml`.
 2. Pull each `{slug}.md`, strip its frontmatter (article prints carry their
    own `css:` block that would override your style pack), and weave the body
    into your document.

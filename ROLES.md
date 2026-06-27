@@ -85,6 +85,9 @@ did not run.
 - The editor checks memory and ledgers before printing repeats.
 - Page budgets are ceilings and appetite signals, not quotas. A thin honest
   paper is better than filler.
+- Structured preferences in `preferences/` are part of the newsroom contract:
+  voice, interests, source budgets, checks, and desk-sheet settings should reach
+  the roles that need them.
 - Keep process pages small. Unless the reader asks, source/run-status material
   belongs in handoffs and the production record, not in the reader's pages.
 - The art desk protects readability: printer-friendly, accessible, no gradient
