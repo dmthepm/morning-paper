@@ -34,6 +34,7 @@ jobs:
     name: Pretty renderer smoke (WeasyPrint)
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.13"]
@@ -65,7 +66,7 @@ jobs:
         run: |
           morning-paper doctor --strict
           morning-paper demo
-          python -m pytest tests/test_demo.py tests/test_styles.py tests/test_frontpage_visual_snapshot.py -q
+          python -m pytest tests/test_demo.py tests/test_styles.py tests/test_visual_snapshot.py -q
           python scripts/setup_scaffold_smoke.py
           python scripts/new_user_smoke.py
           python scripts/five_edition_loop_smoke.py
