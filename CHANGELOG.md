@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.12] - 2026-06-27
+
 ### Changed
 - Removed remaining public default-source configuration examples and
   issue-backlog prompts so setup starts from reader-owned sources and private
