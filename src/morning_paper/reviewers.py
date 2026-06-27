@@ -2,8 +2,8 @@
 
 `morning-paper review <edition>` is the editorial twin of `doctor`: where
 `doctor` answers "does it render", `review` answers "is it good enough to run".
-It reads the artifacts `build`/`render` already wrote (the composed markdown,
-and the edition `.json` when present) and emits editorial WARNINGS — never hard
+It reads the artifacts `render` already wrote (the composed markdown, and the
+edition `.json` when present) and emits editorial WARNINGS — never hard
 fails. The severity ladder tops out at `flag`; exit code is 0 by default
 (a future `--strict` is the only way a flag becomes a nonzero exit). A cron
 edition must never break because a headline ran long.
@@ -251,7 +251,7 @@ def resolve_artifacts(path: Path) -> dict[str, Path]:
     """Find the .md and .json for an edition from a file or directory path.
 
     Accepts the composed markdown file directly, the edition JSON, or a
-    directory holding either. Mirrors what build/render write.
+    directory holding either. Mirrors what render writes.
     """
     found: dict[str, Path] = {}
     if path.is_dir():

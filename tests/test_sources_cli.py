@@ -54,7 +54,6 @@ class SourcesCliTest(unittest.TestCase):
         rc = cli.main(["init", "--config", str(config_path)])
         self.assertEqual(rc, 0)
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-        config["sources"]["hacker_news"]["enabled"] = False
         config["sources"]["rss"] = [
             {"name": "Full Feed", "url": "https://example.com/full.xml", "limit": 5},
             {"name": "Summary Feed", "url": "https://example.com/summary.xml", "limit": 5},
@@ -71,7 +70,7 @@ class SourcesCliTest(unittest.TestCase):
                 rc = cli.main(["sources", "list", "--config", str(config_path)])
         self.assertEqual(rc, 0)
         payload = json.loads(stdout.getvalue())
-        self.assertEqual(payload["count"], 4)
+        self.assertEqual(payload["count"], 3)
         self.assertEqual(payload["source_model"]["posture"], "reader_stack_first")
         self.assertIn("rss_or_feed_url", payload["source_model"]["entry_points"])
         self.assertIn("assignment_board", payload["source_model"]["entry_points"])
@@ -79,12 +78,9 @@ class SourcesCliTest(unittest.TestCase):
         self.assertIn("local_drop", payload["source_model"]["reader_owned_inputs"])
         self.assertIn("work_systems", payload["source_model"]["reader_owned_inputs"])
         self.assertIn("social_and_video_feeds", payload["source_model"]["reader_owned_inputs"])
-        self.assertEqual(payload["sources"][0]["id"], "hacker_news")
-        self.assertEqual(payload["sources"][0]["name"], "Community Signals")
-        self.assertEqual(payload["sources"][0]["role"], "optional_starter")
-        self.assertEqual(payload["sources"][0]["status"], "disabled")
-        self.assertEqual(payload["sources"][1]["role"], "reader_owned")
-        self.assertEqual(payload["sources"][1]["status"], "configured")
+        self.assertEqual(payload["sources"][0]["id"], "rss:Full Feed")
+        self.assertEqual(payload["sources"][0]["role"], "reader_owned")
+        self.assertEqual(payload["sources"][0]["status"], "configured")
         self.assertIn("morning-paper stage", payload["collector_contract"]["command"])
         self.assertIn("Assignment Board", payload["collector_contract"]["meaning"])
         self.assertIn("Pass --newsroom", " ".join(payload["next_actions"]))
@@ -104,7 +100,7 @@ class SourcesCliTest(unittest.TestCase):
         self.assertIn("GitHub", next_actions)
         self.assertIn("Linear", next_actions)
         self.assertIn("video feed", next_actions)
-        self.assertNotIn("Hacker News", next_actions)
+        self.assertNotIn("starter", next_actions.lower())
 
     def test_sources_list_can_include_newsroom_collectors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

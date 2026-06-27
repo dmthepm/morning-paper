@@ -56,7 +56,6 @@ morning-paper = "morning_paper.cli:main"
 [project.urls]
 Homepage = "https://github.com/dmthepm/morning-paper"
 Repository = "https://github.com/dmthepm/morning-paper"
-Issues = "https://github.com/dmthepm/morning-paper/issues"
 Changelog = "https://github.com/dmthepm/morning-paper/blob/main/CHANGELOG.md"
 
 [tool.setuptools]

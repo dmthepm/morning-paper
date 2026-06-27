@@ -121,8 +121,8 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     codex_manifest = json.loads(_read("plugins/morning-paper/.codex-plugin/plugin.json"))
     changelog = _read("CHANGELOG.md")
     version = _pyproject_field("version")
-    release_readiness = _read(f"docs/archive/releases/release-readiness-{version}.md")
-    roadmap = _read("ROADMAP.md")
+    readme = _read("README.md")
+    release_check = _read("scripts/release_candidate_check.py")
     skill_suite = _read("docs/newsroom-skill-suite.md")
     edition_run = _read("docs/edition-run-contract.md")
     operating_model = _read("docs/private-newsroom-operating-model.md")
@@ -140,10 +140,6 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "sources and preferences you own as files" in summary
     assert f"## [{version}]" in changelog
     assert "Substantial editions" in changelog
-    assert f"`v{version}`" in release_readiness
-    assert "Status: published and verified." in release_readiness or "Status: candidate, ready to tag." in release_readiness
-    assert "Clean Python 3.13 venv installed" in release_readiness
-    assert "## Shipped (`v0.8.x private newsroom`)" in roadmap
     assert "public skill surface is intentionally small" in skill_suite
     assert "Morning Paper skills are newsroom desks" in skill_suite
     assert "0.8.x ships exactly three plugin skills" in skill_suite
@@ -158,11 +154,13 @@ def test_package_and_plugin_descriptions_match_the_owned_algorithm_story() -> No
     assert "feedback_rules_carried" in five_loop_smoke
     assert "reprinted old read title" in five_loop_smoke
     assert "quality_notes" in five_loop_smoke
-    assert "morning-paper doctor --strict" in _read("README.md")
-    assert "scripts/release_candidate_check.py --outdir" in release_readiness
-    assert "--install-check" in release_readiness
-    assert "Latest full local verification" in release_readiness
-    assert "current `main` HEAD" in release_readiness
+    assert "morning-paper doctor --strict" in readme
+    assert "scripts/release_candidate_check.py --outdir" in readme
+    assert "--install-check" in readme
+    assert "--journey-check" in readme
+    assert "--journey-check" in release_check
+    assert "setup_scaffold_smoke.py" in release_check
+    assert "five_edition_loop_smoke.py" in release_check
     assert "edition apply-feedback" in feedback_loop
     assert "complete_with_notes" in edition_run
     assert "private newsroom" in operating_model
@@ -191,14 +189,12 @@ def test_product_and_design_context_remain_active_design_contracts() -> None:
     assert "A real paper every morning" in readme
 
 
-def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
-    roadmap = _read("ROADMAP.md")
+def test_chart_guardrails_are_current_work_not_stale_future_notes() -> None:
     composing = _read("docs/composing.md")
     readme = _read("README.md")
     edition_run = _read("docs/edition-run-contract.md")
     reviewers = _read("src/morning_paper/reviewers.py")
 
-    assert "chart row/label bounds" not in roadmap
     assert "mp-bars` shows up to 12 rows" in composing
     assert "mp-stats`" in composing and "6 primary blocks" in composing
     assert "mp-spark`" in composing and "90 values" in composing
@@ -209,10 +205,10 @@ def test_chart_guardrails_are_current_work_not_future_roadmap() -> None:
 
 
 def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
+    assert not (ROOT / "ROADMAP.md").exists()
     current_docs = {
         "README.md": _read("README.md"),
         "AGENTS.md": _read("AGENTS.md"),
-        "ROADMAP.md": _read("ROADMAP.md"),
         "docs/architecture-decisions.md": _read("docs/architecture-decisions.md"),
         "docs/collectors.md": _read("docs/collectors.md"),
         "docs/composing.md": _read("docs/composing.md"),
@@ -239,7 +235,6 @@ def test_current_facing_docs_do_not_center_old_starter_sources() -> None:
         "needs_hydration",
         "source graph",
         "product readiness",
-        "RSS and Hacker News",
         "starter inputs",
         "starter_inputs",
         "starter feeds",

@@ -83,7 +83,6 @@ def write_config(config_path: Path, output_dir: Path, profile: str) -> None:
     data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     data["profile"] = profile
     data["outputs"]["directory"] = str(output_dir)
-    data["sources"]["hacker_news"]["enabled"] = False
     data["sources"]["rss"] = []
     config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 

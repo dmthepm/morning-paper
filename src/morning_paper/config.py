@@ -18,12 +18,6 @@ class ConfigError(ValueError):
 
 
 @dataclass(slots=True)
-class HackerNewsConfig:
-    enabled: bool = False
-    limit: int = 20
-
-
-@dataclass(slots=True)
 class RssFeedConfig:
     name: str
     url: str
@@ -32,7 +26,6 @@ class RssFeedConfig:
 
 @dataclass(slots=True)
 class SourcesConfig:
-    hacker_news: HackerNewsConfig = field(default_factory=HackerNewsConfig)
     rss: list[RssFeedConfig] = field(default_factory=list)
 
 
@@ -226,7 +219,6 @@ def load_config(path: Path) -> MorningPaperConfig:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     sources = data.get("sources") or {}
     outputs = data.get("outputs") or {}
-    hn = sources.get("hacker_news") or {}
     rss_feeds = [
         RssFeedConfig(
             name=str(feed["name"]),
@@ -243,10 +235,6 @@ def load_config(path: Path) -> MorningPaperConfig:
         article_extractor=_validate_article_extractor(str(data.get("article_extractor", "local"))),
         remote_extractor_fallback=_parse_bool(data.get("remote_extractor_fallback"), default=False),
         sources=SourcesConfig(
-            hacker_news=HackerNewsConfig(
-                enabled=bool(hn.get("enabled", True)),
-                limit=_validate_limit(int(hn.get("limit", 20)), label="hacker_news.limit"),
-            ),
             rss=rss_feeds,
         ),
         outputs=OutputsConfig(
@@ -304,10 +292,6 @@ article_extractor: local
 remote_extractor_fallback: false
 
 sources:
-  hacker_news:
-    # Legacy built-in public feed. Leave off unless the reader explicitly asks.
-    enabled: false
-    limit: 20
   # Add feed URLs the reader already follows, when they have them. Full-text
   # feeds (those that ship the whole article in `content:encoded`) print as
   # real reads. Summary-only feeds stay summary-only. Example:

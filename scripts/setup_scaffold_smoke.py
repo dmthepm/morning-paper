@@ -86,7 +86,6 @@ def configure_default_config(config_path: Path, output_dir: Path) -> None:
     data["name"] = "Demo Desk"
     data["profile"] = "Sandboxed setup-smoke reader validating the first newsroom path."
     data["outputs"]["directory"] = str(output_dir)
-    data["sources"]["hacker_news"]["enabled"] = False
     data["sources"]["rss"] = []
     config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 
@@ -129,7 +128,10 @@ def assert_required_files(newsroom: Path) -> None:
         "specs/front-page.md",
         "specs/reading.md",
         "preferences/voice.md",
-        "preferences/algorithm-prior.yaml",
+        "preferences/interests.yaml",
+        "preferences/source-budgets.yaml",
+        "preferences/checks.yaml",
+        "preferences/desk-sheet.yaml",
         "collectors/run_all.sh",
         "collectors/local-drop.sh",
         "examples/edition-skeleton.md",

@@ -328,7 +328,7 @@ def stage_social_record(
     social = record.get("social") if isinstance(record.get("social"), dict) else {}
     if not social:
         raise ValueError("social source record is missing `social`")
-    source_status = str(record.get("source_status") or record.get("hydration_status") or "").strip().lower()
+    source_status = str(record.get("source_status") or "").strip().lower()
     if source_status not in {"complete", "snippet_only", "partial", "discovery", "incomplete"}:
         raise ValueError("social source record needs `source_status`: complete, snippet_only, partial, discovery, or incomplete")
     _required_social(record, "source")

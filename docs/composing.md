@@ -409,15 +409,12 @@ the style — recompose instead.
 `words_extracted`, `warning`), and each item's markdown sits next to it as
 `{slug}.md`.
 
-The edition `build` consumes that queue itself: staged items are appended as a
-**Staged for today** section (the broadsheet-native build template serves
-every style), clipped items carry an on-page `.trunc-notice`, and the build
-JSON reports the included slugs under `staged_included`. If a queue exists
-but cannot be included — unreadable file, or the portable fallback renderer —
-the build warns loudly instead of letting the material vanish.
+The agent consumes that queue during composition. Staged items are source
+material on the Assignment Board, not automatically printed copy: the editor
+reads the candidates, checks source health, cuts weak material, and weaves the
+strongest items into `draft.md` before rendering.
 
-When composing a custom edition by hand (an agent writing tomorrow's brief
-through `render`), read the same seam:
+When composing an edition through `render`, read the same seam:
 
 1. `morning-paper queue --date YYYY-MM-DD` for staged source metadata; in an
    edition workspace, compare it with `preferences/source-budgets.yaml`.

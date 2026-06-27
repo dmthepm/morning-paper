@@ -65,6 +65,18 @@ REQUIRED_SUBSTANTIAL_PHASES = {
     "06": "art-desk",
 }
 PRODUCER_PHASE = "07"
+PLACEHOLDER_DRAFT_MARKERS = (
+    "Draft starts here",
+    "Replace this placeholder",
+    "Not composed yet",
+)
+INCOMPLETE_SOURCE_STATUSES = {
+    "discovery",
+    "snippet_only",
+    "snippet-only",
+    "partial",
+    "incomplete",
+}
 
 
 def _utc_stamp() -> str:
@@ -237,9 +249,9 @@ def _assignment_board(
             for key in ("warning", "extractor_note")
             if str(item.get(key) or "").strip()
         ]
-        source_status = str(item.get("source_status") or item.get("hydration_status") or "").strip().lower()
+        source_status = str(item.get("source_status") or "").strip().lower()
         social_like = str(item.get("kind") or "").strip().lower() in {"social", "tweet", "thread", "x-post"}
-        if source_status in {"discovery", "snippet_only", "snippet-only", "needs_hydration", "partial", "incomplete"}:
+        if source_status in INCOMPLETE_SOURCE_STATUSES:
             board_item["route"] = "needs source record"
             board_item["reason"] = (
                 "; ".join(proof_notes)
@@ -587,12 +599,35 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
 
     delivery = _load_json_object(edition_dir / "delivery-result.json")
     delivery_status = str(delivery.get("status") or "missing")
-    if delivery_status in {"delivered", "not_configured", "skipped"}:
+    if delivery_status in {"delivered", "complete", "complete_with_notes", "not_configured", "skipped"}:
         _add_ticket_check(checks, name="delivery proof", state="pass", detail=delivery_status)
     elif delivery_status == "pending":
         _add_ticket_check(checks, name="delivery proof", state="note", detail="delivery result is pending")
     else:
         _add_ticket_check(checks, name="delivery proof", state="note", detail="delivery result is missing")
+    if delivery_status in {"delivered", "complete", "complete_with_notes"}:
+        printed_reads = delivery.get("printed_reads")
+        ledger_updated = bool(delivery.get("reads_ledger_updated") or delivery.get("ledger_updated"))
+        no_printed_reads = bool(delivery.get("no_printed_reads"))
+        if isinstance(printed_reads, list) and printed_reads:
+            if ledger_updated:
+                _add_ticket_check(checks, name="memory proof", state="pass", detail="printed reads logged")
+            else:
+                _add_ticket_check(
+                    checks,
+                    name="memory proof",
+                    state="block",
+                    detail="printed reads are listed but reads-ledger update is not proven",
+                )
+        elif no_printed_reads:
+            _add_ticket_check(checks, name="memory proof", state="pass", detail="no printed reads")
+        else:
+            _add_ticket_check(
+                checks,
+                name="memory proof",
+                state="block",
+                detail="delivery did not prove reads-ledger update or no printed reads",
+            )
 
     substantial_pages = _substantial_page_count(estimate, render)
     if substantial_pages >= SUBSTANTIAL_PAGE_THRESHOLD:
@@ -769,6 +804,19 @@ def final_editor_pass(
     draft_path = edition_dir / "draft.md"
     if draft_path.is_file():
         files_read.append(str(draft_path))
+        draft_text = draft_path.read_text(encoding="utf-8", errors="replace")
+        markers = [marker for marker in PLACEHOLDER_DRAFT_MARKERS if marker in draft_text]
+        if markers:
+            _final_finding(
+                findings,
+                check="draft-composed",
+                severity="flag",
+                location=str(draft_path),
+                issue="Draft still contains prepare-time placeholder text.",
+                why="A prepared workspace is not a composed paper; code may render it, but it must not pass final-editor.",
+                hint="Replace the placeholder with an agent-composed edition, then rerun estimate, render, review, visual QA, and final-editor.",
+                measured={"markers": markers},
+            )
 
     roles = _role_artifacts(edition_dir)
     phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
@@ -1160,6 +1208,52 @@ def final_editor_pass(
                 why="The final handoff should not let clipped or remote-fetched material masquerade as complete/local.",
                 hint="Surface the warning in the paper or cut the item.",
                 measured={"flagged_staged_items": len(flagged_items)},
+            )
+        incomplete_items = [
+            item
+            for item in queue_snapshot["items"]
+            if isinstance(item, dict)
+            and str(item.get("source_status") or "").strip().lower()
+            in INCOMPLETE_SOURCE_STATUSES
+        ]
+        if incomplete_items:
+            _final_finding(
+                findings,
+                check="source-honesty",
+                severity="flag",
+                issue=f"{len(incomplete_items)} Assignment Board item(s) are incomplete source records.",
+                why="Snippet-only or partial records may inform source health, but they should not print as complete reads or posts.",
+                hint="Complete the source records, route them to Source Health, or cut them before delivery.",
+                measured={"incomplete_source_records": len(incomplete_items)},
+            )
+
+    reads_ledger = root / "memory" / "reads-ledger.md"
+    delivery_result = _load_json_object(edition_dir / "delivery-result.json")
+    if reads_ledger.is_file():
+        files_read.append(str(reads_ledger))
+    delivery_status = str(delivery_result.get("status") or "").strip().lower()
+    printed_reads = delivery_result.get("printed_reads")
+    ledger_updated = bool(delivery_result.get("reads_ledger_updated") or delivery_result.get("ledger_updated"))
+    no_printed_reads = bool(delivery_result.get("no_printed_reads"))
+    if delivery_status in {"delivered", "complete", "complete_with_notes"}:
+        if isinstance(printed_reads, list) and printed_reads:
+            if not ledger_updated:
+                _final_finding(
+                    findings,
+                    check="memory-proof",
+                    severity="flag",
+                    issue="Delivery says reads printed, but does not prove the reads ledger was updated.",
+                    why="The next edition depends on memory to prevent repeats.",
+                    hint="Append printed reads to `memory/reads-ledger.md` and set `reads_ledger_updated: true` in `delivery-result.json`.",
+                )
+        elif not no_printed_reads:
+            _final_finding(
+                findings,
+                check="memory-proof",
+                severity="flag",
+                issue="Delivery result does not say whether printed reads were logged.",
+                why="A completed run must either update repeat-prevention memory or state that no reads printed.",
+                hint="Set `printed_reads` with `reads_ledger_updated: true`, or set `no_printed_reads: true` with a short rationale.",
             )
 
     feedback_plan = edition_dir / "feedback-plan.md"
@@ -1597,7 +1691,7 @@ def apply_feedback(
     stamp = datetime.now(timezone.utc).date().isoformat()
     target_line = f"{stamp} - {decision_key} - {clean_note} ({clean_why})"
     changed_paths: list[str] = []
-    if target.name != "TASTELOG.md":
+    if decision_key == "accepted" and target.name != "TASTELOG.md":
         _append_feedback_note(target, note=target_line)
         changed_paths.append(str(target))
 
@@ -1609,7 +1703,10 @@ def apply_feedback(
     changed_paths.append(str(taste_log))
 
     feedback_plan = root / "editions" / date_str / "feedback-plan.md"
-    applied_line = f"{decision_key} `{route_key}` feedback -> `{target_relative}`; paths changed: {', '.join(changed_paths)}"
+    applied_line = (
+        f"{decision_key} `{route_key}` feedback: {clean_note} -> `{target_relative}`; "
+        f"paths changed: {', '.join(changed_paths)}"
+    )
     _append_applied_feedback(feedback_plan, applied_line, date_str=date_str)
     changed_paths.append(str(feedback_plan))
 
@@ -1642,15 +1739,14 @@ def assignment_board_edition_workspace(
         source_payload = source_inventory(config, check=False, newsroom=root)
         write_json(edition_dir / "source-inventory.json", source_payload)
     queue_snapshot = _load_json_object(edition_dir / "queue-snapshot.json")
-    if not queue_snapshot:
-        budget_policy = _page_budget_policy(root)
-        queue_snapshot = queue_status(
-            config,
-            date_str,
-            page_budget=int(budget_policy["target_pages"]),
-            max_pages=int(budget_policy["max_pages"]),
-        )
-        write_json(edition_dir / "queue-snapshot.json", queue_snapshot)
+    budget_policy = _page_budget_policy(root)
+    queue_snapshot = queue_status(
+        config,
+        date_str,
+        page_budget=int(budget_policy["target_pages"]),
+        max_pages=int(budget_policy["max_pages"]),
+    )
+    write_json(edition_dir / "queue-snapshot.json", queue_snapshot)
     board = _assignment_board(source_payload, queue_snapshot, date_str=date_str, edition_dir=edition_dir)
     write_json(edition_dir / "assignment-board.json", board)
     (edition_dir / "assignment-board.md").write_text(_render_assignment_board_markdown(board), encoding="utf-8")

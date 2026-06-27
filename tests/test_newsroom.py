@@ -71,7 +71,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("work_streams", state["source_choices"])
             self.assertIn("personal_feeds", state["source_choices"])
             self.assertIn("local_folders", state["source_choices"])
-            self.assertNotIn("hacker_news", state["source_choices"])
+            self.assertFalse(any(str(key).startswith("hacker") for key in state["source_choices"]))
             self.assertIn("printer_choice", state)
             self.assertIn("pending_questions", state)
             self.assertIn("next_action", state)
@@ -84,7 +84,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Work streams", setup)
             self.assertIn("Personal feeds", setup)
             self.assertIn("Local folders / exports", setup)
-            self.assertNotIn("Hacker News", setup)
+            self.assertNotIn("starter feed", setup.lower())
             self.assertIn("Printer", setup)
 
             readme = (root / "README.md").read_text(encoding="utf-8")
@@ -144,7 +144,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             self.assertIn("Social Source Records", sources)
             self.assertIn("complete source record", sources)
             self.assertIn("needs_source_record", sources)
-            self.assertNotIn("Hacker News", sources)
+            self.assertNotIn("starter feed", sources.lower())
 
             source_budgets = (root / "preferences" / "source-budgets.yaml").read_text(encoding="utf-8")
             self.assertIn("source-budgets.yaml", source_budgets)
@@ -182,7 +182,7 @@ class NewsroomScaffoldTest(unittest.TestCase):
             tastelog = (root / "TASTELOG.md").read_text(encoding="utf-8")
             self.assertIn("## Entries", tastelog)
             self.assertIn("durable taste decision", tastelog)
-            self.assertNotIn("Hacker News", tastelog)
+            self.assertNotIn("starter feed", tastelog.lower())
 
             the_read = (root / "specs" / "the-read.md").read_text(encoding="utf-8")
             self.assertIn("The four moves", the_read)

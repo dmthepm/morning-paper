@@ -66,9 +66,9 @@ EDITIONS = [
         "source_confusion": "none",
     },
     {
-        "title": "Algorithm Prior",
-        "source": "# Algorithm prior\n\nThe paper should prefer fewer stronger items over comprehensive coverage.\n",
-        "route": "prior",
+        "title": "Interests",
+        "source": "# Interests\n\nThe paper should prefer fewer stronger items over comprehensive coverage.\n",
+        "route": "interests",
         "note": "Prefer fewer stronger items over comprehensive coverage when the page budget is tight.",
         "why": "day five saved the taste rule in a structured preference file",
         "useful": "page budget had a taste rule",
@@ -102,8 +102,6 @@ def configure(config_path: Path, output_dir: Path) -> None:
     data["outputs"]["directory"] = str(output_dir)
     data["outputs"]["style"] = "broadsheet"
     data["outputs"]["palette"] = "color"
-    data["page_budget"] = 10
-    data["sources"]["hacker_news"]["enabled"] = False
     data["sources"]["rss"] = []
     config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 

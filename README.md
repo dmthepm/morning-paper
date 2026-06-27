@@ -82,7 +82,7 @@ morning-paper demo --open
 - Renders a demo paper with no config or network.
 - Scaffolds a private newsroom repo with durable preferences and setup state.
 - Adds URLs or local files to a dated Assignment Board with page estimates.
-- Builds daily editions from configured sources and Assignment Board material.
+- Gives agents the source, review, render, and feedback tools to compose real editions.
 - Lets local collector scripts bring in anything else: folders, exports,
   Obsidian vaults, GitHub activity, business systems, research reports, or
   agent-produced files.
@@ -218,7 +218,6 @@ use `--newsroom <path>` when checking from somewhere else.
 - [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
 - [docs/inbox.md](docs/inbox.md) — trusted contributor email intake
-- [ROADMAP.md](ROADMAP.md) — what shipped, what's next
 - [CHANGELOG.md](CHANGELOG.md) — release history
 
 ## Development
@@ -226,15 +225,15 @@ use `--newsroom <path>` when checking from somewhere else.
 ```bash
 git clone https://github.com/dmthepm/morning-paper.git
 cd morning-paper
-pip install -e ".[dev,pretty]"
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=src python -m pytest tests/
-python scripts/setup_scaffold_smoke.py --isolated
-python scripts/new_user_smoke.py
-python scripts/dogfood_newsroom_smoke.py
-python scripts/five_edition_loop_smoke.py
-python scripts/source_shape_intake_smoke.py
-python scripts/host_plugin_smoke.py
-python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-dist --install-check
+python3 -m pip install -e ".[dev,pretty]"
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=src python3 -m pytest tests/
+python3 scripts/setup_scaffold_smoke.py --isolated
+python3 scripts/new_user_smoke.py
+python3 scripts/dogfood_newsroom_smoke.py
+python3 scripts/five_edition_loop_smoke.py
+python3 scripts/source_shape_intake_smoke.py
+python3 scripts/host_plugin_smoke.py
+python3 scripts/release_candidate_check.py --outdir /tmp/morning-paper-dist --install-check --journey-check
 ```
 
 ## License

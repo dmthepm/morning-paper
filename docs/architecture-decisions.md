@@ -16,8 +16,8 @@ Reason:
 - Private deployments extend it for specific operators.
 - Public repo owns:
   - the generic source/staging contract
-  - the generic stage/inbox/build/render contract
-  - normalized models
+  - the generic stage/inbox/render contract
+  - normalized artifact schemas
   - CLI
   - renderer implementations
   - tests
@@ -34,9 +34,10 @@ Reason:
 ## 3. Deterministic vs Agentic
 
 Deterministic code owns:
-- fetching configured web/feed inputs
+- fetching and extracting one-off article URLs
+- checking reader-supplied feed/source inventory
 - extracting article bodies
-- normalizing content
+- normalizing staged source material
 - rendering artifacts
 
 Agentic logic owns:
@@ -47,7 +48,8 @@ Agentic logic owns:
 - tomorrow-vs-now decisions
 
 Reason:
-- A paper should still build without an LLM key.
+- The engine should render, validate, and stage source material without an LLM
+  key; the agent still composes the paper.
 
 ## 4. Core Dependency Contract
 
@@ -61,7 +63,8 @@ Required dependencies stay pure Python:
 - `trafilatura>=2.1,<3`
 
 Reason:
-- `pip install morning-paper && morning-paper init && morning-paper build` must work without system packages.
+- `pip install morning-paper && morning-paper demo` and local URL staging must
+  work without system packages.
 - URL staging needs a local parser so the default path can keep article capture
   on the reader's machine. Today that parser is `trafilatura`; it is a
   maintained implementation detail behind the extractor registry, not product
@@ -133,7 +136,6 @@ Reason:
 Stable public commands:
 - `morning-paper demo` — zero-config sample edition
 - `morning-paper init`
-- `morning-paper build`
 - `morning-paper print <url...>`
 - `morning-paper render <file.md>` — typeset any markdown through a style pack
 - `morning-paper stage <url|file>` (alias `add`) — queue material for tomorrow

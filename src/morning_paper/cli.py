@@ -20,7 +20,6 @@ from .article_print import (
     fetch_article,
     render_article_markdown,
 )
-from .builder import build_paper
 from .config import DEFAULT_CONFIG_PATH, ConfigError, MorningPaperConfig, load_config, render_default_config
 from .renderers import (
     TypewriterRendererUnavailable,
@@ -34,9 +33,7 @@ from .styles import PALETTES, STYLES, StyleError
 
 
 DOCS_URL = "https://github.com/dmthepm/morning-paper"
-ROADMAP_URL = f"{DOCS_URL}/blob/main/ROADMAP.md"
 PYPI_JSON_URL = "https://pypi.org/pypi/morning-paper/json"
-ROADMAP_COMMANDS = {"remove", "list"}
 SUPPORTED_WEASYPRINT_RANGE = ">=69.0,<70"
 _SUPPORTED_WEASYPRINT_MIN = (69, 0, 0)
 _SUPPORTED_WEASYPRINT_MAX = (70, 0, 0)
@@ -46,7 +43,6 @@ Commands:
   demo              Print a sample edition right now — no config, no network
   init              Create a local config
   newsroom          Scaffold/update a private newsroom repo (init|state)
-  build             Build today's paper from configured sources
   sources           List or check configured sources and collector contract
   print <url>       Print a single article right now
   render <file.md>  Typeset any markdown file through a style pack
@@ -276,7 +272,6 @@ def doctor(args: list[str] | None = None) -> int:
     required_modules = [
         "morning_paper.cli",
         "morning_paper.article_print",
-        "morning_paper.builder",
         "morning_paper.config",
         "morning_paper.extractors",
         "morning_paper.image_tools",
@@ -291,13 +286,6 @@ def doctor(args: list[str] | None = None) -> int:
             checks.append({"name": module_name, "ok": True})
         except Exception:
             checks.append({"name": module_name, "ok": False})
-    for template_name in ("broadsheet-build.md",):
-        resource_check = f"morning_paper/resources/{template_name}"
-        try:
-            resource = resources.files("morning_paper").joinpath("resources", template_name)
-            checks.append({"name": resource_check, "ok": bool(resource.is_file())})
-        except Exception:
-            checks.append({"name": resource_check, "ok": False})
     missing = [str(check["name"]) for check in checks if not check["ok"]]
     dependency_report = _dependency_report()
     weasyprint_support = dependency_report["weasyprint"] if isinstance(dependency_report["weasyprint"], dict) else {}
@@ -602,45 +590,6 @@ def newsroom_command(args: list[str]) -> int:
     return 0
 
 
-def build_command(args: list[str]) -> int:
-    config_path = DEFAULT_CONFIG_PATH
-    date = None
-    index = 0
-    while index < len(args):
-        arg = args[index]
-        if arg in {"-h", "--help"}:
-            print("usage: morning-paper build [--config PATH] [--date YYYY-MM-DD]")
-            return 0
-        if arg == "--config" and index + 1 < len(args):
-            config_path = Path(args[index + 1]).expanduser().resolve()
-            index += 2
-            continue
-        if arg == "--date" and index + 1 < len(args):
-            date = args[index + 1]
-            index += 2
-            continue
-        print(f"unknown build argument: {arg}", file=sys.stderr)
-        return 2
-    if not config_path.exists():
-        print(f"missing config: {config_path}", file=sys.stderr)
-        print("run `morning-paper init` first or pass --config", file=sys.stderr)
-        return 1
-    try:
-        config = load_config(config_path)
-    except ConfigError as exc:
-        print(f"invalid config: {exc}", file=sys.stderr)
-        return 1
-    try:
-        result = build_paper(config, date_str=date)
-    except TypewriterRendererUnavailable as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
-    for warning in result.get("warnings", []):
-        print(f"warning: {warning}", file=sys.stderr)
-    print(json.dumps(result, indent=2))
-    return 0
-
-
 def _load_print_config(config_path: Path) -> tuple[MorningPaperConfig, bool]:
     if config_path.exists():
         return load_config(config_path), True
@@ -823,7 +772,7 @@ def render_command(args: list[str]) -> int:
     if palette:
         config.outputs.palette = palette
     # render exists to typeset: always produce html+pdf regardless of the
-    # build-pipeline output toggles in config
+    # artifact output toggles in config
     config.outputs.html = True
     config.outputs.pdf = True
     markdown_text = source.read_text(encoding="utf-8")
@@ -1391,7 +1340,7 @@ def review_command(args: list[str]) -> int:
         if edition_path is None:
             print(
                 "no edition found to review — pass an edition path or date, "
-                f"or build one first (looked under {config.outputs.directory})",
+                f"or render an edition first (looked under {config.outputs.directory})",
                 file=sys.stderr,
             )
             return 1
@@ -1437,8 +1386,6 @@ def main(argv: list[str] | None = None) -> int:
         return init_command(extra)
     if command == "newsroom":
         return newsroom_command(extra)
-    if command == "build":
-        return build_command(extra)
     if command in {"sources", "source"}:
         return sources_command(extra)
     if command == "print":
@@ -1467,9 +1414,6 @@ def main(argv: list[str] | None = None) -> int:
         return routine_command(extra)
     if command == "doctor":
         return doctor(extra)
-    if command in ROADMAP_COMMANDS:
-        print(f'"{command}" is not implemented yet. It is on the roadmap: {ROADMAP_URL}', file=sys.stderr)
-        return 2
     print(f"unknown command: {command}", file=sys.stderr)
     print_help()
     return 2

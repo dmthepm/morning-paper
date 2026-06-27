@@ -19,7 +19,6 @@ class EditionWorkspaceTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
         config["outputs"]["directory"] = str(tmp_path / "out")
-        config["sources"]["hacker_news"]["enabled"] = False
         config["sources"]["rss"] = []
         config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
         return config_path
@@ -86,8 +85,7 @@ class EditionWorkspaceTest(unittest.TestCase):
             source_inventory = json.loads((edition_dir / "source-inventory.json").read_text(encoding="utf-8"))
             self.assertEqual(source_inventory["source_model"]["posture"], "reader_stack_first")
             self.assertIn("work_systems", source_inventory["source_model"]["reader_owned_inputs"])
-            self.assertEqual(source_inventory["sources"][0]["id"], "hacker_news")
-            self.assertEqual(source_inventory["sources"][0]["status"], "disabled")
+            self.assertEqual(source_inventory["sources"], [])
             self.assertEqual(source_inventory["newsroom"]["status"], "configured")
             collector_ids = {item["id"] for item in source_inventory["newsroom"]["collectors"]}
             self.assertIn("collector:local-drop", collector_ids)
@@ -206,7 +204,9 @@ class EditionWorkspaceTest(unittest.TestCase):
                 "page_budget": 18,
                 "budget_remaining": 16,
             }
-            (edition_dir / "queue-snapshot.json").write_text(json.dumps(queue, indent=2), encoding="utf-8")
+            staging_dir = tmp_path / "out" / "staging" / "2026-06-22"
+            staging_dir.mkdir(parents=True, exist_ok=True)
+            (staging_dir / "queue.json").write_text(json.dumps(queue["items"], indent=2), encoding="utf-8")
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
@@ -316,6 +316,7 @@ class EditionWorkspaceTest(unittest.TestCase):
             self._minimal_pdf(pdf)
             (rendered / "edition.md").write_text("# Done\n", encoding="utf-8")
             draft = edition_dir / "draft.md"
+            draft.write_text("# Done\n\n## The Read\n\nA composed edition, not the prepare placeholder.\n", encoding="utf-8")
             estimate_file_mtime = draft.stat().st_mtime
             (edition_dir / "estimate-result.json").write_text(
                 json.dumps(
@@ -449,6 +450,64 @@ date: 2026-06-22
             self.assertEqual(ticket["roles"]["files"], ["03.1-x-reporter.md"])
             self.assertTrue((edition_dir / "run-ticket.json").is_file())
             self.assertIn("Status: complete", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+            (edition_dir / "delivery-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "delivered",
+                        "date": "2026-06-22",
+                        "printed_reads": ["A composed edition"],
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "blocked")
+            self.assertIn("reads-ledger update is not proven", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+            (edition_dir / "delivery-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "delivered",
+                        "date": "2026-06-22",
+                        "printed_reads": ["A composed edition"],
+                        "reads_ledger_updated": True,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "status",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "complete")
 
     def test_run_ticket_blocks_when_role_artifact_reports_blocked(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -956,6 +1015,61 @@ date: 2026-06-22
             self.assertNotIn("No feedback applied yet.", feedback_plan)
             self.assertIn("visuals", feedback_plan)
             self.assertIn("VISUALS.md", feedback_plan)
+
+    def test_rejected_feedback_does_not_mutate_routed_taste_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(
+                    [
+                        "edition",
+                        "prepare",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                    ]
+                ),
+                0,
+            )
+            visuals_path = newsroom / "VISUALS.md"
+            before = visuals_path.read_text(encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    [
+                        "edition",
+                        "apply-feedback",
+                        str(newsroom),
+                        "--config",
+                        str(config_path),
+                        "--date",
+                        "2026-06-22",
+                        "--route",
+                        "visuals",
+                        "--decision",
+                        "rejected",
+                        "--note",
+                        "Make every page a full-bleed chart.",
+                        "--why",
+                        "would overwhelm reading",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["decision"], "rejected")
+            self.assertEqual(visuals_path.read_text(encoding="utf-8"), before)
+            self.assertNotIn(str(visuals_path.resolve()), payload["paths_changed"])
+            self.assertIn("Make every page a full-bleed chart.", (newsroom / "TASTELOG.md").read_text(encoding="utf-8"))
+            self.assertIn(
+                "Make every page a full-bleed chart.",
+                (newsroom / "editions" / "2026-06-22" / "feedback-plan.md").read_text(encoding="utf-8"),
+            )
 
     def test_apply_feedback_can_target_voice_and_section_specs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

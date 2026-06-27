@@ -177,7 +177,7 @@ If yes:
   desk tomorrow morning."* Tip: a plus address (`you+paper@gmail.com`) plus
   a label/filter keeps the poll out of their main inbox (docs/inbox.md).
 - Upsell, honestly labeled: a hosted door (Cloudflare Worker email address)
-  for **instant** confirmations instead of poll-time ones is on the roadmap —
+  for **instant** confirmations instead of poll-time ones belongs in a scoped source contract —
   **not yet shipped**. Today's path is the IMAP poll, which the edition skill
   runs every morning anyway.
 
@@ -641,7 +641,7 @@ tmp="$(mktemp -t shipped.XXXXXX).md"
   echo
   gh search prs --author=@me --merged --merged-at=">$(date -v-1d +%F 2>/dev/null || date -d yesterday +%F)" \
     --json title,url,repository \
-    | jq -r '.[] | "- [\(.title)](\(.url)) — \(.repository.name)"'
+    --jq '.[] | "- [\(.title)](\(.url)) — \(.repository.name)"'
 } > "$tmp"
 
 # Only stage if there's a body beyond the heading — honest empty beats a fake.

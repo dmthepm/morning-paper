@@ -50,7 +50,6 @@ def configure(config_path: Path, output_dir: Path) -> None:
     data["outputs"]["style"] = "broadsheet"
     data["outputs"]["palette"] = "color"
     data["page_budget"] = 12
-    data["sources"]["hacker_news"]["enabled"] = False
     data["sources"]["rss"] = []
     config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 

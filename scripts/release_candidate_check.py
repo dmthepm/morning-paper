@@ -7,7 +7,7 @@ path should build from a sanitized source copy, then prove the produced wheel
 and sdist install and print.
 
 Usage:
-  python scripts/release_candidate_check.py --outdir dist --install-check
+  python3 scripts/release_candidate_check.py --outdir dist --install-check --journey-check
 """
 
 from __future__ import annotations
@@ -313,11 +313,35 @@ def _install_and_print(artifact: Path, version: str, temp_root: Path) -> dict[st
     }
 
 
+def _run_user_journey_smokes(repo: Path) -> list[dict[str, object]]:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{repo / 'src'}{os.pathsep}{env.get('PYTHONPATH', '')}"
+    commands = [
+        ["scripts/setup_scaffold_smoke.py", "--isolated"],
+        ["scripts/new_user_smoke.py"],
+        ["scripts/dogfood_newsroom_smoke.py"],
+        ["scripts/five_edition_loop_smoke.py"],
+    ]
+    results: list[dict[str, object]] = []
+    for command in commands:
+        result = _run([sys.executable, *command], cwd=repo, merge_stderr=False)
+        _require_ok("user journey smoke " + " ".join(command), result)
+        results.append(
+            {
+                "command": " ".join(command),
+                "stdout_bytes": len(result.stdout or ""),
+                "stderr_bytes": len(result.stderr or ""),
+            }
+        )
+    return results
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=Path(__file__).resolve().parent.parent, type=Path)
     parser.add_argument("--outdir", default=Path("dist"), type=Path)
     parser.add_argument("--install-check", action="store_true", help="install wheel and sdist with [pretty] and print")
+    parser.add_argument("--journey-check", action="store_true", help="run public setup/new-user/dogfood/five-edition smokes")
     parser.add_argument("--keep-temp", action="store_true", help="keep the sanitized source and install venvs")
     args = parser.parse_args()
 
@@ -344,6 +368,8 @@ def main() -> int:
                 _install_and_print(wheel, version, temp_root),
                 _install_and_print(sdist, version, temp_root),
             ]
+        if args.journey_check:
+            summary["journey_checks"] = _run_user_journey_smokes(repo)
         if args.keep_temp:
             kept = Path(tempfile.mkdtemp(prefix="morning-paper-release-kept-"))
             shutil.copytree(temp_root, kept / "run")

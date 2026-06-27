@@ -52,24 +52,6 @@ def _fake_get(url: str, timeout: int = 30, **kwargs: object) -> _FakeResponse:
                 }
             )
         )
-    if "hn.algolia.com" in url:
-        return _FakeResponse(
-            text=json.dumps(
-                {
-                    "hits": [
-                        {
-                            "title": "Test HN Story",
-                            "url": "https://example.com/hn-story",
-                            "points": 100,
-                            "num_comments": 50,
-                            "author": "alice",
-                            "created_at": "2026-04-14T10:00:00Z",
-                            "objectID": "123",
-                        }
-                    ]
-                }
-            )
-        )
     if "r.jina.ai" in url:
         return _FakeResponse(
             text=(
@@ -167,11 +149,10 @@ def _supported_metadata_version(package: str) -> str:
 
 
 class BuildFlowTest(unittest.TestCase):
-    def test_init_then_build_writes_all_outputs(self) -> None:
+    def test_init_writes_reader_first_render_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             config_path = tmp_path / "config.yaml"
-            output_dir = tmp_path / "out"
 
             rc = cli.main(["init", "--config", str(config_path)])
             self.assertEqual(rc, 0)
@@ -184,41 +165,9 @@ class BuildFlowTest(unittest.TestCase):
             self.assertEqual(config["outputs"]["renderer"], "typewriter")
             # local-first extraction: URLs stay on this machine by default
             self.assertEqual(config["article_extractor"], "local")
-            # generated config should be reader-first; demo proves the engine
-            self.assertFalse(config["sources"]["hacker_news"]["enabled"])
+            # generated config should be reader-first; private collectors prove sources
+            self.assertFalse(any(str(key).startswith("hacker") for key in config["sources"]))
             self.assertEqual(config["sources"]["rss"], [])
-            config["sources"]["hacker_news"]["enabled"] = True
-            config["sources"]["rss"] = [
-                {"name": "Example Feed A", "url": "https://example.com/a.xml", "limit": 5},
-                {"name": "Example Feed B", "url": "https://example.com/b.xml", "limit": 5},
-            ]
-            config["outputs"]["directory"] = str(output_dir)
-            config["outputs"]["renderer"] = "portable"
-            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-            stdout = io.StringIO()
-            with patch("morning_paper.sources.requests.get", side_effect=_fake_get):
-                with redirect_stdout(stdout):
-                    rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
-            self.assertEqual(rc, 0)
-
-            payload = json.loads(stdout.getvalue())
-            self.assertEqual(payload["counts"]["hacker_news"], 1)
-            self.assertEqual(payload["counts"]["rss"], 2)
-            for key in ("json", "markdown", "html", "pdf"):
-                path = Path(payload["outputs"][key])
-                self.assertTrue(path.exists(), key)
-                self.assertGreater(path.stat().st_size, 0, key)
-            markdown = Path(payload["outputs"]["markdown"]).read_text(encoding="utf-8")
-            html = Path(payload["outputs"]["html"]).read_text(encoding="utf-8")
-            self.assertIn("Community Signals", markdown)
-            self.assertIn("Community Signals", html)
-            self.assertNotIn("Hacker News", markdown)
-            self.assertNotIn("Hacker News", html)
-            self.assertEqual(payload["renderer"], "portable")
-            self.assertIsInstance(payload["pages"], int)
-            self.assertGreaterEqual(payload["pages"], 1)
-            self.assertIsInstance(payload["warnings"], list)
 
     def test_print_writes_outputs_for_article_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -314,21 +263,6 @@ class BuildFlowTest(unittest.TestCase):
                 path = Path(payload["outputs"][key])
                 self.assertTrue(path.exists(), key)
                 self.assertGreater(path.stat().st_size, 0, key)
-
-    def test_default_typewriter_fails_cleanly_without_pretty_stack(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            config_path = tmp_path / "config.yaml"
-            rc = cli.main(["init", "--config", str(config_path)])
-            self.assertEqual(rc, 0)
-
-            stderr = io.StringIO()
-            with patch("morning_paper.renderers._render_typewriter_pdf", side_effect=RuntimeError("missing weasy")):
-                with patch("sys.stderr", stderr):
-                    rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
-
-            self.assertEqual(rc, 1)
-            self.assertIn("typewriter renderer requires the pretty print stack", stderr.getvalue())
 
     def test_print_fails_cleanly_for_shell_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -435,175 +369,6 @@ class BuildFlowTest(unittest.TestCase):
 
             self.assertEqual(rc, 1)
             self.assertIn("Could not fetch article", stderr.getvalue())
-
-
-def _build_no_pdf(
-    *,
-    style: str,
-    staging: dict | None = None,
-    configured_sources: bool = False,
-) -> tuple[dict, str, str]:
-    """Run a full build with pdf/html off; returns (payload, markdown text, stderr)."""
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        config_path = tmp_path / "config.yaml"
-        output_dir = tmp_path / "out"
-        rc = cli.main(["init", "--config", str(config_path)])
-        assert rc == 0
-        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-        config["outputs"]["directory"] = str(output_dir)
-        config["outputs"]["style"] = style
-        if configured_sources:
-            config["sources"]["hacker_news"]["enabled"] = True
-            config["sources"]["rss"] = [
-                {"name": "Example Feed", "url": "https://example.com/feed.xml", "limit": 5}
-            ]
-        # pdf/html off: exercise the template path without the pretty stack
-        config["outputs"]["pdf"] = False
-        config["outputs"]["html"] = False
-        config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-        if staging:
-            staging_dir = output_dir / "staging" / "2026-04-14"
-            staging_dir.mkdir(parents=True, exist_ok=True)
-            (staging_dir / "queue.json").write_text(json.dumps(staging["queue"]), encoding="utf-8")
-            for name, text in staging.get("files", {}).items():
-                (staging_dir / name).write_text(text, encoding="utf-8")
-
-        stdout = io.StringIO()
-        stderr = io.StringIO()
-        with patch("morning_paper.sources.requests.get", side_effect=_fake_get):
-            with redirect_stdout(stdout), redirect_stderr(stderr):
-                rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
-        assert rc == 0
-        payload = json.loads(stdout.getvalue())
-        markdown = Path(payload["outputs"]["markdown"]).read_text(encoding="utf-8")
-        return payload, markdown, stderr.getvalue()
-
-
-class BuildTemplateDispatchTest(unittest.TestCase):
-    """Since 0.5.0 every build gets the broadsheet-native template, including
-    builds configured with a retired 0.4.x style name (the alias path)."""
-
-    def test_default_broadsheet_style_gets_broadsheet_template(self) -> None:
-        payload, markdown, _stderr = _build_no_pdf(style="broadsheet")
-        self.assertIn("masthead-title", markdown)
-        self.assertIn("dept-kicker", markdown)
-        self.assertIn('class="not-configured"', markdown)
-        self.assertIn("No signals available", markdown)
-        # no retired typewriter-template classes on a broadsheet page
-        self.assertNotIn("page-1-header", markdown)
-        self.assertNotIn("hn-card", markdown)
-        self.assertEqual(payload["staged_included"], [])
-
-    def test_configured_sources_render_broadsheet_data_table(self) -> None:
-        _payload, markdown, _stderr = _build_no_pdf(style="broadsheet", configured_sources=True)
-        self.assertIn('<table class="data">', markdown)
-
-    def test_build_works_via_typewriter_alias(self) -> None:
-        # the retired pack's users keep building: typewriter -> brief, and the
-        # front page routes to the broadsheet template with a deprecation warning
-        from morning_paper import styles
-
-        styles._WARNED_ALIASES.clear()
-        _payload, markdown, stderr = _build_no_pdf(style="typewriter")
-        self.assertIn("masthead-title", markdown)
-        self.assertNotIn("page-1-header", markdown)
-        self.assertIn("style 'typewriter' is now 'brief'", stderr)
-
-    def test_other_styles_use_broadsheet_template(self) -> None:
-        _payload, markdown, _stderr = _build_no_pdf(style="field-card")
-        self.assertIn("masthead-title", markdown)
-        self.assertNotIn("page-1-header", markdown)
-
-
-class StagedInclusionTest(unittest.TestCase):
-    """P0 (0.4.3): material queued via `stage` must reach the edition."""
-
-    _QUEUE_ITEM = {
-        "slug": "staged-note",
-        "kind": "file",
-        "source": "/somewhere/staged-note.md",
-        "title": "A Staged Note",
-        "words": 18,
-        "est_pages": 1,
-        "staged_at": "2026-04-13T18:00:00",
-        "truncated": False,
-        "words_extracted": None,
-        "warning": "",
-        "extractor_note": "",
-    }
-    _STAGED_BODY = "# A staged note\n\nQueued yesterday, printed today — the staging seam works."
-
-    def test_build_appends_staged_section_broadsheet(self) -> None:
-        payload, markdown, _stderr = _build_no_pdf(
-            style="broadsheet",
-            staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
-        )
-        self.assertEqual(payload["staged_included"], ["staged-note"])
-        self.assertIn("Assignment Board", markdown)
-        self.assertIn("A Staged Note", markdown)
-        self.assertIn("the staging seam works", markdown)
-
-    def test_build_appends_staged_section_via_alias(self) -> None:
-        # staged inclusion still works for a 0.4.x config naming a retired pack
-        payload, markdown, _stderr = _build_no_pdf(
-            style="typewriter",
-            staging={"queue": [self._QUEUE_ITEM], "files": {"staged-note.md": self._STAGED_BODY}},
-        )
-        self.assertEqual(payload["staged_included"], ["staged-note"])
-        self.assertIn("Assignment Board", markdown)
-        self.assertIn("the staging seam works", markdown)
-
-    def test_truncated_staged_item_carries_on_page_notice(self) -> None:
-        item = dict(self._QUEUE_ITEM)
-        item.update(truncated=True, words_extracted=11000, warning="truncated: extracted 11000 words but only ~4500 will print")
-        payload, markdown, _stderr = _build_no_pdf(
-            style="broadsheet",
-            staging={"queue": [item], "files": {"staged-note.md": self._STAGED_BODY}},
-        )
-        self.assertEqual(payload["staged_included"], ["staged-note"])
-        self.assertIn("trunc-notice", markdown)
-        self.assertIn("11000", markdown)
-
-    def test_missing_staged_file_warns_loudly(self) -> None:
-        payload, markdown, stderr = _build_no_pdf(
-            style="broadsheet",
-            staging={"queue": [self._QUEUE_ITEM], "files": {}},
-        )
-        self.assertEqual(payload["staged_included"], [])
-        self.assertNotIn('edition-divider-label">Assignment Board', markdown)
-        self.assertIn("ASSIGNMENT BOARD ITEM NOT INCLUDED", stderr)
-        self.assertTrue(any("ASSIGNMENT BOARD ITEM NOT INCLUDED" in w for w in payload["warnings"]))
-
-    def test_portable_renderer_warns_staged_items_not_included(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            config_path = tmp_path / "config.yaml"
-            output_dir = tmp_path / "out"
-            rc = cli.main(["init", "--config", str(config_path)])
-            self.assertEqual(rc, 0)
-            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-            config["outputs"]["directory"] = str(output_dir)
-            config["outputs"]["renderer"] = "portable"
-            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-            staging_dir = output_dir / "staging" / "2026-04-14"
-            staging_dir.mkdir(parents=True, exist_ok=True)
-            (staging_dir / "queue.json").write_text(json.dumps([self._QUEUE_ITEM]), encoding="utf-8")
-            (staging_dir / "staged-note.md").write_text(self._STAGED_BODY, encoding="utf-8")
-
-            stdout = io.StringIO()
-            stderr = io.StringIO()
-            with patch("morning_paper.sources.requests.get", side_effect=_fake_get):
-                with redirect_stdout(stdout), redirect_stderr(stderr):
-                    rc = cli.main(["build", "--config", str(config_path), "--date", "2026-04-14"])
-            self.assertEqual(rc, 0)
-            payload = json.loads(stdout.getvalue())
-            self.assertEqual(payload["staged_included"], [])
-            self.assertIn("ASSIGNMENT BOARD ITEMS NOT INCLUDED", stderr.getvalue())
-            self.assertIn("outputs.renderer: typewriter", stderr.getvalue())
-
 
 class RenderCommandTest(unittest.TestCase):
     def _portable_config(self, tmp_path: Path) -> Path:
@@ -736,14 +501,14 @@ class CliSurfaceTest(unittest.TestCase):
         self.assertIn("renderer: typewriter unavailable", output)
         self.assertNotIn("update available", output)
 
-    def test_roadmap_command_prints_guidance(self) -> None:
+    def test_unknown_command_prints_help_without_roadmap_guidance(self) -> None:
         stderr = io.StringIO()
         with redirect_stderr(stderr):
             rc = cli.main(["remove"])
         self.assertEqual(rc, 2)
         output = stderr.getvalue()
-        self.assertIn('"remove" is not implemented yet', output)
-        self.assertIn("ROADMAP.md", output)
+        self.assertIn("unknown command: remove", output)
+        self.assertNotIn("ROADMAP.md", output)
 
     def test_doctor_json_reports_renderer_and_checks(self) -> None:
         stdout = io.StringIO()
@@ -770,7 +535,7 @@ class CliSurfaceTest(unittest.TestCase):
         )
         check_names = {check["name"] for check in payload["checks"]}
         self.assertIn("morning_paper.renderers", check_names)
-        self.assertIn("morning_paper/resources/broadsheet-build.md", check_names)
+        self.assertFalse(any("broadsheet" in name and "build" in name for name in check_names))
         self.assertTrue(all(check["ok"] for check in payload["checks"]))
 
     def test_doctor_strict_rejects_unsupported_weasyprint(self) -> None:

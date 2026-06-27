@@ -849,7 +849,7 @@ tmp="$(mktemp -t shipped.XXXXXX).md"
   echo
   gh search prs --author=@me --merged --merged-at=">$(date -v-1d +%F 2>/dev/null || date -d yesterday +%F)" \
     --json title,url,repository \
-    | jq -r '.[] | "- [\\(.title)](\\(.url)) - \\(.repository.name)"'
+    --jq '.[] | "- [\\(.title)](\\(.url)) - \\(.repository.name)"'
 } > "$tmp"
 
 if [ "$(grep -c '^- ' "$tmp")" -gt 0 ]; then

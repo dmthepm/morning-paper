@@ -18,8 +18,8 @@ Platform mapping:
   note that cron has no coalescing: a run missed during sleep is simply gone.
 
 Everything prints JSON; ``routine status`` parses the run-marker lines this
-module wraps around the command, so "did my paper actually build this
-morning?" has a machine-readable answer.
+module wraps around the command, so "did my paper actually run this morning?"
+has a machine-readable answer.
 """
 
 from __future__ import annotations

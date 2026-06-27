@@ -176,11 +176,14 @@ The renderer prints media only when an item in `social.media` has
 `"print": true`. Prefer `local_path` for reliable PDF output; keep `print:
 false` for screenshots, videos, or images the visual editor has not chosen.
 
-### The direct way: write the files yourself
+### High-volume collectors
 
-If you would rather not shell out per item (a high-volume collector, an offline
-build), write the staging files directly. Append one entry per item to
-`queue.json` and drop a matching `<slug>.md`. A queue entry looks like:
+Collectors should call `morning-paper stage` or `morning-paper stage-social`
+instead of writing `queue.json` directly. Those commands create the matching
+markdown file, normalize page estimates, and enforce the social source-record
+contract before anything reaches the Assignment Board.
+
+A staged queue entry has this shape:
 
 ```json
 {
@@ -271,7 +274,7 @@ tmp="$(mktemp -t shipped.XXXXXX).md"
   echo
   gh search prs --author=@me --merged --merged-at=">$(date -v-1d +%F 2>/dev/null || date -d yesterday +%F)" \
     --json title,url,repository \
-    | jq -r '.[] | "- [\(.title)](\(.url)) — \(.repository.name)"'
+    --jq '.[] | "- [\(.title)](\(.url)) — \(.repository.name)"'
 } > "$tmp"
 
 # Only stage if there's a body beyond the heading — honest empty beats a fake.
