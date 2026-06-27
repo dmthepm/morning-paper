@@ -27,6 +27,27 @@ FEEDBACK_ROUTES = {
     "reading": "specs/reading.md",
 }
 
+FEEDBACK_ROUTE_GUIDANCE: tuple[tuple[str, str, str], ...] = (
+    ("Keep / cut / more / less / what earns ink", "editorial", FEEDBACK_ROUTES["editorial"]),
+    ("Voice, density, register, tone, AI tells", "voice", FEEDBACK_ROUTES["voice"]),
+    (
+        "Section-specific taste",
+        "the-read|front-page|reading",
+        f'{FEEDBACK_ROUTES["the-read"]}, {FEEDBACK_ROUTES["front-page"]}, or {FEEDBACK_ROUTES["reading"]}',
+    ),
+    ("Visuals, charts, illustrations, layout, print readability", "visuals", FEEDBACK_ROUTES["visuals"]),
+    ("Add, demote, remove, distrust, or change cadence of a source", "sources", FEEDBACK_ROUTES["sources"]),
+    ("Standing interests and topic dampeners", "interests", FEEDBACK_ROUTES["interests"]),
+    ("Page, source, beat, full-read, visual, or process budget", "budgets", FEEDBACK_ROUTES["budgets"]),
+    ("Review thresholds or muted copy-desk findings", "checks", FEEDBACK_ROUTES["checks"]),
+    (
+        "PDF, print, email/article view, archive, routine/automation behavior",
+        "delivery",
+        FEEDBACK_ROUTES["delivery"],
+    ),
+    ("Stable accepted/rejected taste decision", "taste", FEEDBACK_ROUTES["taste"]),
+)
+
 
 DEFAULT_DESK_SHEET_PREFS: dict[str, object] = {
     "enabled": False,
@@ -1364,6 +1385,10 @@ body {{ color: #1f1d1b; }}
 
 
 def feedback_plan_template(date_str: str) -> str:
+    route_rows = "\n".join(
+        f"| {label} | `{target}` (`--route {route}`) |"
+        for label, route, target in FEEDBACK_ROUTE_GUIDANCE
+    )
     return f"""# Feedback Plan - {date_str}
 
 Use this after the reader marks up `operator-answers.md` or replies in chat.
@@ -1384,17 +1409,8 @@ into the smallest durable newsroom change that makes tomorrow's paper better.
 
 | Reader note | Durable target |
 |---|---|
-| Keep / cut / more / less / what earns ink | `EDITORIAL.md` (`--route editorial`) |
-| Voice, density, register, tone, AI tells | `preferences/voice.md` (`--route voice`) |
-| Section-specific taste | `specs/the-read.md`, `specs/front-page.md`, or `specs/reading.md` (`--route the-read|front-page|reading`) |
-| Visuals, charts, illustrations, layout, print readability | `VISUALS.md` (`--route visuals`) |
-| Add, demote, remove, distrust, or change cadence of a source | `SOURCES.md` (`--route sources`) |
-| Standing interests and topic dampeners | `preferences/interests.yaml` (`--route interests`) |
-| Page, source, beat, full-read, visual, or process budget | `preferences/source-budgets.yaml` (`--route budgets`) |
-| Review thresholds or muted copy-desk findings | `preferences/checks.yaml` (`--route checks`) |
-| PDF, print, email/article view, archive, routine/automation behavior | `DELIVERY.md` (`--route delivery`) |
+{route_rows}
 | One-off URL or file to read tomorrow | `morning-paper stage <url-or-file>` adds it to the Assignment Board |
-| Stable accepted/rejected taste decision | `TASTELOG.md` (`--route taste`) |
 
 ## Guardrails
 
