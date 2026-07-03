@@ -33,6 +33,97 @@ class EditionWorkspaceTest(unittest.TestCase):
             b"%%EOF\n"
         )
 
+    def _write_low_page_completed_artifacts(self, newsroom: Path, edition_dir: Path, *, date: str, draft_text: str) -> None:
+        (newsroom / "preferences" / "source-budgets.yaml").write_text(
+            "version: 1\nedition:\n  target_pages: 22\n  max_pages: 25\n",
+            encoding="utf-8",
+        )
+        sources_dir = newsroom / "sources"
+        sources_dir.mkdir(exist_ok=True)
+        (sources_dir / "health.json").write_text(
+            json.dumps(
+                {
+                    "counts": {"total": 20, "healthy": 15, "broken": 5},
+                    "sources": [
+                        {"id": "x-social-apify", "verdict": "broken", "owner_desk": "x"},
+                        {"id": "hacker-news-deep-reads", "verdict": "broken", "owner_desk": "reading"},
+                    ],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        rendered = edition_dir / "edition"
+        rendered.mkdir(exist_ok=True)
+        pdf = rendered / "edition.pdf"
+        self._minimal_pdf(pdf)
+        desk_sheet_pdf = rendered / "desk-sheet.pdf"
+        self._minimal_pdf(desk_sheet_pdf)
+        markdown = rendered / "edition.md"
+        markdown.write_text(draft_text, encoding="utf-8")
+        draft = edition_dir / "draft.md"
+        draft.write_text(draft_text, encoding="utf-8")
+        (edition_dir / "estimate-result.json").write_text(
+            json.dumps(
+                {
+                    "status": "estimated",
+                    "date": date,
+                    "file": str(draft.resolve()),
+                    "file_mtime": draft.stat().st_mtime,
+                    "est_pages": 6,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        (edition_dir / "render-result.json").write_text(
+            json.dumps(
+                {
+                    "status": "rendered",
+                    "date": date,
+                    "pages": 6,
+                    "outputs": {"pdf": str(pdf), "markdown": str(markdown)},
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        (edition_dir / "review.json").write_text(
+            json.dumps(
+                {
+                    "status": "clean",
+                    "edition": {"artifacts": {"markdown": str(markdown)}},
+                    "summary": {"flag": 0, "nudge": 0, "info": 0},
+                    "findings": [],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        (edition_dir / "visual-qa.json").write_text(
+            json.dumps({"status": "clean", "pdf": {"path": str(pdf), "ok": True, "pages": 1}, "findings": []}),
+            encoding="utf-8",
+        )
+        (edition_dir / "final-editor.json").write_text(
+            json.dumps({"status": "clean", "summary": {"flag": 0, "nudge": 0, "info": 0}}, indent=2),
+            encoding="utf-8",
+        )
+        (edition_dir / "delivery-result.json").write_text(
+            json.dumps({"status": "not_configured", "date": date}, indent=2),
+            encoding="utf-8",
+        )
+        (edition_dir / "desk-sheet-result.json").write_text(
+            json.dumps(
+                {
+                    "status": "rendered",
+                    "date": date,
+                    "outputs": {"pdf": str(desk_sheet_pdf)},
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
     def test_edition_prepare_writes_all_resume_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -727,6 +818,97 @@ handoff:
             self.assertEqual(ticket["status"], "blocked")
             self.assertEqual(ticket["roles"]["invalid"][0]["file"], "04-editor.md")
             self.assertIn("too skeletal", ticket["roles"]["invalid"][0]["issue"])
+
+    def test_run_ticket_blocks_high_health_under_floor_zero_role_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            self._write_low_page_completed_artifacts(
+                newsroom,
+                edition_dir,
+                date="2026-06-22",
+                draft_text="# Thin Paper\n\nThe paper shipped short without a printed editor rationale.\n",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["edition", "status", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "blocked")
+            self.assertEqual(ticket["source_health"]["healthy"], 15)
+            details = "\n".join(str(check["detail"]) for check in ticket["checks"])
+            self.assertIn("6 pages of 22", details)
+            self.assertIn("X desk down", details)
+            self.assertIn("no copy-edit pass ran", details)
+            self.assertIn("0 newsroom roles produced artifacts", details)
+            self.assertIn("missing printed editor rationale", details)
+            self.assertIn("Production Shortfalls", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+
+    def test_run_ticket_notes_printed_under_floor_rationale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
+            edition_dir = newsroom / "editions" / "2026-06-22"
+            self._write_low_page_completed_artifacts(
+                newsroom,
+                edition_dir,
+                date="2026-06-22",
+                draft_text="# Thin Paper\n\nEditor rationale: 6 pages of 22 because the X desk is down and no copy-edit pass ran.\n",
+            )
+            (edition_dir / "desks" / "02-assignment-editor.md").write_text(
+                """---
+role: assignment-editor
+phase: "02"
+status: ready
+date: 2026-06-22
+inputs:
+  - source-inventory.json
+  - assignment-board.json
+handoff:
+  candidates: 3
+  repeats_cut: 0
+  needs_followup: false
+---
+
+## What I Checked
+- Source inventory and the under-floor editor rationale printed in the edition.
+
+## Findings
+- Sources were healthy enough to require a named shortfall rather than a green status.
+
+## Handoff
+- The edition can ship only with notes because it is 6 pages of 22.
+""",
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["edition", "status", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]
+                )
+            self.assertEqual(rc, 0)
+            ticket = json.loads(stdout.getvalue())
+            self.assertEqual(ticket["status"], "complete_with_notes")
+            self.assertEqual(ticket["summary"]["note"], 1)
+            self.assertTrue(ticket["shortfalls"][0]["printed_in_edition"])
+            self.assertIn("Status: complete_with_notes", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
 
     def test_substantial_run_requires_late_desks_and_producer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

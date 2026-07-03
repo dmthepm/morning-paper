@@ -60,6 +60,8 @@ DEFAULT_DESK_SHEET_PREFS: dict[str, object] = {
 }
 
 SUBSTANTIAL_PAGE_THRESHOLD = 8
+PAGE_FLOOR = 20
+HIGH_HEALTHY_SOURCE_COUNT = 10
 REQUIRED_SUBSTANTIAL_PHASES = {
     "04": "editor",
     "05": "copy-desk",
@@ -539,6 +541,12 @@ def _render_run_ticket_markdown(ticket: dict[str, object]) -> str:
             lines.append("- Phases: " + ", ".join(sorted(str(phase) for phase in phases)))
         for phase in missing:
             lines.append(f"- Missing quality gate: `{phase}`")
+    shortfalls = ticket.get("shortfalls") if isinstance(ticket.get("shortfalls"), list) else []
+    if shortfalls:
+        lines.extend(["", "## Production Shortfalls"])
+        for item in shortfalls:
+            if isinstance(item, dict):
+                lines.append(f"- {item.get('detail', '')}")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -636,6 +644,102 @@ def _substantial_page_count(estimate: dict[str, object], render: dict[str, objec
     return max(_int_or_zero(estimate.get("est_pages")), _int_or_zero(render.get("pages")))
 
 
+def _source_gate_summary(root: Path, source_inventory: dict[str, object]) -> dict[str, object]:
+    health = _load_json_object(root / "sources" / "health.json")
+    counts = health.get("counts") if isinstance(health.get("counts"), dict) else {}
+    healthy = _int_or_zero(counts.get("healthy"))
+    total = _int_or_zero(counts.get("total"))
+    broken = _int_or_zero(counts.get("broken"))
+    broken_desks: set[str] = set()
+    sources = health.get("sources") if isinstance(health.get("sources"), list) else []
+    for item in sources:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("verdict") or item.get("status") or "").lower() != "broken":
+            continue
+        desk = str(item.get("owner_desk") or "").strip().lower()
+        if desk:
+            broken_desks.add(desk)
+
+    if healthy or total or broken:
+        return {
+            "healthy": healthy,
+            "total": total,
+            "broken": broken,
+            "broken_desks": sorted(broken_desks),
+            "source": str(root / "sources" / "health.json"),
+        }
+
+    healthy = sum(
+        1
+        for item in source_inventory.get("sources", [])
+        if isinstance(item, dict) and str(item.get("status") or "").lower() in {"ok", "configured"}
+    )
+    newsroom = source_inventory.get("newsroom") if isinstance(source_inventory.get("newsroom"), dict) else {}
+    collectors = newsroom.get("collectors") if isinstance(newsroom.get("collectors"), list) else []
+    healthy += sum(
+        1
+        for item in collectors
+        if isinstance(item, dict) and str(item.get("status") or "").lower() == "configured"
+    )
+    total = healthy
+    return {"healthy": healthy, "total": total, "broken": broken, "broken_desks": [], "source": "source-inventory.json"}
+
+
+def _desk_down_phrase(broken_desks: list[str]) -> str:
+    if not broken_desks:
+        return "no source desk marked down"
+    names = ["X" if desk == "x" else desk.replace("-", " ") for desk in broken_desks]
+    if len(names) == 1:
+        return f"{names[0]} desk down"
+    return ", ".join(f"{name} desk down" for name in names)
+
+
+def _shortfall_detail(*, est_pages: int, target_pages: int, source_summary: dict[str, object], roles: dict[str, object]) -> str:
+    healthy = _int_or_zero(source_summary.get("healthy"))
+    broken_desks = source_summary.get("broken_desks") if isinstance(source_summary.get("broken_desks"), list) else []
+    phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
+    parts = [
+        f"{est_pages} pages of {target_pages}",
+        f"{healthy} healthy source(s)",
+        _desk_down_phrase([str(item) for item in broken_desks]),
+    ]
+    if "05" not in phases:
+        parts.append("no copy-edit pass ran")
+    if int(roles.get("count") or 0) == 0:
+        parts.append("0 newsroom roles produced artifacts")
+    return "; ".join(parts)
+
+
+def _rendered_text_for_gate(edition_dir: Path, render: dict[str, object]) -> str:
+    chunks: list[str] = []
+    draft = edition_dir / "draft.md"
+    if draft.is_file():
+        chunks.append(draft.read_text(encoding="utf-8", errors="replace"))
+    outputs = render.get("outputs") if isinstance(render.get("outputs"), dict) else {}
+    rendered_markdown = Path(str(outputs.get("markdown", ""))).expanduser() if outputs.get("markdown") else Path()
+    if rendered_markdown.is_file():
+        chunks.append(rendered_markdown.read_text(encoding="utf-8", errors="replace"))
+    return "\n".join(chunks).lower()
+
+
+def _edition_prints_shortfall(text: str, *, est_pages: int, target_pages: int) -> bool:
+    if not text:
+        return False
+    page_markers = {
+        f"{est_pages} pages",
+        f"{est_pages}-page",
+        f"{est_pages} page",
+        f"{est_pages} of {target_pages}",
+        f"{est_pages}/{target_pages}",
+        f"{target_pages}-page target",
+        "under 20",
+        "under twenty",
+    }
+    reason_markers = {"rationale", "because", "why", "shortfall", "floor", "source", "desk", "copy-edit"}
+    return any(marker in text for marker in page_markers) and any(marker in text for marker in reason_markers)
+
+
 def _missing_substantial_phases(roles: dict[str, object]) -> list[str]:
     phases = roles.get("phases") if isinstance(roles.get("phases"), dict) else {}
     missing: list[str] = []
@@ -675,6 +779,10 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
     role_count = int(roles.get("count") or 0)
     role_invalid = roles.get("invalid") if isinstance(roles.get("invalid"), list) else []
     role_blocked = roles.get("blocked") if isinstance(roles.get("blocked"), list) else []
+    source_inventory = _load_json_object(edition_dir / "source-inventory.json")
+    source_summary = _source_gate_summary(root, source_inventory)
+    broad_source_run = _int_or_zero(source_summary.get("healthy")) >= HIGH_HEALTHY_SOURCE_COUNT
+    shortfalls: list[dict[str, object]] = []
     if role_count:
         if role_blocked:
             _add_ticket_check(
@@ -702,7 +810,7 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
             checks,
             name="desk artifacts",
             state="pass",
-            detail="no role artifacts yet; simple run path is allowed",
+            detail="no role artifacts found",
         )
 
     estimate = _load_json_object(edition_dir / "estimate-result.json")
@@ -778,6 +886,63 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
             detail=str(desk_sheet_proof.get("detail") or "missing Desk Sheet proof"),
         )
 
+    est_pages = _int_or_zero(estimate.get("est_pages"))
+    target_pages = int(budget_policy["target_pages"])
+    if target_pages >= PAGE_FLOOR and est_pages > 0 and est_pages < PAGE_FLOOR and broad_source_run:
+        shortfall = _shortfall_detail(
+            est_pages=est_pages,
+            target_pages=target_pages,
+            source_summary=source_summary,
+            roles=roles,
+        )
+        printed = _edition_prints_shortfall(
+            _rendered_text_for_gate(edition_dir, render),
+            est_pages=est_pages,
+            target_pages=target_pages,
+        )
+        shortfalls.append(
+            {
+                "name": "page-floor",
+                "detail": f"page floor missed: {shortfall}",
+                "printed_in_edition": printed,
+            }
+        )
+        if printed:
+            _add_ticket_check(
+                checks,
+                name="page floor",
+                state="note",
+                detail=f"under 20-page floor with high source health: {shortfall}",
+            )
+        else:
+            _add_ticket_check(
+                checks,
+                name="page floor",
+                state="block",
+                detail=f"under 20-page floor with high source health: {shortfall}; missing printed editor rationale",
+            )
+
+    if broad_source_run and role_count == 0:
+        shortfall = _shortfall_detail(
+            est_pages=est_pages,
+            target_pages=target_pages,
+            source_summary=source_summary,
+            roles=roles,
+        )
+        shortfalls.append(
+            {
+                "name": "zero-newsroom-roles",
+                "detail": f"zero newsroom roles on broad run: {shortfall}",
+                "printed_in_edition": False,
+            }
+        )
+        _add_ticket_check(
+            checks,
+            name="newsroom roles",
+            state="block",
+            detail=f"broad source run had 0 newsroom role artifacts: {shortfall}",
+        )
+
     substantial_pages = _substantial_page_count(estimate, render)
     if substantial_pages >= SUBSTANTIAL_PAGE_THRESHOLD:
         missing = _missing_substantial_phases(roles)
@@ -826,6 +991,8 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
             "block": sum(1 for check in checks if check.get("state") == "block"),
         },
         "roles": roles,
+        "source_health": source_summary,
+        "shortfalls": shortfalls,
         "page_budget": budget_policy,
         "next_action": next_action,
         "artifacts": {
