@@ -399,6 +399,34 @@ def _deliver_pdf(outputs: dict[str, object], output_arg: str | None) -> tuple[st
     return str(target), 0
 
 
+def _render_estimate_warning(source: Path) -> str | None:
+    if source.name != "draft.md":
+        return None
+    estimate_path = source.parent / "estimate-result.json"
+    if not estimate_path.is_file():
+        return None
+    try:
+        estimate = json.loads(estimate_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "estimate-result.json is unreadable; rerun `morning-paper edition estimate` before trusting page budget"
+    if not isinstance(estimate, dict) or estimate.get("status") != "estimated":
+        return None
+    estimate_file = Path(str(estimate.get("file", ""))).expanduser()
+    try:
+        if not estimate_file.is_file() or estimate_file.resolve() != source.resolve():
+            return "estimate-result.json does not describe this draft; rerun `morning-paper edition estimate`"
+    except OSError:
+        return "estimate-result.json does not describe this draft; rerun `morning-paper edition estimate`"
+    est_mtime = float(estimate.get("file_mtime") or 0)
+    try:
+        source_mtime = source.stat().st_mtime
+    except OSError:
+        return None
+    if source_mtime > est_mtime + 0.001:
+        return "draft.md is newer than estimate-result.json; rerun `morning-paper edition estimate` before delivery"
+    return None
+
+
 def _open_pdf(path: Path) -> dict[str, object]:
     if sys.platform == "darwin":
         command = ["open", str(path)]
@@ -775,6 +803,7 @@ def render_command(args: list[str]) -> int:
     # artifact output toggles in config
     config.outputs.html = True
     config.outputs.pdf = True
+    source = source.resolve()
     markdown_text = source.read_text(encoding="utf-8")
     target_date = date or datetime.now(ZoneInfo(config.timezone)).date().isoformat()
     target_slug = _safe_filename(slug or source.stem)[:48] or "render"
@@ -788,6 +817,9 @@ def render_command(args: list[str]) -> int:
             "rendering with the document's own stylesheet",
             file=sys.stderr,
         )
+    stale_estimate_warning = _render_estimate_warning(source)
+    if stale_estimate_warning:
+        print(f"warning: {stale_estimate_warning}", file=sys.stderr)
     try:
         outputs, warnings, pages = write_custom_markdown(
             config,
@@ -807,6 +839,9 @@ def render_command(args: list[str]) -> int:
     except TypewriterRendererUnavailable as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    output_warnings = list(warnings)
+    if stale_estimate_warning:
+        output_warnings.append(stale_estimate_warning)
     for warning in warnings:
         print(f"warning: {warning}", file=sys.stderr)
     delivered, rc = _deliver_pdf(outputs, output_arg)
@@ -824,7 +859,7 @@ def render_command(args: list[str]) -> int:
                 "style": reported_style,
                 "palette": config.outputs.palette,
                 "pages": pages,
-                "warnings": warnings,
+                "warnings": output_warnings,
                 "outputs": output_paths,
                 "output_dir": str(outputs["dir"]),
             },

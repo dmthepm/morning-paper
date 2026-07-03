@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- Added self-describing role handoff validation details to production records
+  and final-editor markdown, including missing/invalid keys and the expected
+  frontmatter/body schema.
+- Added stale-estimate guardrails: edition estimates record when they replace a
+  stale prior estimate, and render warns when `draft.md` is newer than
+  `estimate-result.json`.
+
+### Changed
+- Documented the current release-candidate focus on the shipped production
+  gate, clearer validator recovery, and earlier estimate freshness warnings.
+
 ## [0.8.12] - 2026-06-27
 
 ### Changed

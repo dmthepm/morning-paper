@@ -436,6 +436,37 @@ class RenderCommandTest(unittest.TestCase):
             self.assertEqual(payload["style"], "broadsheet")
             self.assertNotIn("custom-css", stderr.getvalue())
 
+    def test_render_warns_when_edition_estimate_is_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = self._portable_config(tmp_path)
+            edition_dir = tmp_path / "editions" / "2026-06-22"
+            edition_dir.mkdir(parents=True)
+            source = edition_dir / "draft.md"
+            source.write_text("# Hello\n\nChanged after estimate.\n", encoding="utf-8")
+            (edition_dir / "estimate-result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "estimated",
+                        "date": "2026-06-22",
+                        "file": str(source.resolve()),
+                        "file_mtime": 0,
+                        "est_pages": 1,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                rc = cli.main(["render", str(source), "--config", str(config_path), "--date", "2026-06-22"])
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertIn("draft.md is newer than estimate-result.json", stderr.getvalue())
+            self.assertIn("draft.md is newer than estimate-result.json", payload["warnings"][0])
+
     def test_render_applies_config_font_scale_to_html(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)

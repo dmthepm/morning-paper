@@ -544,6 +544,15 @@ def _render_run_ticket_markdown(ticket: dict[str, object]) -> str:
         for item in invalid:
             if isinstance(item, dict):
                 lines.append(f"- Needs repair: `{item.get('file', '')}` - {item.get('issue', '')}")
+                missing_keys = item.get("missing_keys") if isinstance(item.get("missing_keys"), list) else []
+                invalid_keys = item.get("invalid_keys") if isinstance(item.get("invalid_keys"), list) else []
+                if missing_keys:
+                    lines.append("  Missing keys: " + ", ".join(str(key) for key in missing_keys))
+                if invalid_keys:
+                    lines.append("  Invalid keys: " + ", ".join(str(key) for key in invalid_keys))
+                if item.get("expected_schema"):
+                    schema = json.dumps(item["expected_schema"], sort_keys=True)
+                    lines.append(f"  Expected schema: `{schema}`")
         for item in blocked:
             if isinstance(item, dict):
                 lines.append(f"- Blocked: `{item.get('file', '')}` - role reported blocked")
@@ -573,6 +582,50 @@ def _add_ticket_check(checks: list[dict[str, object]], *, name: str, state: str,
     checks.append({"name": name, "state": state, "detail": detail})
 
 
+ROLE_HANDOFF_SCHEMA: dict[str, object] = {
+    "frontmatter": {
+        "required_keys": ["date", "handoff", "inputs", "phase", "role", "status"],
+        "status_allowed": ["ready", "notes", "blocked"],
+        "inputs": "non-empty list of artifact names or paths",
+        "handoff": "non-empty mapping with role-specific counts, decisions, or next-action facts",
+    },
+    "body": {
+        "required_sections": ["## What I Checked", "## Handoff"],
+        "one_of_sections": ["## Findings", "## Candidates"],
+        "minimum_words": 24,
+    },
+}
+
+
+def role_handoff_schema() -> dict[str, object]:
+    """Return the validator's current role handoff schema for docs and errors."""
+
+    return json.loads(json.dumps(ROLE_HANDOFF_SCHEMA))
+
+
+def _invalid_role_artifact(
+    invalid: list[dict[str, object]],
+    *,
+    file: str,
+    issue: str,
+    missing_keys: list[str] | None = None,
+    invalid_keys: list[str] | None = None,
+    missing_sections: list[str] | None = None,
+) -> None:
+    item: dict[str, object] = {
+        "file": file,
+        "issue": issue,
+        "expected_schema": role_handoff_schema(),
+    }
+    if missing_keys:
+        item["missing_keys"] = missing_keys
+    if invalid_keys:
+        item["invalid_keys"] = invalid_keys
+    if missing_sections:
+        item["missing_sections"] = missing_sections
+    invalid.append(item)
+
+
 def _role_artifacts(edition_dir: Path) -> dict[str, object]:
     desks_dir = edition_dir / "desks"
     if not desks_dir.is_dir():
@@ -582,7 +635,7 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
         for path in desks_dir.glob("*.md")
         if path.is_file() and path.name.lower() != "readme.md"
     )
-    invalid: list[dict[str, str]] = []
+    invalid: list[dict[str, object]] = []
     blocked: list[dict[str, str]] = []
     phases: dict[str, dict[str, str]] = {}
     required = {"role", "phase", "status", "date", "inputs", "handoff"}
@@ -590,35 +643,55 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
     for path in paths:
         text = path.read_text(encoding="utf-8", errors="replace")
         if not text.startswith("---\n"):
-            invalid.append({"file": path.name, "issue": "missing YAML frontmatter"})
+            _invalid_role_artifact(invalid, file=path.name, issue="missing YAML frontmatter")
             continue
         marker = text.find("\n---", 4)
         if marker == -1:
-            invalid.append({"file": path.name, "issue": "unclosed YAML frontmatter"})
+            _invalid_role_artifact(invalid, file=path.name, issue="unclosed YAML frontmatter")
             continue
         try:
             frontmatter = yaml.safe_load(text[4:marker]) or {}
         except yaml.YAMLError:
-            invalid.append({"file": path.name, "issue": "invalid YAML frontmatter"})
+            _invalid_role_artifact(invalid, file=path.name, issue="invalid YAML frontmatter")
             continue
         if not isinstance(frontmatter, dict):
-            invalid.append({"file": path.name, "issue": "frontmatter must be a mapping"})
+            _invalid_role_artifact(invalid, file=path.name, issue="frontmatter must be a mapping")
             continue
         missing = sorted(required - set(str(key) for key in frontmatter))
         if missing:
-            invalid.append({"file": path.name, "issue": "missing " + ", ".join(missing)})
+            _invalid_role_artifact(
+                invalid,
+                file=path.name,
+                issue="missing " + ", ".join(missing),
+                missing_keys=missing,
+            )
             continue
         status = str(frontmatter.get("status", "")).strip().lower()
         if status not in allowed_statuses:
-            invalid.append({"file": path.name, "issue": "status must be ready, notes, or blocked"})
+            _invalid_role_artifact(
+                invalid,
+                file=path.name,
+                issue="status must be ready, notes, or blocked",
+                invalid_keys=["status"],
+            )
             continue
         inputs = frontmatter.get("inputs")
         if not isinstance(inputs, list) or not [item for item in inputs if str(item).strip()]:
-            invalid.append({"file": path.name, "issue": "inputs must name at least one artifact"})
+            _invalid_role_artifact(
+                invalid,
+                file=path.name,
+                issue="inputs must name at least one artifact",
+                invalid_keys=["inputs"],
+            )
             continue
         handoff = frontmatter.get("handoff")
         if not isinstance(handoff, dict) or not handoff:
-            invalid.append({"file": path.name, "issue": "handoff must be a non-empty mapping"})
+            _invalid_role_artifact(
+                invalid,
+                file=path.name,
+                issue="handoff must be a non-empty mapping",
+                invalid_keys=["handoff"],
+            )
             continue
         body = text[marker + len("\n---") :].strip()
         missing_sections = [
@@ -629,11 +702,16 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
         if "## Findings" not in body and "## Candidates" not in body:
             missing_sections.append("## Findings or ## Candidates")
         if missing_sections:
-            invalid.append({"file": path.name, "issue": "missing body section(s): " + ", ".join(missing_sections)})
+            _invalid_role_artifact(
+                invalid,
+                file=path.name,
+                issue="missing body section(s): " + ", ".join(missing_sections),
+                missing_sections=missing_sections,
+            )
             continue
         body_words = [word for word in body.replace("#", " ").split() if word.strip()]
         if len(body_words) < 24:
-            invalid.append({"file": path.name, "issue": "handoff body is too skeletal"})
+            _invalid_role_artifact(invalid, file=path.name, issue="handoff body is too skeletal")
             continue
         phase = str(frontmatter.get("phase", "")).strip()
         role = str(frontmatter.get("role", "")).strip()
@@ -648,6 +726,27 @@ def _role_artifacts(edition_dir: Path) -> dict[str, object]:
         "blocked": blocked,
         "phases": phases,
     }
+
+
+def _estimate_staleness_detail(estimate: dict[str, object], draft_path: Path) -> dict[str, object] | None:
+    if estimate.get("status") != "estimated":
+        return None
+    estimate_file = Path(str(estimate.get("file", ""))).expanduser()
+    if not draft_path.is_file():
+        return None
+    if not estimate_file.is_file() or estimate_file.resolve() != draft_path.resolve():
+        return {"estimate_file": str(estimate_file), "draft": str(draft_path), "reason": "wrong-file"}
+    est_mtime = float(estimate.get("file_mtime") or 0)
+    current_mtime = draft_path.stat().st_mtime
+    if current_mtime > est_mtime + 0.001:
+        return {
+            "estimate_file": str(estimate_file),
+            "draft": str(draft_path),
+            "estimate_file_mtime": est_mtime,
+            "draft_mtime": current_mtime,
+            "reason": "draft-newer-than-estimate",
+        }
+    return None
 
 
 def _substantial_page_count(estimate: dict[str, object], render: dict[str, object]) -> int:
@@ -1037,6 +1136,21 @@ def _render_final_editor_markdown(report: dict[str, object]) -> str:
             lines.append(f"- {severity} `{check}` - {issue}")
             if hint:
                 lines.append(f"  Fix: {hint}")
+            measured = item.get("measured") if isinstance(item.get("measured"), dict) else {}
+            invalid_roles = measured.get("invalid_roles") if isinstance(measured.get("invalid_roles"), list) else []
+            for role in invalid_roles:
+                if not isinstance(role, dict):
+                    continue
+                lines.append(f"  Invalid handoff: `{role.get('file', '')}` - {role.get('issue', '')}")
+                missing_keys = role.get("missing_keys") if isinstance(role.get("missing_keys"), list) else []
+                invalid_keys = role.get("invalid_keys") if isinstance(role.get("invalid_keys"), list) else []
+                if missing_keys:
+                    lines.append("    Missing keys: " + ", ".join(str(key) for key in missing_keys))
+                if invalid_keys:
+                    lines.append("    Invalid keys: " + ", ".join(str(key) for key in invalid_keys))
+                if role.get("expected_schema"):
+                    schema = json.dumps(role["expected_schema"], sort_keys=True)
+                    lines.append(f"    Expected schema: `{schema}`")
     lines.extend(
         [
             "",
@@ -1206,10 +1320,8 @@ def final_editor_pass(
             measured={"error": estimate_result.get("error", "")},
         )
     elif estimate_result:
-        estimate_file = Path(str(estimate_result.get("file", ""))).expanduser()
-        est_mtime = float(estimate_result.get("file_mtime") or 0)
-        current_mtime = estimate_file.stat().st_mtime if estimate_file.is_file() else 0
-        if not estimate_file.is_file() or estimate_file.resolve() != draft_path.resolve():
+        staleness = _estimate_staleness_detail(estimate_result, draft_path)
+        if staleness and staleness.get("reason") == "wrong-file":
             _final_finding(
                 findings,
                 check="artifact-freshness",
@@ -1217,9 +1329,9 @@ def final_editor_pass(
                 issue="Estimate was not run against this edition's draft.",
                 why="A page estimate for another file cannot prove this paper's budget.",
                 hint="Run `morning-paper edition estimate` from this newsroom/date.",
-                measured={"estimate_file": str(estimate_file), "draft": str(draft_path)},
+                measured=staleness,
             )
-        elif current_mtime > est_mtime + 0.001:
+        elif staleness:
             _final_finding(
                 findings,
                 check="artifact-freshness",
@@ -1227,6 +1339,7 @@ def final_editor_pass(
                 issue="Draft changed after the page estimate.",
                 why="The estimate no longer describes the draft that was rendered.",
                 hint="Rerun the estimate, render, review, and final-editor.",
+                measured=staleness,
             )
 
     if render_result.get("status") == "pending":
@@ -2337,8 +2450,13 @@ def estimate_edition_workspace(
     edition_dir = root / "editions" / date_str
     if not edition_dir.is_dir():
         raise FileNotFoundError(f"missing edition directory: {edition_dir}")
+    previous = _load_json_object(edition_dir / "estimate-result.json")
+    stale_previous = _estimate_staleness_detail(previous, edition_dir / "draft.md")
     payload = estimate_markdown(edition_dir / "draft.md", config, date_str=date_str)
     payload["page_budget"] = _page_budget_policy(root)
+    if stale_previous:
+        payload["warnings"] = ["previous estimate-result.json was stale; overwrote it with this estimate"]
+        payload["stale_estimate_replaced"] = stale_previous
     write_json(edition_dir / "estimate-result.json", payload)
     return payload
 

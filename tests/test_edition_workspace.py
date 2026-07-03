@@ -771,7 +771,11 @@ phase: "04"
             ticket = json.loads(stdout.getvalue())
             self.assertEqual(ticket["roles"]["invalid"][0]["file"], "04-editor.md")
             self.assertIn("status", ticket["roles"]["invalid"][0]["issue"])
+            self.assertEqual(ticket["roles"]["invalid"][0]["missing_keys"], ["date", "handoff", "inputs", "status"])
+            schema = ticket["roles"]["invalid"][0]["expected_schema"]
+            self.assertEqual(schema["frontmatter"]["required_keys"], ["date", "handoff", "inputs", "phase", "role", "status"])
             self.assertIn("Needs repair", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
+            self.assertIn("Expected schema", (edition_dir / "run-ticket.md").read_text(encoding="utf-8"))
 
     def test_run_ticket_rejects_skeletal_role_handoff(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1247,6 +1251,43 @@ handoff:
             self.assertIn("artifact-freshness", checks)
             self.assertIn("estimate-drift", checks)
             self.assertIn("visual-qa", checks)
+
+    def test_edition_estimate_warns_when_replacing_stale_estimate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            newsroom = tmp_path / "newsroom"
+            config_path = self._config_path(tmp_path)
+            self.assertEqual(cli.main(["newsroom", "init", str(newsroom)]), 0)
+            self.assertEqual(
+                cli.main(["edition", "prepare", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]),
+                0,
+            )
+            draft = newsroom / "editions" / "2026-06-22" / "draft.md"
+            draft.write_text("# Test Edition\n\nSimple body copy for page estimation.\n", encoding="utf-8")
+            estimate_path = draft.parent / "estimate-result.json"
+            estimate_path.write_text(
+                json.dumps(
+                    {
+                        "status": "estimated",
+                        "date": "2026-06-22",
+                        "file": str(draft.resolve()),
+                        "file_mtime": 0,
+                        "est_pages": 1,
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = cli.main(
+                    ["edition", "estimate", str(newsroom), "--config", str(config_path), "--date", "2026-06-22"]
+            )
+            self.assertEqual(rc, 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertIn("previous estimate-result.json was stale", payload["warnings"][0])
+            self.assertEqual(payload["stale_estimate_replaced"]["reason"], "draft-newer-than-estimate")
 
     def test_edition_prepare_preserves_draft_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
