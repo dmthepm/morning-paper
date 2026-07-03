@@ -35,7 +35,7 @@ class EditionWorkspaceTest(unittest.TestCase):
 
     def _write_low_page_completed_artifacts(self, newsroom: Path, edition_dir: Path, *, date: str, draft_text: str) -> None:
         (newsroom / "preferences" / "source-budgets.yaml").write_text(
-            "version: 1\nedition:\n  target_pages: 22\n  max_pages: 25\n",
+            "version: 1\nedition:\n  target_pages: 22\n  floor_pages: 20\n  max_pages: 25\n",
             encoding="utf-8",
         )
         sources_dir = newsroom / "sources"

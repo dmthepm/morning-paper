@@ -60,7 +60,6 @@ DEFAULT_DESK_SHEET_PREFS: dict[str, object] = {
 }
 
 SUBSTANTIAL_PAGE_THRESHOLD = 8
-PAGE_FLOOR = 20
 HIGH_HEALTHY_SOURCE_COUNT = 10
 REQUIRED_SUBSTANTIAL_PHASES = {
     "04": "editor",
@@ -132,6 +131,13 @@ def _positive_int(value: object) -> int | None:
     return parsed if parsed > 0 else None
 
 
+def _acceptable_range_floor(value: object) -> int | None:
+    if not isinstance(value, str) or "-" not in value:
+        return None
+    low, _, _high = value.partition("-")
+    return _positive_int(low.strip())
+
+
 def _page_budget_policy(root: Path) -> dict[str, object]:
     fallback_target = 12
     fallback_max = 20
@@ -156,8 +162,12 @@ def _page_budget_policy(root: Path) -> dict[str, object]:
     max_pages = _positive_int(edition.get("max_pages")) or max(target, fallback_max)
     if max_pages < target:
         max_pages = target
+    floor_pages = _positive_int(edition.get("floor_pages")) or _acceptable_range_floor(edition.get("acceptable_range")) or 0
+    if floor_pages > max_pages:
+        floor_pages = max_pages
     return {
         "target_pages": target,
+        "floor_pages": floor_pages,
         "max_pages": max_pages,
         "source": "preferences/source-budgets.yaml",
     }
@@ -733,8 +743,8 @@ def _edition_prints_shortfall(text: str, *, est_pages: int, target_pages: int) -
         f"{est_pages} of {target_pages}",
         f"{est_pages}/{target_pages}",
         f"{target_pages}-page target",
-        "under 20",
-        "under twenty",
+        "under floor",
+        "under the floor",
     }
     reason_markers = {"rationale", "because", "why", "shortfall", "floor", "source", "desk", "copy-edit"}
     return any(marker in text for marker in page_markers) and any(marker in text for marker in reason_markers)
@@ -888,7 +898,8 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
 
     est_pages = _int_or_zero(estimate.get("est_pages"))
     target_pages = int(budget_policy["target_pages"])
-    if target_pages >= PAGE_FLOOR and est_pages > 0 and est_pages < PAGE_FLOOR and broad_source_run:
+    floor_pages = int(budget_policy.get("floor_pages") or 0)
+    if floor_pages > 0 and est_pages > 0 and est_pages < floor_pages and broad_source_run:
         shortfall = _shortfall_detail(
             est_pages=est_pages,
             target_pages=target_pages,
@@ -912,14 +923,14 @@ def _build_run_ticket(root: Path, config: MorningPaperConfig, *, date_str: str) 
                 checks,
                 name="page floor",
                 state="note",
-                detail=f"under 20-page floor with high source health: {shortfall}",
+                detail=f"under {floor_pages}-page floor with high source health: {shortfall}",
             )
         else:
             _add_ticket_check(
                 checks,
                 name="page floor",
                 state="block",
-                detail=f"under 20-page floor with high source health: {shortfall}; missing printed editor rationale",
+                detail=f"under {floor_pages}-page floor with high source health: {shortfall}; missing printed editor rationale",
             )
 
     if broad_source_run and role_count == 0:

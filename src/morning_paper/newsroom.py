@@ -689,6 +689,7 @@ If a section is thin, say so instead of padding.
 version: 1
 edition:
   target_pages: 12
+  floor_pages: 0
   max_pages: 20
   max_pages_about_the_paper: 3
 beats:
