@@ -15,6 +15,17 @@ API = "https://api.elevenlabs.io/v1/text-to-speech"
 IDENTIFIER = re.compile(r"[A-Za-z0-9_-]+\Z")
 
 
+class InputError(Exception):
+    """A fixed message about local input, safe to show without request details."""
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Reject every redirect so a render can send at most one request."""
+
+    def redirect_request(self, request, fp, code, msg, headers, new_url):
+        return None
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--script", type=Path, required=True)
@@ -25,16 +36,16 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if not args.script.is_file():
-            raise ValueError("--script must be a readable file")
+            raise InputError("--script must be a readable file")
         if args.output.suffix.lower() != ".mp3":
-            raise ValueError("--output must end in .mp3")
+            raise InputError("--output must end in .mp3")
         if not IDENTIFIER.fullmatch(args.voice_id) or not IDENTIFIER.fullmatch(args.model_id):
-            raise ValueError("voice and model IDs may contain only letters, digits, underscore and hyphen")
+            raise InputError("voice and model IDs may contain only letters, digits, underscore and hyphen")
         script = args.script.read_text(encoding="utf-8").strip()
         if not script:
-            raise ValueError("script is empty")
+            raise InputError("script is empty")
         if args.output.exists():
-            raise ValueError("output already exists; choose a new path to avoid a duplicate paid render")
+            raise InputError("output already exists; choose a new path to avoid a duplicate paid render")
         plan = {"route": "ElevenLabs direct API", "model_id": args.model_id,
                 "voice_id": args.voice_id, "characters": len(script), "output": str(args.output),
                 "paid_request": args.render}
@@ -43,14 +54,16 @@ def main(argv=None):
             return 0
         key = os.environ.get("ELEVENLABS_API_KEY")
         if not key:
-            raise ValueError("ELEVENLABS_API_KEY is not set")
+            raise InputError("ELEVENLABS_API_KEY is not set")
+        if not key.isascii() or any(not 33 <= ord(char) <= 126 for char in key):
+            raise InputError("ELEVENLABS_API_KEY contains unsupported characters")
         request = urllib.request.Request(
             f"{API}/{args.voice_id}?output_format=mp3_44100_128",
             data=json.dumps({"text": script, "model_id": args.model_id}).encode("utf-8"),
             headers={"Content-Type": "application/json", "xi-api-key": key},
             method="POST",
         )
-        with urllib.request.urlopen(request, timeout=120) as response:
+        with urllib.request.build_opener(NoRedirect()).open(request, timeout=120) as response:
             media_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
             if media_type not in ("audio/mpeg", "audio/mp3"):
                 raise ValueError("provider did not return MP3 audio")
@@ -64,11 +77,14 @@ def main(argv=None):
         print(json.dumps({**plan, "bytes": len(audio)}, sort_keys=True))
         return 0
     except urllib.error.HTTPError as error:
-        print(f"render_podcast_elevenlabs: provider HTTP {error.code}; no output written", file=sys.stderr)
+        status = error.code if isinstance(error.code, int) and 100 <= error.code <= 599 else "unexpected status"
+        print(f"render_podcast_elevenlabs: provider HTTP {status}; no output written", file=sys.stderr)
     except urllib.error.URLError:
         print("render_podcast_elevenlabs: provider connection failed; check account before retrying", file=sys.stderr)
-    except (OSError, UnicodeError, ValueError) as error:
+    except InputError as error:
         print(f"render_podcast_elevenlabs: {error}", file=sys.stderr)
+    except (OSError, UnicodeError, ValueError):
+        print("render_podcast_elevenlabs: request or file operation failed; no output written", file=sys.stderr)
     return 1
 
 
