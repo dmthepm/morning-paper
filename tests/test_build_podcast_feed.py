@@ -79,7 +79,8 @@ class FeedBuilderTest(unittest.TestCase):
         self.assertFalse(self.out.exists())
 
         wrong = self.root / "wrong.jpg"
-        wrong.write_bytes(self.art.read_bytes())  # PNG bytes with a JPEG suffix
+        Image.new("RGB", (1400, 1400), "navy").save(self.art)
+        wrong.write_bytes(self.art.read_bytes())  # opaque RGB PNG bytes with a JPEG suffix
         args = self.args.copy()
         args[args.index("--artwork") + 1] = str(wrong)
         self.assertEqual(builder.main(args), 1)
