@@ -217,6 +217,7 @@ use `--newsroom <path>` when checking from somewhere else.
 - [docs/source-conversion.md](docs/source-conversion.md) — turn exports into Assignment Board material
 - [docs/feedback-loop.md](docs/feedback-loop.md) — turn notes into durable taste
 - [docs/composing.md](docs/composing.md) — layout, chart, and review vocabulary
+- [docs/podcast.md](docs/podcast.md) — create a spoken edition and a local podcast feed
 - [docs/inbox.md](docs/inbox.md) — trusted contributor email intake
 - [CHANGELOG.md](CHANGELOG.md) — release history
 
