@@ -186,7 +186,8 @@ access control. The listener's phone must reach the HTTPS host. For one
 owner-operated option, use a reader-controlled server with
 [Caddy's static file server](https://caddyserver.com/docs/caddyfile/directives/file_server).
 The owner points DNS at the server, provisions HTTPS and an upload-writable
-`/srv/podcast` directory, and chooses an unlisted ASCII path. This example
+`/srv/podcast` directory, opens inbound TCP 80/443, and chooses an unlisted
+ASCII path. This example
 uses `audio.example.org/reader-7f4c2e`; replace both values. Caddy's
 [installation instructions](https://caddyserver.com/docs/install) cover the
 host. Configure its Caddyfile on that host:
@@ -202,6 +203,16 @@ audio.example.org {
   header @mp3 Content-Type audio/mpeg
   file_server
 }
+```
+
+On a packaged Caddy host, save that block in `/etc/caddy/Caddyfile`, ensure
+the `caddy` user can read `/srv/podcast`, then validate and reload the
+[service](https://caddyserver.com/docs/running):
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+systemctl status caddy
 ```
 
 After the owner has reviewed the generated local feed and granted upload
