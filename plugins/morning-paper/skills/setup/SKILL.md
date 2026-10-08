@@ -96,9 +96,11 @@ Ask in 2-3 messages, not twenty. Capture:
   `preferences/desk-sheet.yaml` so they can turn it off.
 - **Delivery and archive** — PDF, print, email/article, Telegram or other
   messaging, GitHub artifact links, mobile reading, podcast audio, and where
-  archives should live. If they want a spoken edition, follow
-  `docs/podcast.md` for voice audition, local rendering, feed checks, and
-  Apple Podcasts options. Save only the preference here; account and hosting
+  archives should live. If they want a spoken edition, follow the public
+  [podcast guide](https://github.com/dmthepm/morning-paper/blob/main/docs/podcast.md)
+  (or `docs/podcast.md` in a source checkout) for voice audition, local
+  rendering, feed checks, and Apple Podcasts options. Save only the
+  preference here; account and hosting
   choices belong in private `DELIVERY.md`, and credentials stay outside the repo.
 - **Voice** — how should the paper talk? Offer three registers and write
   the answer to `preferences/voice.md` in the newsroom: *dense operator*

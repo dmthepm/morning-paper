@@ -52,7 +52,8 @@ class FeedBuilderTest(unittest.TestCase):
         self.assertEqual(int(enclosure.get("length")),
                          (self.out / "episodes" / Path(enclosure.get("url")).name).stat().st_size)
         self.assertEqual(len(json.loads((self.out / "episodes.json").read_text())), 1)
-        self.assertEqual(builder.main(self.args), 1)  # same bytes cannot make another episode
+        self.assertEqual(builder.main(self.args), 0)  # same bytes rebuild the one existing episode
+        self.assertEqual(len(json.loads((self.out / "episodes.json").read_text())), 1)
 
     @patch.object(builder, "duration", return_value=31)
     def test_dry_run_writes_nothing(self, _duration):
@@ -84,30 +85,44 @@ class FeedBuilderTest(unittest.TestCase):
         self.assertEqual(builder.main(args), 1)
         self.assertFalse(self.out.exists())
 
+        Image.new("RGB", (1400, 1400), "navy").save(self.art)
+        self.assertEqual(builder.main(self.args + ["--cover-name", "../cover.png"]), 1)
+        self.assertFalse(self.out.exists())
+
     @patch.object(builder, "duration", return_value=31)
     def test_existing_audio_rebuilds_host_and_visibility_without_losing_guid(self, _duration):
         self.assertEqual(builder.main(self.args), 0)
         old = json.loads((self.out / "episodes.json").read_text())[0]
         args = self.args.copy()
-        args[args.index("--base-url") + 1] = "https://podcast.example.org/matt"
-        args[args.index("--show-title") + 1] = "Matt's Paper"
+        args[args.index("--base-url") + 1] = "https://podcast.example.org/reader"
+        args[args.index("--show-title") + 1] = "Second Paper"
+        args[args.index("--episode-title") + 1] = "Retitled attempt"
         args[args.index("--published-at") + 1] = "2026-10-08T12:00:00Z"
-        args += ["--visibility", "public"]
+        args += ["--visibility", "public", "--cover-name", "cover-new.png"]
         self.assertEqual(builder.main(args), 0)
         self.assertEqual(builder.main(args), 0)  # unchanged rerun is idempotent
         episodes = json.loads((self.out / "episodes.json").read_text())
         self.assertEqual(len(episodes), 1)
         self.assertEqual(episodes[0]["guid"], old["guid"])
         self.assertEqual(episodes[0]["published_at"], old["published_at"])
+        self.assertEqual(episodes[0]["title"], old["title"])
+        self.assertEqual(sorted(path.name for path in (self.out / "episodes").iterdir()), [old["file"]])
         channel = ET.parse(self.out / "feed.xml").getroot().find("channel")
-        self.assertEqual(channel.findtext("title"), "Matt's Paper")
+        self.assertEqual(channel.findtext("title"), "Second Paper")
         self.assertIsNone(channel.find(f"{{{builder.ITUNES}}}block"))
-        self.assertTrue(channel.find("item/enclosure").get("url").startswith("https://podcast.example.org/matt/"))
+        self.assertEqual(channel.find(f"{{{builder.ITUNES}}}image").get("href"),
+                         "https://podcast.example.org/reader/cover-new.png")
+        self.assertTrue((self.out / "cover-new.png").is_file())
+        self.assertTrue(channel.find("item/enclosure").get("url").startswith("https://podcast.example.org/reader/"))
 
     @patch.object(builder, "duration", return_value=31)
     def test_rejects_unencoded_or_hostless_base_urls(self, _duration):
+        self.assertEqual(builder.base_url("https://example.invalid/my%20paper"),
+                         "https://example.invalid/my%20paper")
         for url in ("https://example.invalid/my podcast", "https://example.invalid/über",
-                    "https://:443/podcast", "https://exa mple.invalid/podcast"):
+                    "https://:443/podcast", "https://exa mple.invalid/podcast",
+                    "https://example..invalid/podcast", "https://-example.invalid/podcast",
+                    "https://example.invalid:/podcast", "https://@example.invalid/podcast"):
             with self.subTest(url=url):
                 args = self.args.copy()
                 args[args.index("--base-url") + 1] = url

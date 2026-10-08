@@ -23,9 +23,20 @@ MEDIA_TYPES = {".m4a": "audio/x-m4a", ".mp3": "audio/mpeg"}
 
 
 def base_url(value):
+    if not value.isascii() or any(char.isspace() or ord(char) < 32 or ord(char) == 127 for char in value):
+        raise ValueError("--base-url must use percent-encoded ASCII without whitespace or controls")
     parts = urlsplit(value)
-    if parts.scheme != "https" or not parts.netloc or parts.query or parts.fragment:
+    if parts.scheme != "https" or not parts.hostname or "@" in parts.netloc or parts.query or parts.fragment:
         raise ValueError("--base-url must be an HTTPS URL without a query or fragment")
+    label = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+    if (parts.netloc.endswith(":") or parts.netloc.count(":") > 1
+            or any(not re.fullmatch(label, part) for part in parts.hostname.split("."))
+            or not re.fullmatch(r"(?:/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*)?", parts.path)):
+        raise ValueError("--base-url has an invalid hostname or path")
+    if re.search(r"%(?![0-9A-Fa-f]{2})", parts.path):
+        raise ValueError("--base-url path must use valid percent escapes")
+    if parts.port == 0:
+        raise ValueError("--base-url port must be positive")
     return value.rstrip("/")
 
 
@@ -34,8 +45,11 @@ def artwork(path):
         width, height = image.size
         if image.format not in ("PNG", "JPEG") or width != height or not 1400 <= width <= 3000:
             raise ValueError("artwork must be a square PNG or JPEG, 1400–3000 pixels per side")
-        if image.mode not in ("RGB", "L"):
-            raise ValueError("artwork must have no transparency or alpha channel")
+        if image.mode != "RGB" or "transparency" in image.info:
+            raise ValueError("artwork must be RGB with no transparency or alpha channel")
+        expected = {"PNG": (".png",), "JPEG": (".jpg", ".jpeg")}[image.format]
+        if path.suffix.lower() not in expected:
+            raise ValueError("artwork filename extension must match its image format")
 
 
 def duration(path):
@@ -95,6 +109,7 @@ def main(argv=None):
     parser.add_argument("--base-url", required=True, help="future HTTPS location of this directory")
     parser.add_argument("--audio", type=Path, required=True)
     parser.add_argument("--artwork", type=Path, required=True)
+    parser.add_argument("--cover-name", help="ASCII filename for a new artwork URL; default cover plus extension")
     parser.add_argument("--show-title", required=True)
     parser.add_argument("--show-description", required=True)
     parser.add_argument("--author", required=True)
@@ -115,13 +130,16 @@ def main(argv=None):
         if not args.artwork.is_file():
             raise ValueError("artwork file does not exist")
         artwork(args.artwork)
+        cover_name = args.cover_name or "cover" + args.artwork.suffix.lower()
+        if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", cover_name)
+                or Path(cover_name).suffix.lower() != args.artwork.suffix.lower()):
+            raise ValueError("--cover-name must be an ASCII filename matching the artwork extension")
         published = dt.datetime.fromisoformat(args.published_at) if args.published_at else dt.datetime.now(dt.timezone.utc)
         if published.tzinfo is None:
             raise ValueError("--published-at needs a timezone")
         published = published.astimezone(dt.timezone.utc).isoformat()
         audio_hash = hashlib.sha256(args.audio.read_bytes()).hexdigest()
         name = f"{slug(args.episode_title)}-{audio_hash[:12]}{ext}"
-        cover_name = "cover" + args.artwork.suffix.lower()
         entry = {
             "title": args.episode_title, "description": args.episode_description,
             "published_at": published, "file": name, "bytes": args.audio.stat().st_size,
@@ -130,9 +148,11 @@ def main(argv=None):
         }
         index = args.output_dir / "episodes.json"
         episodes = json.loads(index.read_text()) if index.exists() else []
-        if any(e["sha256"] == audio_hash for e in episodes):
-            raise ValueError("this audio is already in the feed")
-        episodes.append(entry)
+        existing = next((e for e in episodes if e["sha256"] == audio_hash), None)
+        if existing is None:
+            episodes.append(entry)
+        else:
+            entry = existing
         xml = feed_xml(args, episodes, cover_name, base)
         ET.fromstring(xml)
         plan = {"feed": base + "/feed.xml", "episodes": len(episodes), "audio_bytes": entry["bytes"],
@@ -141,7 +161,7 @@ def main(argv=None):
         if not args.dry_run:
             args.output_dir.mkdir(parents=True, exist_ok=True)
             (args.output_dir / "episodes").mkdir(exist_ok=True)
-            shutil.copyfile(args.audio, args.output_dir / "episodes" / name)
+            shutil.copyfile(args.audio, args.output_dir / "episodes" / entry["file"])
             shutil.copyfile(args.artwork, args.output_dir / cover_name)
             (args.output_dir / "feed.xml.tmp").write_bytes(xml)
             (args.output_dir / "feed.xml.tmp").replace(args.output_dir / "feed.xml")
