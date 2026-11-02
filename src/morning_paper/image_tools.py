@@ -6,6 +6,11 @@ from pathlib import Path
 import requests
 from PIL import Image, ImageEnhance, ImageOps
 
+# Article images come from untrusted pages. load_image() decodes only web
+# formats, for URLs and local paths alike, so TIFF, FPX, PDF and other Pillow
+# decoders are never reached.
+WEB_IMAGE_FORMATS = ("JPEG", "PNG", "GIF", "WEBP")
+
 
 def _trim_light_border(img: Image.Image, *, threshold: int = 244, padding: int = 8) -> Image.Image:
     gray = img.convert("L")
@@ -25,9 +30,9 @@ def load_image(source: str) -> Image.Image:
     if source.startswith(("http://", "https://")):
         response = requests.get(source, timeout=30)
         response.raise_for_status()
-        return Image.open(BytesIO(response.content))
+        return Image.open(BytesIO(response.content), formats=WEB_IMAGE_FORMATS)
     normalized = source[7:] if source.startswith("file://") else source
-    return Image.open(Path(normalized).expanduser())
+    return Image.open(Path(normalized).expanduser(), formats=WEB_IMAGE_FORMATS)
 
 
 def process_for_print(
