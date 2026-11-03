@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morning-paper"
-version = "0.8.12"
+version = "0.8.13"
 description = "A real paper every morning from your private newsroom: an agent composes a print-ready edition from sources and preferences you own as files."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
   { name = "Devon Meadows" }
@@ -27,7 +27,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -38,7 +37,7 @@ dependencies = [
   "feedparser>=6.0.11",
   "fpdf2>=2.8.2",
   "markdown-it-py>=3.0.0",
-  "Pillow>=11.3.0",
+  "Pillow>=13.0.0",
   "PyYAML>=6.0.2",
   "requests>=2.32.3",
   "trafilatura>=2.1,<3",

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.13] - 2026-11-02
+
 ### Added
 - Added self-describing role handoff validation details to production records
   and final-editor markdown, including missing/invalid keys and the expected
@@ -17,6 +19,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 - Documented the current release-candidate focus on the shipped production
   gate, clearer validator recovery, and earlier estimate freshness warnings.
+
+### Removed
+- Python 3.10 support. Pillow 13 requires Python 3.11 or newer.
+
+### Security
+- Require Pillow 13.0.0, which fixes ten Pillow advisories (CVE-2026-114501,
+  CVE-2026-112395, -112397, -112398, -112400, -112403, -112404, -112895,
+  -112896, -112897).
+- `load_image()` decodes only JPEG, PNG, GIF or WebP, for downloaded article
+  images and local files alike; other formats are rejected before any decoder
+  runs.
 
 ## [0.8.12] - 2026-06-27
 
