@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Security
+- Raised the fpdf2 floor to 2.8.8 (CVE-2026-114609, CVE-2026-114610). Morning Paper only
+  writes plain text with fpdf2, so neither issue was reachable.
+
 ## [0.8.13] - 2026-11-02
 
 ### Added
